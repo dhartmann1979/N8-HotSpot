@@ -1,0 +1,21 @@
+[Unit]
+Description=N8-Hotspot web interface (DMR Die N8schicht)
+After=network-online.target mosquitto.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=n8hotspot
+Group=n8hotspot
+WorkingDirectory=/opt/n8hotspot
+Environment=N8HS_DATA=/opt/n8hotspot/data
+Environment=N8HS_PORT=80
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/n8hotspot/venv/bin/python -m n8hotspot
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

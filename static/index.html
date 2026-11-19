@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0b1224">
+    <title>N8 Hotspot</title>
+    <link rel="icon" href="/static/n8schicht-icon.svg">
+    <link rel="apple-touch-icon" href="/static/n8schicht-icon-192.png">
+    <link rel="stylesheet" href="/static/app.css?v=1">
+</head>
+<body>
+<div class="container">
+    <header>
+        <div class="brand">
+            <img src="/static/n8schicht-icon.svg" alt="DMR Die N8schicht">
+            <div>
+                <h1 id="title">N8 Hotspot</h1>
+                <div class="sub" id="subtitle">&nbsp;</div>
+            </div>
+        </div>
+        <div class="chips">
+            <span class="chip" id="chipLive">Live data</span>
+            <span class="chip" id="chipModem">Modem</span>
+            <span class="chip" id="chipNet">DMR server</span>
+            <span class="chip" id="chipMode">Idle</span>
+            <span id="userArea"></span>
+        </div>
+    </header>
+
+    <div class="banner warn hidden" id="defaultBanner">
+        <span>⚠️ <b>The factory login n8schicht / n8schicht is still active.</b> Anyone on your network could change your hotspot. Please set your own password.</span>
+        <button class="btn primary" onclick="openAccount(true)">Change now</button>
+    </div>
+    <div class="banner info hidden" id="restartBanner">
+        <span>⚙️ <b>Settings saved.</b> MMDVMHost and DMRGateway use them after a restart.</span>
+        <button class="btn primary" onclick="applyRestart(this)">Restart now</button>
+    </div>
+
+    <nav class="tabs" id="mainTabs">
+        <button data-tab="live" class="active">🎙️ Live</button>
+        <button data-tab="stats">📈 Statistics</button>
+        <button data-tab="admin" id="tabAdminBtn" class="hidden">⚙️ Admin</button>
+    </nav>
+
+    <!-- ================= LIVE ================= -->
+    <section id="tab-live">
+        <h2 class="section-header">Today</h2>
+        <div class="stats-bar">
+            <div class="stat"><div class="k">📞 Calls</div><div class="v" id="sCalls">–</div></div>
+            <div class="stat"><div class="k">⏱️ Airtime</div><div class="v" id="sAir">–</div></div>
+            <div class="stat"><div class="k">📻 RF (local)</div><div class="v" id="sRf">–</div></div>
+            <div class="stat"><div class="k">🌐 Network</div><div class="v" id="sNet">–</div></div>
+            <div class="stat"><div class="k">🎯 RF BER</div><div class="v" id="sBer">–</div></div>
+        </div>
+
+        <div class="grid live-top" id="liveTop">
+            <div>
+                <h2 class="section-header" style="margin-top: 4px">Time slots</h2>
+                <div class="slots" id="slots"></div>
+            </div>
+            <div>
+                <h2 class="section-header" style="margin-top: 4px">Hotspot</h2>
+                <div class="card"><div class="kv" id="hsInfo"></div></div>
+            </div>
+        </div>
+
+        <h2 class="section-header">Last heard <span class="seg" id="lhFilter" style="margin-left: auto">
+            <button data-v="all" class="active">All</button><button data-v="rf">📻 RF</button><button data-v="network">🌐 Network</button></span></h2>
+        <div class="card"><div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Time</th><th>Callsign</th><th>Source</th><th class="hide-sm">Slot</th><th>Target</th><th class="num">Duration</th><th class="num hide-sm">BER / Loss</th><th class="num hide-sm">RSSI</th></tr></thead>
+            <tbody id="lhBody"><tr><td colspan="8" class="empty">Nothing heard yet.</td></tr></tbody>
+        </table></div></div>
+    </section>
+
+    <!-- ================= STATISTICS ================= -->
+    <section id="tab-stats" class="hidden">
+        <h2 class="section-header">📈 Statistics</h2>
+        <div class="card" style="padding: 16px">
+            <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; margin-bottom:14px">
+                <div class="seg" id="stRange"><button data-v="today" class="active">Today</button><button data-v="24h">24 h</button><button data-v="7d">7 days</button><button data-v="30d">30 days</button></div>
+                <div class="seg" id="stMetric"><button data-v="duration" class="active">⏱️ Airtime</button><button data-v="calls">📞 Calls</button></div>
+            </div>
+            <div class="kpis">
+                <div class="kpi"><div class="k">📞 Calls</div><div class="v" id="kCalls">–</div></div>
+                <div class="kpi"><div class="k">⏱️ Airtime</div><div class="v" id="kAir">–</div></div>
+                <div class="kpi"><div class="k">📻 RF share</div><div class="v" id="kRf">–</div></div>
+                <div class="kpi"><div class="k">🎙️ Stations</div><div class="v" id="kSt">–</div></div>
+            </div>
+            <div class="grid st-grid" id="stGrid">
+                <div class="panel"><h3><span>Top talkgroups</span><small id="stTopNote"></small></h3><div class="chart" id="stBars"></div></div>
+                <div class="panel"><h3><span>Activity</span><span class="seg" id="stBy"><button data-v="tg" class="active">Talkgroups</button><button data-v="src">RF / Network</button></span></h3>
+                    <div class="legend" id="stLegend"></div><div class="chart" id="stTime"></div></div>
+            </div>
+            <div class="grid g2" style="margin-top: 14px">
+                <div class="panel"><h3><span>Talkgroups</span></h3><div class="tbl-wrap"><table class="tbl">
+                    <thead><tr><th>Talkgroup</th><th class="num">Calls</th><th class="num">Airtime</th><th class="hide-sm">Share</th></tr></thead><tbody id="stTgTable"></tbody></table></div></div>
+                <div class="panel"><h3><span>Most active stations</span></h3><div class="tbl-wrap"><table class="tbl">
+                    <thead><tr><th>Station</th><th class="num">Calls</th><th class="num">Airtime</th><th class="hide-sm">Last</th></tr></thead><tbody id="stStTable"></tbody></table></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= ADMIN ================= -->
+    <section id="tab-admin" class="hidden">
+        <nav class="tabs sub" id="adminTabs">
+            <button data-a="settings" class="active">⚙️ Settings</button>
+            <button data-a="cal">🎛️ Calibration</button>
+            <button data-a="users">👥 Users</button>
+            <button data-a="system">🖥️ System</button>
+            <button data-a="logs">📜 Logs</button>
+            <button data-a="files">🧾 Config files</button>
+            <button data-a="audit">🔑 Sessions &amp; log</button>
+        </nav>
+        <div id="admin-settings"></div>
+        <div id="admin-cal" class="hidden"></div>
+        <div id="admin-users" class="hidden"></div>
+        <div id="admin-system" class="hidden"></div>
+        <div id="admin-logs" class="hidden"></div>
+        <div id="admin-files" class="hidden"></div>
+        <div id="admin-audit" class="hidden"></div>
+    </section>
+
+    <footer>N8-Hotspot <span id="ver"></span> · MMDVMHost &amp; DMRGateway by G4KLX · Design: DMR Die N8schicht</footer>
+</div>
+<div class="tip" id="tip"></div>
+<div id="modalRoot"></div>
+<script src="/static/app.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+[Unit]
+Description=MMDVMHost (G4KLX) – modem
+After=network-online.target mosquitto.service dmrgateway.service
+Wants=mosquitto.service
+
+[Service]
+Type=simple
+User=n8hotspot
+Group=n8hotspot
+SupplementaryGroups=dialout
+WorkingDirectory=/opt/n8hotspot/data
+ExecStart=/usr/local/bin/MMDVMHost /opt/n8hotspot/data/MMDVM-Host.ini
+Restart=always
+RestartSec=5
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
