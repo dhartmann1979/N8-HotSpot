@@ -21,7 +21,7 @@ from typing import Dict, Iterator, Tuple
 from .db import DB
 
 log = logging.getLogger("n8hotspot.idlist")
-UA = "N8-Hotspot (DMR Die N8schicht; https://github.com/dhartmann1979/N8-Hotspot)"
+UA = "N8-Hotspot (DMR Die N8schicht; https://github.com/dhartmann1979/N8-HotSpot)"
 FRID_FIELDS = ("RADIO_ID", "CALLSIGN", "FIRST_NAME", "CITY", "STATE", "COUNTRY")
 
 
@@ -89,6 +89,23 @@ class IdList:
         self.count, self.updated, self.error = len(rows), time.time(), ""
         self._cached.cache_clear()
         return len(rows)
+
+    def merge(self, rows) -> int:
+        """Add IDs that the list does not have yet (e.g. FreeRadioID-only IDs) and rewrite DMRIds.dat."""
+        before = self.count
+        self.db.many("INSERT OR IGNORE INTO dmrids (id, callsign, name, city, country) VALUES (?,?,?,?,?)", rows)
+        self.count = int(self.db.q("SELECT COUNT(*) AS n FROM dmrids")[0]["n"])
+        if self.count != before:
+            self.write_dat()
+            self._cached.cache_clear()
+        return self.count - before
+
+    def write_dat(self) -> None:
+        tmp = self.data_dir / "DMRIds.dat.tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            for r in self.db.q("SELECT id, callsign, name FROM dmrids ORDER BY id"):
+                f.write(f"{r['id']}\t{r['callsign']}\t{r['name']}\n")
+        os.replace(tmp, self.data_dir / "DMRIds.dat")
 
     def refresh(self, url: str) -> int:
         try:

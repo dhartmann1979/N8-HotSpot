@@ -13,6 +13,7 @@
   <a href="docs/de/bedienung.md">Live &amp; Statistik</a> ·
   <a href="docs/de/adminbereich.md">Adminbereich</a> ·
   <a href="docs/de/kalibrierung.md">Kalibrierung</a> ·
+  <a href="docs/de/freeradioid.md">FreeRadioID</a> ·
   <a href="docs/de/technik.md">Technik</a> ·
   <a href="docs/de/fehlersuche.md">Fehlersuche</a>
 </p>
@@ -26,13 +27,15 @@
 | | |
 |---|---|
 | 🎙️ **Live-Ansicht** | Wer gerade spricht (**ON AIR**), lokal per Funk (RF) oder aus dem Netz, mit BER und RSSI. Dazu Last Heard und der Status von Modem und DMR-Server. |
+| 🛡️ **FreeRadioID.net** | **Avatare**, **FRID**-Kennzeichen, Profile und die **DMR-ID-Datenbank** direkt aus der FreeRadioID-API; Stationsansicht per Klick auf ein Rufzeichen |
 | 📈 **Statistiken** | Talkgroups, Sprechzeit, RF und Netz, aktivste Stationen; heute, 24 h, 7 oder 30 Tage, als Diagramm und Tabelle |
 | 🎛️ **Kalibrierung** | Frequenzabgleich mit MMDVMCal im Browser: BER live, Frequenz per Knopf verschieben, Offset mit einem Klick speichern |
 | ⚙️ **Adminbereich** | Station, Modem, Frequenzen, DMR-Server, Zeitschlitze, Expertenzeilen. Dazu Benutzer, Dienste, Logs, System-Infos, Neustart. |
 | 👁️ **Sichtbereich** | Die Live-Ansicht ist öffentlich (abschaltbar). Benutzer der Rolle *Viewer* sehen alles, ändern aber nichts. |
 | 🔐 **Standard-Login** | `n8schicht` / `n8schicht`. Bis zur Änderung im Adminbereich erscheint eine deutliche Warnung. |
 | 🗄️ **SQLite + Python** | Einstellungen, Benutzer, Gespräche und ID-Liste liegen in einer Datenbank; daraus entstehen `MMDVM-Host.ini` und `DMRGateway.ini`. |
-| 🥧 **DietPi-Image** | `scripts/build-image.sh` baut ein Image mit WLAN und Passwort. Der Pi installiert sich beim ersten Start selbst. |
+| 🧭 **Geführte Einrichtung** | `scripts/setup.sh` fragt Station, Modem, Frequenz, Server, Passwort und FreeRadioID ab, prüft die DMR-ID live bei FreeRadioID und installiert alles |
+| 🥧 **DietPi-Image** | `scripts/build-image.sh` baut ein Image mit WLAN, Passwort und auf Wunsch fertigen Hotspot-Einstellungen. Der Pi installiert sich beim ersten Start selbst. |
 
 <p align="center">
   <img src="docs/images/live.png" alt="Live-Ansicht" width="72%">
@@ -45,25 +48,25 @@
 **Variante A – eigenes Image (empfohlen).** Auf einem Linux-PC:
 
 ```bash
-git clone https://github.com/dhartmann1979/N8-Hotspot
-cd N8-Hotspot
+git clone https://github.com/dhartmann1979/N8-HotSpot
+cd N8-HotSpot
 sudo ./scripts/build-image.sh
 ```
 
 Das Image auf eine microSD flashen und den Pi starten. Nach 20–40 Minuten ist der Hotspot unter **http://n8-hotspot.local** erreichbar.
 
-**Variante B – auf einen laufenden Pi** (DietPi, Raspberry Pi OS, Debian):
+**Variante B – geführt auf einem laufenden Pi** (DietPi, Raspberry Pi OS, Debian):
 
 ```bash
-sudo git clone https://github.com/dhartmann1979/N8-Hotspot /opt/n8hotspot
-sudo /opt/n8hotspot/scripts/install.sh
+git clone https://github.com/dhartmann1979/N8-HotSpot && cd N8-HotSpot
+sudo ./scripts/setup.sh
 ```
 
-Danach: **Login** `n8schicht` / `n8schicht` → eigenes Passwort setzen → **Admin → Settings**. Dort Rufzeichen, DMR-ID, Frequenz und FreeRadioID-Passwort eintragen, dann **Save** und **Restart now**.
+Ohne vorher eingetragene Hotspot-Einstellungen geht es im Browser weiter: **Login** `n8schicht` / `n8schicht` → eigenes Passwort setzen → **Admin → Settings**. Dort Rufzeichen, DMR-ID, Frequenz und FreeRadioID-Passwort eintragen, dann **Save** und **Restart now**.
 
 <p align="center">
   <img src="docs/images/build-image.png" alt="Image bauen" width="49%">
-  <img src="docs/images/install.png" alt="Installation" width="49%">
+  <img src="docs/images/setup-1.png" alt="Geführte Einrichtung" width="49%">
 </p>
 
 ➡️ Ausführlich: **[Installation & Image](docs/de/installation.md)**
@@ -76,8 +79,12 @@ Danach: **Login** `n8schicht` / `n8schicht` → eigenes Passwort setzen → **Ad
 <td width="50%"><img src="docs/images/admin-cal.png" alt="Kalibrierung"><br><b>🎛️ Kalibrierung</b>: BER live, Frequenz verschieben, Offset speichern.</td>
 </tr>
 <tr>
+<td><img src="docs/images/station.png" alt="Stationsansicht"><br><b>🛡️ Stationsansicht</b>: Avatar und Profil von FreeRadioID.net, Gespräche und Talkgroups.</td>
 <td><img src="docs/images/admin-settings.png" alt="Einstellungen"><br><b>⚙️ Einstellungen</b>: Station, Modem, DMR-Server, DMR-Modus, Dashboard, Experte.</td>
-<td><img src="docs/images/admin-system.png" alt="System"><br><b>🖥️ System</b>: Temperatur, Speicher, Dienste starten/stoppen, ID-Liste, Neustart.</td>
+</tr>
+<tr>
+<td><img src="docs/images/admin-system.png" alt="System"><br><b>🖥️ System</b>: Temperatur, Speicher, Dienste starten/stoppen, ID-Liste, FreeRadioID, Neustart.</td>
+<td><img src="docs/images/setup-2.png" alt="Zusammenfassung"><br><b>🧭 Geführte Einrichtung</b>: Zusammenfassung, Installation, fertig.</td>
 </tr>
 </table>
 
@@ -85,10 +92,11 @@ Danach: **Login** `n8schicht` / `n8schicht` → eigenes Passwort setzen → **Ad
 
 | Anleitung | Inhalt |
 |---|---|
-| 📦 [Installation & Image](docs/de/installation.md) | Hardware, Image bauen und flashen, Installation auf vorhandenem System, erster Start, Aktualisieren |
+| 📦 [Installation & Image](docs/de/installation.md) | Hardware, Image bauen und flashen, geführte Einrichtung, Installation ohne Fragen, erster Start, Aktualisieren |
 | 🎙️ [Live & Statistik](docs/de/bedienung.md) | Kopfzeile, Zeitschlitze, Last Heard, Statistik-Diagramme |
 | ⚙️ [Adminbereich](docs/de/adminbereich.md) | Standard-Login, alle Einstellungen, Benutzer, System, Logs, Konfigurationsdateien |
 | 🎛️ [Kalibrierung](docs/de/kalibrierung.md) | Frequenz-Offset mit MMDVMCal finden, weitere Tests |
+| 🛡️ [FreeRadioID](docs/de/freeradioid.md) | Avatare, FRID, Profile, ID-Datenbank, Stationsansicht |
 | 🧩 [Technik](docs/de/technik.md) | Aufbau (MMDVMHost ↔ DMRGateway ↔ MQTT), Dateien, Ports, API, Sicherheit |
 | 🩺 [Fehlersuche](docs/de/fehlersuche.md) | Modem, Verbindung, Passwort vergessen, Logs, Sicherung |
 

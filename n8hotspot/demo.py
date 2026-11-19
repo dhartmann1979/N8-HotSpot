@@ -14,7 +14,7 @@ import time
 from .db import DB
 from .live import Live
 
-STATIONS = [(2621234, "DL1ABC", "Andreas"), (2625001, "DO5ALF", "Andi"), (2627042, "DB9NAC", "Nadine"),
+STATIONS = [(2621234, "DL1ABC", "Andreas"), (2625001, "DO7DEM", "Andi"), (2627042, "DB9NAC", "Nadine"),
             (2622718, "DK2XYZ", "Klaus"), (2623301, "DG9NAU", "Gerd"), (2624410, "DO1KLM", "Lena"),
             (2629912, "DL7BER", "Bernd"), (2626123, "DM3HH", "Hanna"), (2421180, "PA3XYZ", "Pieter"),
             (2351200, "G4ABC", "John")]
@@ -56,11 +56,53 @@ def seed_history(db: DB, days: int = 30) -> None:
             "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
 
 
-def seed_ids(db: DB) -> None:
+FRID_DEMO = {2621234: "Minden", 2625001: "Bielefeld", 2627042: "Hannover", 2622718: "Herford", 2626123: "Hamburg"}
+AVATAR_DEMO = (2621234, 2625001, 2627042, 2626123)
+
+
+def _demo_avatar(seed: int) -> bytes:
+    """A made-up landscape picture (demo only; no real person's photo)."""
+    import io
+    from PIL import Image, ImageDraw
+    rnd = random.Random(seed)
+    s = 192
+    im = Image.new("RGB", (s, s))
+    d = ImageDraw.Draw(im)
+    top = (rnd.randint(10, 60), rnd.randint(30, 90), rnd.randint(110, 200))
+    bot = (rnd.randint(150, 255), rnd.randint(90, 170), rnd.randint(60, 140))
+    for y in range(s):
+        t = y / s
+        d.line([(0, y), (s, y)], fill=tuple(int(top[i] * (1 - t) + bot[i] * t) for i in range(3)))
+    d.ellipse([rnd.randint(30, 120), 40, rnd.randint(30, 120) + 42, 82], fill=(255, 226, 140))
+    for layer, shade in ((0, 0.55), (1, 0.3)):
+        pts = [(0, s)]
+        x = 0
+        while x <= s:
+            pts.append((x, rnd.randint(95, 135) + layer * 25))
+            x += rnd.randint(25, 45)
+        pts += [(s, s)]
+        d.polygon(pts, fill=tuple(int(c * shade) for c in top))
+    d.line([(150, 70), (150, 150)], fill=(30, 30, 40), width=4)            # antenna mast
+    d.line([(138, 82), (162, 82)], fill=(30, 30, 40), width=3)
+    out = io.BytesIO()
+    im.save(out, "WEBP", quality=82)
+    return out.getvalue()
+
+
+def seed_ids(db: DB, frid=None) -> None:
     if db.q("SELECT 1 FROM dmrids LIMIT 1"):
         return
-    rows = [(i, c, n, "", "Germany") for i, c, n in STATIONS]
+    rows = [(i, c, n, FRID_DEMO.get(i, ""), "Germany") for i, c, n in STATIONS]
     db.many("INSERT OR REPLACE INTO dmrids (id, callsign, name, city, country) VALUES (?,?,?,?,?)", rows)
+    if frid is not None:
+        frows = [(i, c, n, FRID_DEMO[i], "", "Germany") for i, c, n in STATIONS if i in FRID_DEMO]
+        db.many("INSERT OR REPLACE INTO frid_ids (id, callsign, name, city, state, country) VALUES (?,?,?,?,?,?)", frows)
+        for i in FRID_DEMO:
+            img = _demo_avatar(i) if i in AVATAR_DEMO else None
+            db.x("INSERT OR REPLACE INTO frid_avatars (dmr_id, has_avatar, mime, data, fetched_at) VALUES (?,?,?,?,?)",
+                 (i, 1 if img else 0, "image/webp" if img else None, img, time.time()))
+        frid._registered = set(FRID_DEMO)
+        frid.updated = time.time() - 3 * 3600
 
 
 async def run(live: Live) -> None:

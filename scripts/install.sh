@@ -40,7 +40,7 @@ echo -e "
 # ---------------------------------------------------------------------------
 step "1/7 Systempakete"
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -q
+apt-get update -qq >/dev/null
 apt-get install -y -q --no-install-recommends git ca-certificates build-essential libmosquitto-dev \
     nlohmann-json3-dev mosquitto python3 python3-venv python3-pip sudo avahi-daemon >/dev/null
 ok "git, Compiler, mosquitto, Python, avahi (Name.local)"
@@ -158,6 +158,7 @@ systemctl enable -q dmrgateway mmdvmhost n8hotspot
 systemctl restart dmrgateway mmdvmhost n8hotspot
 ok "dmrgateway, mmdvmhost, n8hotspot gestartet und beim Booten aktiv"
 
+[ "${N8_QUIET_END:-0}" = 1 ] && { [ "$REBOOT" = 1 ] && echo -e "   ${Y}Serielle Schnittstelle umgestellt: nach der Einrichtung einmal neu starten (sudo reboot).${N}"; exit 0; }
 IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 PORTSFX=""; [ "$N8_PORT" != "80" ] && PORTSFX=":$N8_PORT"
 echo -e "

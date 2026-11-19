@@ -110,7 +110,17 @@ header { position: sticky; top: 10px; z-index: 50; border-radius: var(--radius-l
 .slot .who { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
 .avatar { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 18px; flex: none;
           background: linear-gradient(135deg, #5e5ce6, #0a84ff); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35); }
+.avatar { position: relative; overflow: hidden; }
+.avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .avatar.sm { width: 30px; height: 30px; font-size: 12px; }
+.avatar.xl { width: 92px; height: 92px; font-size: 30px; box-shadow: 0 0 0 3px rgba(255,255,255,.12), 0 10px 30px rgba(0,0,0,.45); }
+.frid { display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: .04em; color: #9ff5b8; background: rgba(48,209,88,.18);
+        border: 1px solid rgba(48,209,88,.45); border-radius: 6px; padding: 0 5px; vertical-align: 2px; margin-left: 4px; }
+.station-link { cursor: pointer; }
+.station-link:hover b, .station-link:hover .call { text-decoration: underline; text-decoration-color: rgba(90,200,250,.6); text-underline-offset: 3px; }
+.modal.wide { width: min(720px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; }
+.st-head { display: flex; gap: 18px; align-items: center; }
+.st-call { font-size: 28px; font-weight: 800; letter-spacing: -.01em; }
 .slot .call { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; }
 .slot .name { color: var(--text-dim); font-size: 13px; }
 .slot .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }

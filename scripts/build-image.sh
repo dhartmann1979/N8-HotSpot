@@ -16,11 +16,14 @@
 #    --wifi-ssid SSID  --wifi-pass PASSWORT  --wifi-country DE
 #    --password PW       Passwort für root/dietpi (SSH)
 #    --timezone ZONE     Standard Europe/Berlin
+#    --callsign DL1ABC --dmr-id 2621234 [--suffix 01] [--board 1-4] [--freq 438.8] [--net-password PW]
+#                        Hotspot gleich mit einrichten (sonst nach dem Start im Browser)
 #    --yes               nichts fragen, Standardwerte nehmen
 # =============================================================================
 set -euo pipefail
 
 URL="https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Bookworm.img.xz"
+CALL=""; DMRID=""; SUFFIX=""; BOARD=""; FREQ=""; NETPW=""
 IMAGE=""; HOST="n8-hotspot"; SSID=""; WPASS=""; COUNTRY="DE"; PW=""; TZ_="Europe/Berlin"; YES=0
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK="${WORK:-$REPO/build}"
@@ -39,6 +42,8 @@ while [ $# -gt 0 ]; do
         --image) IMAGE=$2; shift 2;;  --url) URL=$2; shift 2;;  --hostname) HOST=$2; shift 2;;
         --wifi-ssid) SSID=$2; shift 2;;  --wifi-pass) WPASS=$2; shift 2;;  --wifi-country) COUNTRY=$2; shift 2;;
         --password) PW=$2; shift 2;;  --timezone) TZ_=$2; shift 2;;  --yes|-y) YES=1; shift;;
+        --callsign) CALL=$2; shift 2;;  --dmr-id) DMRID=$2; shift 2;;  --suffix) SUFFIX=$2; shift 2;;
+        --board) BOARD=$2; shift 2;;  --freq) FREQ=$2; shift 2;;  --net-password) NETPW=$2; shift 2;;
         -h|--help) sed -n '2,24p' "$0"; exit 0;;
         *) fail "Unbekannte Option: $1";;
     esac
@@ -59,6 +64,26 @@ ask PW "Passwort für SSH (root/dietpi), leer = dietpi" "" 1
 PW="${PW:-dietpi}"
 ask TZ_ "Zeitzone" "$TZ_"
 ok "Rechnername $HOST · WLAN ${SSID:-aus} · Zeitzone $TZ_"
+
+# optional: hotspot settings, applied on the first start (otherwise in the browser)
+HS=0
+if [ "$YES" != 1 ] || [ -n "$CALL" ]; then
+    if [ -n "$CALL" ]; then HS=1; else
+        read -r -p "   ? Hotspot gleich mit einrichten (Rufzeichen, DMR-ID, Frequenz, Passwort)? [J/n]: " v
+        case "${v:-j}" in [jJyY]*) HS=1;; esac
+    fi
+fi
+if [ "$HS" = 1 ]; then
+    ask CALL "Rufzeichen" "${CALL:-}"; CALL="${CALL^^}"
+    ask DMRID "DMR-ID (7-stellig)" "${DMRID:-}"
+    [[ "$DMRID" =~ ^[0-9]{7}$ ]] || fail "DMR-ID muss 7 Ziffern haben"
+    ask SUFFIX "Hotspot-Suffix (2 Ziffern)" "${SUFFIX:-01}"
+    echo "     1) MMDVM_HS_Hat GPIO (Simplex)  2) MMDVM_HS_Dual_Hat GPIO (Duplex)  3) ZUMspot/HS per USB  4) Repeaterboard USB"
+    ask BOARD "Board" "${BOARD:-1}"
+    ask FREQ "Frequenz in MHz" "${FREQ:-438.8000}"
+    ask NETPW "Passwort für dmr.die-n8schicht.de (FreeRadioID; leer = Gast passw0rd)" "" 1
+    ok "Hotspot $CALL · ${DMRID}${SUFFIX} · Board $BOARD · $FREQ MHz"
+fi
 
 step "2/5 DietPi-Image"
 mkdir -p "$WORK"
@@ -128,6 +153,22 @@ fi
 ok "config.txt/cmdline.txt: /dev/ttyAMA0 frei für das Modem"
 
 install -m 755 "$REPO/image/Automation_Custom_Script.sh" "$MNT/Automation_Custom_Script.sh"
+if [ "$HS" = 1 ]; then
+    command -v python3 >/dev/null || fail "python3 fehlt (für die Hotspot-Einstellungen)"
+    N8J_CALL="$CALL" N8J_ID="$DMRID" N8J_SUF="$SUFFIX" N8J_BOARD="${BOARD:-1}" N8J_FREQ="${FREQ:-438.8}" N8J_PW="$NETPW" \
+    python3 - "$MNT/n8hotspot-setup.json" <<'EOF'
+import json, os, sys
+e = os.environ
+board = {"1": ("hs_hat", "/dev/ttyAMA0", False), "2": ("hs_dual", "/dev/ttyAMA0", True),
+         "3": ("hs_usb", "/dev/ttyACM0", False), "4": ("rpt_usb", "/dev/ttyACM0", True)}.get(e["N8J_BOARD"], ("hs_hat", "/dev/ttyAMA0", False))
+s = {"station.callsign": e["N8J_CALL"], "station.dmr_id": e["N8J_ID"], "station.suffix": e["N8J_SUF"],
+     "modem.preset": board[0], "modem.port": board[1], "modem.duplex": board[2], "dmr.slot1": board[2],
+     "modem.rx_freq": e["N8J_FREQ"], "modem.tx_freq": e["N8J_FREQ"],
+     "network.password": e["N8J_PW"] or "passw0rd"}
+json.dump({"settings": s, "refresh_ids": True}, open(sys.argv[1], "w"))
+EOF
+    ok "n8hotspot-setup.json: Rufzeichen, ID, Board, Frequenz, Passwort (wird nach dem Einlesen gelöscht)"
+fi
 tar -C "$REPO" --exclude=./build --exclude=./data --exclude=./venv --exclude=./.pytest_cache --exclude='*/__pycache__' \
     -czf "$MNT/n8hotspot.tar.gz" .
 HASH="$(git -C "$REPO" log -1 --format=%h 2>/dev/null || true)"

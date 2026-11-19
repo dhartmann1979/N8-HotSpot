@@ -37,6 +37,11 @@ function ago(ts) {
 function fmtBytes(b) { if (b == null) return '–'; const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0; while (b >= 1024 && i < 4) { b /= 1024; i++; } return `${b.toFixed(b < 10 && i ? 1 : 0)} ${u[i]}`; }
 function initials(c) { return esc((c || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() || '?'); }
 function avatarColor(id) { const h = (Number(id) * 47) % 360; return `linear-gradient(135deg, hsl(${h} 70% 50%), hsl(${(h + 40) % 360} 75% 42%))`; }
+function avatar(id, call, frid, cls) {
+    const img = frid && S.info && S.info.avatars && id ? `<img src="/api/avatar/${id}" alt="" loading="lazy" onerror="this.remove()">` : '';
+    return `<span class="avatar ${cls || ''}" style="background:${avatarColor(id)}">${initials(call)}${img}</span>`;
+}
+function fridBadge(on) { return on ? '<span class="frid" title="Registered at FreeRadioID.net">FRID</span>' : ''; }
 function tgName(tg) { return (S.info && S.info.tg_names && S.info.tg_names[tg]) || ''; }
 function target(e) {
     if (!e.group) return `👤 ${esc(e.dst_id)}`;
@@ -155,6 +160,39 @@ function confirmBox(text, okLabel, cls) {
     });
 }
 
+// ---------------------------------------------------------------- station view
+async function openStation(id) {
+    if (!id) return;
+    modal('<div class="empty">Loading …</div>');
+    $('ov').querySelector('.modal').classList.add('wide');
+    let d;
+    try { d = await api('GET', `/api/station/${id}`); } catch (e) { $('ov').querySelector('.modal').innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+    const p = d.profile || {}, h = d.heard;
+    const place = [p.city, p.state, p.country].filter(Boolean).join(', ');
+    const big = `<span class="avatar xl" style="background:${avatarColor(id)}">${initials(d.callsign)}${d.avatar ? `<img src="${d.avatar}" alt="" onerror="this.remove()">` : ''}</span>`;
+    const recent = d.recent.map(r => `<tr><td>${fmtDate(r.ts)}</td><td><span class="pill ${r.source === 'rf' ? 'rf' : 'net'}">${r.source === 'rf' ? '📻 RF' : '🌐 Net'}</span></td>
+        <td>${r.group ? 'TG ' + esc(r.dst_id) + (tgName(r.dst_id) ? ` <span class="dim">${esc(tgName(r.dst_id))}</span>` : '') : '👤 ' + esc(r.dst_id)}</td><td class="num">${r.duration.toFixed(1)} s</td>
+        <td class="num hide-sm">${r.source === 'rf' && r.ber != null ? r.ber.toFixed(1) + ' %' : r.loss != null ? r.loss.toFixed(0) + ' % loss' : '–'}</td></tr>`).join('');
+    $('ov').querySelector('.modal').innerHTML = `
+        <div class="st-head">${big}<div style="min-width:0">
+            <div class="st-call">${esc(d.callsign || id)} ${fridBadge(d.frid)}</div>
+            <div class="dim">${esc(p.name || '')}${p.name && place ? ' · ' : ''}${esc(place)}</div>
+            <div class="dim mono" style="font-size:12.5px;margin-top:2px">DMR ID ${esc(id)}</div></div>
+            <button class="btn small" style="margin-left:auto;align-self:flex-start" onclick="closeModal()">✕</button></div>
+        ${d.frid ? `<div class="banner" style="margin:12px 0 0;background:linear-gradient(135deg,rgba(48,209,88,.2),rgba(48,209,88,.05));border:1px solid rgba(48,209,88,.4)">
+            <span>🛡️ <b>Registered at FreeRadioID.net</b>${p.remarks ? ' · ' + esc(p.remarks) : ''}</span>
+            <a class="btn small" target="_blank" rel="noopener" href="https://freeradioid.net/api/dmr/user/?id=${encodeURIComponent(id)}">freeradioid.net ↗</a></div>` : ''}
+        <div class="kpis" style="margin:14px 0 10px">
+            <div class="kpi"><div class="k">📞 Calls (30 d)</div><div class="v">${h.calls}</div></div>
+            <div class="kpi"><div class="k">⏱️ Airtime</div><div class="v">${fmtDur(h.duration, true)}</div></div>
+            <div class="kpi"><div class="k">📻 Via RF</div><div class="v">${h.rf_calls}</div></div>
+            <div class="kpi"><div class="k">🕑 Last heard</div><div class="v" style="font-size:15px">${h.last ? ago(h.last) : '–'}</div></div></div>
+        ${d.talkgroups.length ? `<div class="dim" style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:6px 0">Talkgroups</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">${d.talkgroups.map(t => `<span class="pill tg">TG ${t.tg}${t.name ? ` <span class="dim" style="font-weight:500">${esc(t.name)}</span>` : ''} · ${fmtDur(t.duration, true)}</span>`).join('')}</div>` : ''}
+        ${recent ? `<div class="tbl-wrap" style="margin-top:12px"><table class="tbl"><thead><tr><th>Time</th><th>Source</th><th>Target</th><th class="num">Duration</th><th class="num hide-sm">BER / Loss</th></tr></thead><tbody>${recent}</tbody></table></div>`
+                 : '<div class="empty">Not heard on this hotspot yet.</div>'}`;
+}
+
 // ---------------------------------------------------------------- tabs
 function showTab(tab, sub) {
     S.tab = tab;
@@ -242,8 +280,8 @@ function renderSlots() {
         const ber = c.ber_live != null ? `<span class="pill">BER ${Number(c.ber_live).toFixed(1)} %</span>` : '';
         const rssi = c.rssi_live != null ? `<span class="pill">${c.rssi_live} dBm</span>` : '';
         return `<div class="slot active ${src}"><div class="lbl"><span>Time slot ${n}</span><span class="pill air">ON AIR</span></div>
-            <div class="who"><div class="avatar" style="background:${avatarColor(c.src_id)}">${initials(c.callsign)}</div>
-              <div style="min-width:0"><div class="call">${esc(c.callsign || c.src_id)}</div>
+            <div class="who station-link" onclick="openStation(${c.src_id})">${avatar(c.src_id, c.callsign, c.frid)}
+              <div style="min-width:0"><div class="call">${esc(c.callsign || c.src_id)} ${fridBadge(c.frid)}</div>
               <div class="name">${esc([c.name, c.city].filter(Boolean).join(' · ') || ('ID ' + c.src_id))}</div></div>
               <div class="timer" data-start="${c.start}">${fmtClock(Date.now() / 1000 - c.start)}</div></div>
             <div class="meta"><span class="pill ${src === 'rf' ? 'rf' : 'net'}">${src === 'rf' ? '📻 RF' : '🌐 Network'}</span>${target(c)}${c.is_data ? '<span class="pill">📟 Data</span>' : ''}${ber}${rssi}</div></div>`;
@@ -261,7 +299,7 @@ function renderLH(newId) {
         const q = e.source === 'rf' ? (e.ber != null ? `${Number(e.ber).toFixed(1)} %` : '–') : (e.loss != null ? `${Number(e.loss).toFixed(0)} % loss` : '–');
         const berCls = e.source === 'rf' && e.ber != null ? (e.ber < 1 ? 'ok' : e.ber < 3 ? 'warn' : 'bad') : '';
         return `<tr class="${e.id === newId ? 'new' : ''}"><td>${fmtTime(e.ts)}</td>
-            <td><span class="who"><span class="avatar sm" style="background:${avatarColor(e.src_id)}">${initials(e.callsign)}</span><span><b>${esc(e.callsign || e.src_id)}</b><small>${esc(e.name || ('ID ' + (e.src_id || '?')))}</small></span></span></td>
+            <td><span class="who station-link" onclick="openStation(${e.src_id})">${avatar(e.src_id, e.callsign, e.frid, 'sm')}<span><b>${esc(e.callsign || e.src_id)}</b> ${fridBadge(e.frid)}<small>${esc(e.name || ('ID ' + (e.src_id || '?')))}</small></span></span></td>
             <td><span class="pill ${e.source === 'rf' ? 'rf' : 'net'}">${e.source === 'rf' ? '📻 RF' : '🌐 Net'}</span></td>
             <td class="hide-sm">TS${e.slot}</td><td>${target(e)}${e.is_data ? ' <span class="pill">📟</span>' : ''}</td>
             <td class="num">${e.duration.toFixed(1)} s</td><td class="num hide-sm">${berCls ? `<span class="pill ${berCls}">${q}</span>` : q}</td>
@@ -400,7 +438,7 @@ function renderStatTables(d) {
     $('stTgTable').innerHTML = rows.length ? rows.map(r => `<tr><td><b>${r.tg}</b> <span class="dim">${esc(r.name)}</span></td><td class="num">${r.calls}</td><td class="num">${fmtDur(r.duration, true)}</td>
         <td class="hide-sm"><span class="share"><span class="bar"><div style="width:${r.share / maxS * 100}%;background:${tgColor(r.tg)}"></div></span>${Math.round(r.share * 100)} %</span></td></tr>`).join('')
         : '<tr><td colspan="4" class="empty">–</td></tr>';
-    $('stStTable').innerHTML = d.stations.length ? d.stations.map(s => `<tr><td><span class="who"><span class="avatar sm" style="background:${avatarColor(s.id)}">${initials(s.callsign)}</span><span><b>${esc(s.callsign || s.id)}</b><small>${esc(s.name || s.id)}</small></span></span></td>
+    $('stStTable').innerHTML = d.stations.length ? d.stations.map(s => `<tr><td><span class="who station-link" onclick="openStation(${s.id})">${avatar(s.id, s.callsign, s.frid, 'sm')}<span><b>${esc(s.callsign || s.id)}</b> ${fridBadge(s.frid)}<small>${esc(s.name || s.id)}</small></span></span></td>
         <td class="num">${s.calls}</td><td class="num">${fmtDur(s.duration, true)}</td><td class="hide-sm">${fmtDate(s.last)}</td></tr>`).join('')
         : '<tr><td colspan="4" class="empty">–</td></tr>';
 }
@@ -646,6 +684,11 @@ async function loadSystem() {
             <div class="kv"><div class="k">IDs</div><div class="v">${d.idlist.count.toLocaleString('de-DE')}</div><div class="k">Updated</div><div class="v">${d.idlist.updated ? fmtDate(d.idlist.updated) : 'never'}</div>
             ${d.idlist.error ? `<div class="k">Error</div><div class="v" style="color:#ff8a80;white-space:normal">${esc(d.idlist.error)}</div>` : ''}</div>
             <div class="actions"><button class="btn" onclick="refreshIds(this)">⟳ Update now</button></div></div>
+        <div class="tile"><h3>🛡️ FreeRadioID.net</h3><div class="subt">Registered IDs (FRID badge) and avatars, loaded with the ID list.</div>
+            <div class="kv"><div class="k">Registered IDs</div><div class="v">${d.frid.enabled ? d.frid.registered.toLocaleString('de-DE') : 'off'}</div>
+            <div class="k">Avatars cached</div><div class="v">${d.frid.avatars.with_avatar} <span class="dim">(${d.frid.avatars.without} without picture)</span></div>
+            <div class="k">Updated</div><div class="v">${d.frid.updated ? fmtDate(d.frid.updated) : 'with the next ID list update'}</div>
+            ${d.frid.error ? `<div class="k">Error</div><div class="v" style="color:#ff8a80;white-space:normal">${esc(d.frid.error)}</div>` : ''}</div></div>
         <div class="tile"><h3>🗄️ Data</h3><div class="kv"><div class="k">Calls stored</div><div class="v">${d.calls.toLocaleString('de-DE')}</div>
             <div class="k">Since</div><div class="v">${d.calls_since ? fmtDate(d.calls_since) : '–'}</div><div class="k">Folder</div><div class="v mono" style="font-size:12px">${esc(d.data_dir)}</div></div></div>
     </div>`;

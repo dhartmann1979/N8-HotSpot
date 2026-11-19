@@ -105,6 +105,7 @@ def summary(db: DB, rng: str = "today", names: Optional[Dict[int, str]] = None,
         info = lookup(s["id"])
         s["callsign"] = s["callsign"] or info.get("callsign", "")
         s["name"] = info.get("name", "")
+        s["frid"] = bool(info.get("frid"))
     return {
         "range": rng, "bucket": kind, "buckets": edges,
         "totals": {"calls": rf["calls"] + net["calls"], "duration": round(rf["duration"] + net["duration"], 1),

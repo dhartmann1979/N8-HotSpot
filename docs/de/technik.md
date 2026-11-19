@@ -26,13 +26,23 @@
 | Was | Wo |
 |---|---|
 | Weboberfläche | `/opt/n8hotspot` (Python-Paket `n8hotspot/`, Oberfläche `static/`) |
-| Datenbank | `/opt/n8hotspot/data/n8hotspot.db` mit den Tabellen `settings`, `users`, `sessions`, `audit`, `calls`, `dmrids` |
+| Datenbank | `/opt/n8hotspot/data/n8hotspot.db` mit den Tabellen `settings`, `users`, `sessions`, `audit`, `calls`, `dmrids`, `frid_ids` (FreeRadioID-registrierte IDs), `frid_avatars` (192-px-WebP) |
 | Erzeugte Konfiguration | `/opt/n8hotspot/data/MMDVM-Host.ini`, `DMRGateway.ini` |
 | ID-Liste für MMDVMHost | `/opt/n8hotspot/data/DMRIds.dat` (aus der FreeRadioID-Liste, täglich neu) |
 | Programme | `/usr/local/bin/MMDVMHost`, `DMRGateway`, `MMDVMCal`; Quellen in `/usr/local/src/g4klx` |
 | Dienste | `mmdvmhost`, `dmrgateway`, `mosquitto`, `n8hotspot` (alle als Benutzer `n8hotspot`, außer mosquitto) |
 | sudo-Regel | `/etc/sudoers.d/n8hotspot`: nur Start/Stopp/Neustart dieser Dienste, Reboot, Shutdown |
 | Logs | `journalctl -u mmdvmhost -u dmrgateway -u n8hotspot`; Installation in `/var/log/n8hotspot-install.log` |
+
+## Externe Dienste
+
+| Was | Woher | Wann |
+|---|---|---|
+| DMR-ID-Liste | `freeradioid.net/api/subscriber_ids.csv` (oder radioid.net) | täglich, Uhrzeit einstellbar |
+| FreeRadioID-registrierte IDs | `freeradioid.net/api/local_subscriber_ids.json` | mit der ID-Liste |
+| Avatare | `freeradioid.net/api/idimg-<ID>.png` | wenn eine registrierte Station gehört wird; neu geprüft wöchentlich bzw. täglich |
+| Profile | `freeradioid.net/api/dmr/user/?id=<ID>` | beim Öffnen der Stationsansicht, eine Stunde zwischengespeichert |
+| Quellcode G4KLX | `github.com/g4klx` | nur bei Installation/Update |
 
 ## Ports
 
@@ -63,24 +73,26 @@ Alle Antworten sind JSON. Die Oberfläche nutzt dieselbe API.
 | `GET /api/info` | Sichtbereich | Station, Frequenz, Netz, Talkgroup-Namen, angemeldeter Benutzer |
 | `GET /api/live` | Sichtbereich | Modem, Modus, Verbindung, aktive Zeitschlitze, Last Heard, Dienste |
 | `GET /api/stats?range=today\|24h\|7d\|30d` | Sichtbereich | Statistik wie in den Diagrammen |
+| `GET /api/station/{id}` | Sichtbereich | Stationsansicht: FreeRadioID-Profil, Gespräche und Talkgroups der letzten 30 Tage, letzte Gespräche |
+| `GET /api/avatar/{id}` | Sichtbereich | Avatar (WebP) für bei FreeRadioID registrierte IDs, sonst 404 |
 | `WS /ws` | Sichtbereich | Live-Ereignisse `status`, `slot`, `heard`; für Admins zusätzlich `log`, `cal` |
 | `POST /api/auth/login`, `logout`, `password` | – | Anmeldung, eigenes Konto |
 | `GET/POST /api/admin/settings`, `POST /api/admin/apply` | Admin | Einstellungen lesen/speichern, Dienste neu starten |
 | `GET /api/admin/config-files` | Admin | erzeugte ini-Dateien (Passwörter ausgeblendet) |
 | `…/admin/users`, `…/sessions`, `…/audit` | Admin | Benutzer, Sitzungen, Protokoll |
-| `GET /api/admin/system`, `POST …/service`, `…/power`, `…/idlist/refresh` | Admin | System, Dienste, Reboot/Shutdown, ID-Liste |
+| `GET /api/admin/system`, `POST …/service`, `…/power`, `…/idlist/refresh` | Admin | System, Dienste, Reboot/Shutdown, ID-Liste und FreeRadioID-Liste |
 | `GET /api/admin/logs`, `…/journal?service=` | Admin | Live-Log, systemd-Journal |
 | `…/admin/cal`, `…/cal/start`, `…/cal/key`, `…/cal/freq`, `…/cal/save`, `…/cal/stop` | Admin | Kalibrierung |
 
 ## Entwicklung und Demo-Modus
 
 ```bash
-python3 -m venv venv && ./venv/bin/pip install -r requirements.txt pytest httpx
+python3 -m venv venv && ./venv/bin/pip install -r requirements.txt pytest httpx    # Pillow verkleinert die Avatare
 N8HS_DEMO=1 N8HS_DATA=/tmp/n8demo N8HS_PORT=8090 ./venv/bin/python -m n8hotspot   # ohne Modem, simulierter Verkehr
 ./venv/bin/python -m pytest -q
 ```
 
-Im Demo-Modus erzeugt N8-Hotspot dieselben MQTT-Nachrichten, die MMDVMHost und DMRGateway schicken würden, und füllt die Statistik. Die Kalibrierung läuft dann gegen `tools/fake_mmdvmcal.py`. Damit sind auch die Screenshots in dieser Doku entstanden. Getestet wurde zusätzlich mit echtem MMDVMHost (Null-Modem), DMRGateway und einem HBlink4-Server der N8schicht: Anmeldung, Gastzugang und falsches Passwort.
+Im Demo-Modus zeigt N8-Hotspot ausgedachte Stationen; die Avatare sind gezeichnete Landschaften statt echter Fotos. Er erzeugt dieselben MQTT-Nachrichten, die MMDVMHost und DMRGateway schicken würden, und füllt die Statistik. Die Kalibrierung läuft dann gegen `tools/fake_mmdvmcal.py`. Damit sind auch die Screenshots in dieser Doku entstanden. Getestet wurde zusätzlich mit echtem MMDVMHost (Null-Modem), DMRGateway und einem HBlink4-Server der N8schicht: Anmeldung, Gastzugang und falsches Passwort.
 
 ---
 

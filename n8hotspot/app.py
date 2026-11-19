@@ -27,6 +27,7 @@ from . import __version__, configgen, demo, stats
 from .auth import Auth, AuthError, DEFAULT_PASSWORD, DEFAULT_USER
 from .calib import KEYS, CalSession
 from .db import DB
+from .freeradioid import FreeRadioID
 from .idlist import IdList
 from .live import Live
 from .settings import MASTER_PRESETS, MODEM_PRESETS, Settings, SettingsError, hotspot_id, tg_names
@@ -47,7 +48,8 @@ class Ctx:
         self.auth = Auth(self.db)
         self.settings = Settings(self.db)
         self.ids = IdList(self.db, DATA)
-        self.live = Live(self.db, self.ids.lookup)
+        self.frid = FreeRadioID(self.db)
+        self.live = Live(self.db, self.lookup)
         self.system = System(demo=DEMO)
         cal_bin = os.environ.get("N8HS_MMDVMCAL") or (
             f"{sys.executable} {ROOT / 'tools' / 'fake_mmdvmcal.py'}" if DEMO else "/usr/local/bin/MMDVMCal")
@@ -55,6 +57,31 @@ class Ctx:
         self.sockets: Dict[WebSocket, Dict[str, Any]] = {}
         self.services: Dict[str, str] = {}
         self.restart_needed = False
+
+    def lookup(self, rid: int) -> Dict[str, Any]:
+        """Callsign/name/place from the ID list, completed by FreeRadioID; 'frid' = registered there."""
+        d = dict(self.ids.lookup(rid))
+        if rid and self.frid.is_registered(rid):
+            info = self.frid.info(self.frid.avatar_id(rid)) or {}
+            for k in ("callsign", "name", "city", "country"):
+                if not d.get(k) and info.get(k):
+                    d[k] = info[k]
+            d["frid"] = True
+        return d
+
+    def refresh_ids(self) -> Dict[str, Any]:
+        """ID list (CSV) and the FreeRadioID registered IDs (blocking; runs in a thread)."""
+        out: Dict[str, Any] = {}
+        out["ids"] = self.ids.refresh(self.settings.get("dashboard.idlist_url"))
+        if self.settings.get("frid.ids"):
+            try:
+                out["frid"] = self.frid.refresh_registered()
+                rows = [(r["id"], r["callsign"], r["name"], r["city"], r["country"])
+                        for r in self.db.q("SELECT * FROM frid_ids")]
+                out["frid_added"] = self.ids.merge(rows)
+            except Exception as e:
+                out["frid_error"] = str(e)
+        return out
 
     def cal_event(self, ev: Dict[str, Any]) -> None:
         asyncio.ensure_future(broadcast(ev, admin_only=True))
@@ -167,7 +194,7 @@ def station_info() -> Dict[str, Any]:
         "network": s["network.name"] if s["network.enabled"] else "", "network_host": s["network.host"],
         "modem": MODEM_PRESETS.get(s["modem.preset"], ("",))[0], "public": s["dashboard.public"],
         "tg_names": {str(k): v for k, v in tg_names(s["dashboard.tg_names"]).items()},
-        "version": __version__, "demo": DEMO,
+        "version": __version__, "demo": DEMO, "avatars": bool(s["frid.avatars"]),
     }
 
 
@@ -200,7 +227,7 @@ async def api_stats(request: Request, range: str = "today"):
     if range not in stats.RANGES:
         raise HTTPError(400, "range must be today, 24h, 7d or 30d")
     names = tg_names(ctx.settings.get("dashboard.tg_names"))
-    return await asyncio.to_thread(stats.summary, ctx.db, range, names, ctx.ids.lookup)
+    return await asyncio.to_thread(stats.summary, ctx.db, range, names, ctx.lookup)
 
 
 @app.websocket("/ws")
@@ -368,7 +395,10 @@ async def system_info(request: Request):
     await poll_services()
     calls = ctx.db.q("SELECT COUNT(*) AS n, MIN(ts) AS first FROM calls")[0]
     return {"info": ctx.system.info(), "versions": await ctx.system.versions(), "services": ctx.services,
-            "idlist": ctx.ids.status(), "calls": calls["n"], "calls_since": calls["first"],
+            "idlist": ctx.ids.status(),
+            "frid": {"enabled": ctx.settings.get("frid.ids"), "registered": ctx.frid.count(), "updated": ctx.frid.updated,
+                     "error": ctx.frid.error, "avatars": ctx.frid.avatar_stats()},
+            "calls": calls["n"], "calls_since": calls["first"],
             "mqtt": ctx.live.mqtt_connected, "app_version": __version__, "demo": DEMO, "data_dir": str(DATA)}
 
 
@@ -424,11 +454,11 @@ async def journal(request: Request, service: str = "mmdvmhost", lines: int = 200
 async def idlist_refresh(request: Request):
     u = need_admin(request)
     try:
-        n = await asyncio.to_thread(ctx.ids.refresh, ctx.settings.get("dashboard.idlist_url"))
+        r = await asyncio.to_thread(ctx.refresh_ids)
     except Exception as e:
         raise HTTPError(502, f"Download failed: {e}")
-    ctx.auth.audit("idlist_refresh", u["username"], f"{n} IDs", ip_of(request))
-    return {"ok": True, "count": n}
+    ctx.auth.audit("idlist_refresh", u["username"], f"{r['ids']} IDs, {r.get('frid', 0)} FreeRadioID", ip_of(request))
+    return {"ok": True, "count": r["ids"], "frid": r.get("frid"), "frid_error": r.get("frid_error")}
 
 
 # ---------------------------------------------------------------- admin: calibration
@@ -514,6 +544,67 @@ async def cal_save(request: Request):
     return {"ok": True, "offset": off}
 
 
+# ---------------------------------------------------------------- FreeRadioID: avatars and station view
+def prefetch_avatar(ev: Dict[str, Any]) -> None:
+    """When a FreeRadioID member starts talking, fetch the avatar in the background."""
+    call = ev.get("call") if ev.get("type") == "slot" else None
+    if not call or not call.get("frid") or DEMO or not ctx.settings.get("frid.avatars"):
+        return
+    aid = ctx.frid.avatar_id(call["src_id"])
+    if ctx.frid.avatar_due(aid):
+        asyncio.get_running_loop().run_in_executor(None, ctx.frid.fetch_avatar, aid)
+
+
+@app.get("/api/avatar/{rid}")
+async def avatar(rid: int, request: Request):
+    need_view(request)
+    none = Response(status_code=404, headers={"Cache-Control": "public, max-age=3600"})
+    if not ctx.settings.get("frid.avatars") or not ctx.frid.is_registered(rid):
+        return none
+    aid = ctx.frid.avatar_id(rid)
+    if ctx.frid.avatar_due(aid) and not DEMO:
+        try:
+            await asyncio.wait_for(asyncio.to_thread(ctx.frid.fetch_avatar, aid), 12)
+        except asyncio.TimeoutError:
+            pass
+    a = ctx.frid.avatar(aid)
+    if not a or not a[0]:
+        return none
+    return Response(a[2], media_type=a[1] or "image/webp", headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.get("/api/station/{rid}")
+async def station(rid: int, request: Request):
+    """Station view: FreeRadioID profile plus what this hotspot heard from the station."""
+    need_view(request)
+    info = ctx.lookup(rid)
+    prof = None
+    if ctx.settings.get("frid.profiles") and not DEMO:
+        prof = await asyncio.to_thread(ctx.frid.profile, rid)
+    if prof is None and info:
+        prof = {"callsign": info.get("callsign", ""), "name": info.get("name", ""), "city": info.get("city", ""),
+                "country": info.get("country", ""), "registered": bool(info.get("frid")), "remarks": ""}
+    since = time.time() - 30 * 86400
+    agg = ctx.db.q("SELECT COUNT(*) AS n, COALESCE(SUM(duration),0) AS d, MIN(ts) AS first, MAX(ts) AS last, "
+                   "SUM(source='rf') AS rf, AVG(CASE WHEN source='rf' THEN ber END) AS ber "
+                   "FROM calls WHERE src_id = ? AND ts >= ?", (rid, since))[0]
+    tgs = ctx.db.q("SELECT dst_id, COUNT(*) AS n, SUM(duration) AS d FROM calls WHERE src_id = ? AND ts >= ? AND grp = 1 "
+                   "GROUP BY dst_id ORDER BY d DESC LIMIT 5", (rid, since))
+    recent = ctx.db.q("SELECT ts, source, slot, dst_id, grp, duration, ber, loss, rssi FROM calls WHERE src_id = ? "
+                      "ORDER BY ts DESC LIMIT 8", (rid,))
+    names = tg_names(ctx.settings.get("dashboard.tg_names"))
+    return {
+        "id": rid, "callsign": (prof or {}).get("callsign") or info.get("callsign", ""),
+        "frid": bool(info.get("frid")) or bool(prof and prof.get("registered")),
+        "avatar": f"/api/avatar/{rid}" if ctx.settings.get("frid.avatars") and info.get("frid") else None,
+        "profile": prof,
+        "heard": {"calls": agg["n"], "duration": round(agg["d"], 1), "first": agg["first"], "last": agg["last"],
+                  "rf_calls": agg["rf"] or 0, "rf_ber": None if agg["ber"] is None else round(agg["ber"], 2)},
+        "talkgroups": [{"tg": r["dst_id"], "name": names.get(r["dst_id"], ""), "calls": r["n"], "duration": round(r["d"], 1)} for r in tgs],
+        "recent": [{**dict(r), "group": bool(r["grp"])} for r in recent],
+    }
+
+
 # ---------------------------------------------------------------- background
 async def poll_services(force: bool = False) -> None:
     states = await ctx.system.service_states()
@@ -543,9 +634,9 @@ def _next(hhmm: str) -> float:
 
 
 async def daily_task():
-    if ctx.ids.count == 0 and not DEMO:
+    if (ctx.ids.count == 0 or (ctx.settings.get("frid.ids") and ctx.frid.count() == 0)) and not DEMO:
         try:
-            await asyncio.to_thread(ctx.ids.refresh, ctx.settings.get("dashboard.idlist_url"))
+            await asyncio.to_thread(ctx.refresh_ids)
         except Exception:
             pass
     while True:
@@ -556,7 +647,7 @@ async def daily_task():
         await asyncio.sleep(_next(ctx.settings.get("dashboard.idlist_time")))
         if not DEMO:
             try:
-                await asyncio.to_thread(ctx.ids.refresh, ctx.settings.get("dashboard.idlist_url"))
+                await asyncio.to_thread(ctx.refresh_ids)
             except Exception:
                 pass
 
@@ -568,9 +659,10 @@ async def startup():
         ctx = Ctx()
     loop = asyncio.get_running_loop()
     ctx.live.listeners.append(lambda ev: broadcast(ev))
+    ctx.live.listeners.append(prefetch_avatar)
     write_config()
     if DEMO:
-        demo.seed_ids(ctx.db)
+        demo.seed_ids(ctx.db, ctx.frid)
         ctx.ids.count = int(ctx.db.q("SELECT COUNT(*) AS n FROM dmrids")[0]["n"])
         ctx.ids.updated = time.time() - 3 * 3600
         demo.seed_history(ctx.db)

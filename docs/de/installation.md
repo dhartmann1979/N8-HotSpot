@@ -1,6 +1,6 @@
 # 📦 Installation & Image
 
-[← Übersicht](../../readme.md) · **Installation** · [Live & Statistik](bedienung.md) · [Adminbereich](adminbereich.md) · [Kalibrierung](kalibrierung.md) · [Technik](technik.md) · [Fehlersuche](fehlersuche.md)
+[← Übersicht](../../readme.md) · **Installation** · [Live & Statistik](bedienung.md) · [Adminbereich](adminbereich.md) · [Kalibrierung](kalibrierung.md) · [FreeRadioID](freeradioid.md) · [Technik](technik.md) · [Fehlersuche](fehlersuche.md)
 
 ---
 
@@ -22,8 +22,8 @@ Das Skript läuft auf einem **Linux-PC** (Debian, Ubuntu, auch WSL2), nicht auf 
 
 ```bash
 sudo apt install git xz-utils curl
-git clone https://github.com/dhartmann1979/N8-Hotspot
-cd N8-Hotspot
+git clone https://github.com/dhartmann1979/N8-HotSpot
+cd N8-HotSpot
 sudo ./scripts/build-image.sh
 ```
 
@@ -35,12 +35,14 @@ sudo ./scripts/build-image.sh
 | WLAN-Name / Passwort / Land | leer lassen, wenn der Pi am Kabel hängt |
 | Passwort für SSH | für `root` und `dietpi`; leer = `dietpi` |
 | Zeitzone | Vorgabe `Europe/Berlin` |
+| Hotspot gleich mit einrichten? | Bei **J** fragt das Skript Rufzeichen, DMR-ID, Suffix, Board, Frequenz und das Passwort für dmr.die-n8schicht.de (FreeRadioID) ab. Die Werte landen in `n8hotspot-setup.json` auf der Boot-Partition und werden beim ersten Start eingelesen; danach wird die Datei gelöscht, weil sie das Passwort enthält. Bei **n** stellst du alles später im Browser ein. |
 
 Alle Fragen gehen auch als Option, z. B. für eigene Serien-Images:
 
 ```bash
 sudo ./scripts/build-image.sh --hostname n8-hotspot --wifi-ssid "MeinWLAN" --wifi-pass "geheim" \
-     --password "ssh-passwort" --yes
+     --password "ssh-passwort" --callsign DL1ABC --dmr-id 2621234 --board 1 --freq 438.8 \
+     --net-password "FreeRadioID-Passwort" --yes
 sudo ./scripts/build-image.sh --image ~/Downloads/DietPi_RPi234-ARMv8-Bookworm.img.xz   # ohne Download
 ```
 
@@ -60,13 +62,44 @@ Ergebnis: `build/N8-Hotspot-DietPi-<datum>.img.xz` mit Prüfsumme.
 3. **20–40 Minuten warten.** DietPi richtet sich ein, dann baut der Pi MMDVMHost, DMRGateway und MMDVMCal und startet einmal neu. Den Fortschritt siehst du per SSH in `/var/log/n8hotspot-firstboot.log`.
 4. Im Browser **http://n8-hotspot.local** öffnen. Klappt `.local` nicht, findest du die IP im Router.
 
-## Variante B: auf einem vorhandenen System installieren
+## Variante B: geführte Einrichtung auf einem vorhandenen System
 
-Auf einem laufenden DietPi, Raspberry Pi OS (Bookworm) oder Debian 12:
+Auf einem laufenden DietPi, Raspberry Pi OS (Bookworm) oder Debian 12, per SSH:
 
 ```bash
 sudo apt install git
-sudo git clone https://github.com/dhartmann1979/N8-Hotspot /opt/n8hotspot
+git clone https://github.com/dhartmann1979/N8-HotSpot
+cd N8-HotSpot
+sudo ./scripts/setup.sh
+```
+
+## Geführte Einrichtung (setup.sh)
+
+`setup.sh` fragt zuerst alles ab, zeigt eine Zusammenfassung und installiert erst nach deinem **J**. Jede Frage hat eine Vorgabe in `[Klammern]`, die du mit Enter übernimmst. Läuft das Skript auf einem schon eingerichteten Hotspot, schlägt es die aktuellen Werte vor. So änderst du später Frequenz oder Passwort auch per SSH.
+
+<p align="center"><img src="../images/setup-1.png" alt="setup.sh Schritte 1–5" width="80%"></p>
+
+| Schritt | Fragen | Hinweise |
+|---|---|---|
+| 1 System | – | zeigt Board und Betriebssystem und welche seriellen Schnittstellen da sind (`/dev/ttyAMA0` = GPIO, `/dev/ttyACM0` = USB) |
+| 2 Station | **DMR-ID**, Rufzeichen, Hotspot-Suffix, Standort | Die ID wird **live bei FreeRadioID.net geprüft**. Das Skript schlägt Rufzeichen und Ort vor und sagt, ob die ID dort registriert ist, also ob ein persönliches Passwort möglich ist. |
+| 3 Modem & Frequenz | **Board** 1–4, Frequenz in MHz (Komma oder Punkt), bei Duplex RX und TX, Color Code | Das Board legt Port, Geschwindigkeit und Simplex/Duplex fest. Die Frequenz wird geprüft (100–1000 MHz). |
+| 4 DMR-Server | N8schicht oder anderer Server, **Passwort** | Bei der N8schicht: FreeRadioID-Passwort, Enter = Gast `passw0rd`. Auf einem eingerichteten Hotspot behält Enter das bisherige Passwort. |
+| 5 FreeRadioID.net | Avatare, Profile, FRID-Liste | alle drei Vorgabe **ja**, siehe [FreeRadioID](freeradioid.md) |
+| 6 Weboberfläche & Login | Titel, öffentlich ja/nein, **eigener Admin** | Mit eigenem Admin entfällt der Werks-Login `n8schicht`. Sonst bleibt er und die Oberfläche warnt, bis du ihn änderst. |
+| 7 Zusammenfassung | **So einrichten? [J/n]** | Erst ab hier wird etwas verändert. |
+| 8 Installation | – | `install.sh` (siehe unten), dann werden die Einstellungen gespeichert, die DMR-ID-Liste und die FreeRadioID-Liste geladen und die Dienste neu gestartet |
+
+<p align="center"><img src="../images/setup-2.png" alt="setup.sh Schritte 6–8" width="80%"></p>
+
+Wer nur die Einstellungen ändern will, ohne neu zu installieren: `sudo N8_SETUP_ONLY=1 ./scripts/setup.sh`. Mit `N8_SKIP_BUILD=1` werden MMDVMHost & Co. nicht neu gebaut.
+
+## Variante C: ohne Fragen installieren (install.sh)
+
+`install.sh` ist der Teil, den `setup.sh` in Schritt 8 aufruft. Allein gestartet installiert es mit Vorgabewerten; alles Weitere stellst du dann im Browser ein.
+
+```bash
+sudo git clone https://github.com/dhartmann1979/N8-HotSpot /opt/n8hotspot
 sudo /opt/n8hotspot/scripts/install.sh
 ```
 
@@ -92,6 +125,8 @@ Optionen per Umgebungsvariable:
 | `MMDVMHOST_REF=<commit>` | bestimmten Stand von MMDVMHost bauen (ebenso `DMRGATEWAY_REF`, `MMDVMCAL_REF`) |
 
 ## Erster Start
+
+Hast du das Image mit Hotspot-Einstellungen gebaut oder `setup.sh` benutzt, sind die Schritte 3 und 4 schon erledigt.
 
 1. **http://n8-hotspot.local** öffnen. Die Live-Ansicht ist sofort sichtbar.
 2. **🔐 Login** mit `n8schicht` / `n8schicht`. Es erscheint sofort *My account*: eigenen Benutzernamen und ein neues Passwort setzen. Danach funktioniert der Werks-Login nicht mehr.

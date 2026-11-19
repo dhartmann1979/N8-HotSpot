@@ -57,6 +57,7 @@ SECTIONS: List[Tuple[str, str, str]] = [
     ("network", "🛰️ DMR network", "Server, password and options"),
     ("dmr", "🎚️ DMR mode", "Color code, time slots, hang times"),
     ("dashboard", "🌐 Dashboard", "Title, public view, ID list"),
+    ("freeradioid", "🛡️ FreeRadioID.net", "Avatars, profiles and registered IDs"),
     ("expert", "🧪 Expert", "Additional lines for the ini files"),
 ]
 
@@ -135,6 +136,15 @@ FIELDS: List[Field] = [
     Field("dashboard.tg_names", "dashboard", "Talkgroup names", "longtext",
           "262 = Deutschland\n2620 = Baden-Württemberg\n26500 = N8schicht\n26501 = Gäste\n9 = Lokal",
           "One per line: 262 = Deutschland", restart=False),
+
+    # FreeRadioID
+    Field("frid.ids", "freeradioid", "Load registered FreeRadioID IDs", "bool", True,
+          "Daily with the ID list: FRID badge, names of FreeRadioID-only IDs", restart=False),
+    Field("frid.avatars", "freeradioid", "Show avatars", "bool", True,
+          "Profile pictures of FreeRadioID members; fetched when a station is heard, cached in the database",
+          restart=False),
+    Field("frid.profiles", "freeradioid", "Look up profiles", "bool", True,
+          "Name, place and remarks in the station view (live from the FreeRadioID API)", restart=False),
 
     # expert
     Field("expert.mmdvm", "expert", "Extra lines for MMDVM-Host.ini", "longtext", "",

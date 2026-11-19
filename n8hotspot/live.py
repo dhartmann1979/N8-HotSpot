@@ -61,9 +61,11 @@ class Live:
         d = dict(r)
         d["group"] = bool(d.pop("grp"))
         d["is_data"] = bool(d["is_data"])
-        d.update({k: v for k, v in self.lookup(d.get("src_id") or 0).items() if k in ("name", "city", "country")})
+        info = self.lookup(d.get("src_id") or 0)
+        d.update({k: v for k, v in info.items() if k in ("name", "city", "country")})
+        d["frid"] = bool(info.get("frid"))
         if not d.get("callsign") and d.get("src_id"):
-            d["callsign"] = self.lookup(d["src_id"]).get("callsign", "")
+            d["callsign"] = info.get("callsign", "")
         return d
 
     def snapshot(self) -> Dict[str, Any]:
@@ -230,7 +232,7 @@ class Live:
                 "slot": slot, "source": b.get("source", "rf"), "src_id": src_id, "callsign": callsign,
                 "name": info.get("name", ""), "city": info.get("city", ""), "country": info.get("country", ""),
                 "dst_id": int(b.get("dst_id") or 0), "group": b.get("group", "yes") == "yes",
-                "is_data": "frames" in b, "start": time.time(),
+                "is_data": "frames" in b, "start": time.time(), "frid": bool(info.get("frid")),
             }
             self.emit({"type": "slot", "slot": slot, "call": self.slots[slot]})
         elif action in ("end", "lost", "timeout"):

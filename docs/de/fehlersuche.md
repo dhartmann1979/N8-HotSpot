@@ -1,6 +1,6 @@
 # 🩺 Fehlersuche
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · [Live & Statistik](bedienung.md) · [Adminbereich](adminbereich.md) · [Kalibrierung](kalibrierung.md) · [Technik](technik.md) · **Fehlersuche**
+[← Übersicht](../../readme.md) · [Installation](installation.md) · [Live & Statistik](bedienung.md) · [Adminbereich](adminbereich.md) · [Kalibrierung](kalibrierung.md) · [FreeRadioID](freeradioid.md) · [Technik](technik.md) · **Fehlersuche**
 
 ---
 
@@ -17,6 +17,8 @@
 | Nur Gast-Talkgroups gehen | mit dem Gast-Passwort angemeldet | persönliches Passwort von [FreeRadioID.net](https://freeradioid.net) eintragen |
 | **✕ Live data** | Browser hat die Verbindung verloren, oder der Dienst `n8hotspot` läuft nicht | Seite neu laden; `sudo systemctl status n8hotspot` |
 | Keine Live-Daten, aber Hotspot funktioniert | mosquitto läuft nicht | *System → Services → MQTT broker → Restart* |
+| Keine Avatare | Station nicht bei FreeRadioID.net registriert (kein FRID), kein eigenes Bild dort hinterlegt, Avatare abgeschaltet oder kein Internet | *System → FreeRadioID.net*: Zahl der registrierten IDs; *Settings → FreeRadioID.net → Show avatars*; *System → ⟳ Update now* |
+| Rufzeichen statt Namen fehlen | ID-Liste noch nicht geladen | *System → DMR ID list → ⟳ Update now*; braucht Internet |
 | `http://n8-hotspot.local` geht nicht | Gerät oder Router ohne mDNS (Bonjour) | IP aus dem Router nehmen; Windows braucht ggf. die Bonjour-Dienste |
 
 ## Passwort vergessen

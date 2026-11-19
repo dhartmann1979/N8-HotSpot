@@ -1,6 +1,6 @@
 # 🎙️ Live & Statistik
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · **Live & Statistik** · [Adminbereich](adminbereich.md) · [Kalibrierung](kalibrierung.md) · [Technik](technik.md) · [Fehlersuche](fehlersuche.md)
+[← Übersicht](../../readme.md) · [Installation](installation.md) · **Live & Statistik** · [Adminbereich](adminbereich.md) · [Kalibrierung](kalibrierung.md) · [FreeRadioID](freeradioid.md) · [Technik](technik.md) · [Fehlersuche](fehlersuche.md)
 
 ---
 
@@ -28,7 +28,7 @@ Dieser Teil ist der **Sichtbereich**: ohne Login sichtbar, solange *Public view*
 
 Ein Simplex-Hotspot nutzt nur **Zeitschlitz 2**, ein Duplex-Hotspot beide. Läuft ein Gespräch, zeigt die Karte **ON AIR** mit:
 
-- **Wer spricht:** Rufzeichen, Name und Ort aus der ID-Liste; die Sprechzeit läuft live mit.
+- **Wer spricht:** Avatar von FreeRadioID.net, Rufzeichen mit **FRID** (falls dort registriert), Name und Ort aus der ID-Liste; die Sprechzeit läuft live mit.
 - **Quelle:** 📻 **RF** (rote Karte) heißt, jemand sendet lokal in den Hotspot. 🌐 **Network** (grüne Karte) heißt, das Gespräch kommt vom Server.
 - **Talkgroup:** mit Namen aus dem Adminbereich.
 - **Signal bei RF:** **BER** (Bitfehlerrate) und **RSSI** (Empfangsstärke) live.
@@ -41,9 +41,15 @@ Rufzeichen, Hotspot-ID, Standort, Frequenz, Simplex/Duplex mit Color Code, Modem
 
 ## Last Heard
 
-Die letzten 20 Gespräche: Zeit, Rufzeichen mit Name, Quelle, Zeitschlitz, Ziel (Talkgroup oder 👤 Einzelruf), Dauer.
+Die letzten 20 Gespräche: Zeit, Avatar und Rufzeichen mit Name (**FRID** = bei FreeRadioID.net registriert), Quelle, Zeitschlitz, Ziel (Talkgroup oder 👤 Einzelruf), Dauer.
 - **Qualität:** bei RF die BER als farbige Marke (grün < 1 %, gelb < 3 %, rot darüber) und die RSSI; bei Netz-Gesprächen der Paketverlust.
 - **Filter:** Mit *All / 📻 RF / 🌐 Network* zeigst du nur lokale oder nur Netz-Gespräche.
+
+## Stationsansicht
+
+Ein Klick auf ein Rufzeichen, egal ob in Last Heard, auf der ON-AIR-Karte oder in der Statistik, zeigt großen Avatar, FreeRadioID-Profil, Gespräche und Talkgroups dieser Station auf deinem Hotspot. Mehr dazu unter [FreeRadioID](freeradioid.md#stationsansicht).
+
+<p align="center"><img src="../images/station.png" alt="Stationsansicht" width="60%"></p>
 
 ## 📈 Statistik
 
