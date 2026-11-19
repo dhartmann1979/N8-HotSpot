@@ -66,7 +66,7 @@ async function boot() {
         connectWS();
         loadToday();
         const h = location.hash.replace('#', '');
-        if (h) { const [t, a] = h.split('/'); if (t === 'stats') showTab('stats'); else if (t === 'admin' && isAdmin()) showTab('admin', a); }
+        if (h) { const [t, a] = h.split('/'); if (t === 'stats' || t === 'tgs') showTab(t); else if (t === 'admin' && isAdmin()) showTab('admin', a); }
     } catch (e) { console.error(e); setTimeout(boot, 3000); }
 }
 function renderAll() { renderHeader(); renderUser(); renderInfo(); renderSlots(); renderLH(); $('ver').textContent = S.info.version ? 'v' + S.info.version : ''; }
@@ -197,8 +197,9 @@ async function openStation(id) {
 function showTab(tab, sub) {
     S.tab = tab;
     document.querySelectorAll('#mainTabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-    ['live', 'stats', 'admin'].forEach(t => $('tab-' + t).classList.toggle('hidden', t !== tab));
+    ['live', 'stats', 'tgs', 'admin'].forEach(t => $('tab-' + t).classList.toggle('hidden', t !== tab));
     if (tab === 'stats') loadStats();
+    if (tab === 'tgs') loadTalkgroups();
     if (tab === 'admin') showAdmin(sub || S.admin.tab);
     history.replaceState(null, '', tab === 'live' ? location.pathname : '#' + tab + (tab === 'admin' ? '/' + (sub || S.admin.tab) : ''));
     hideTip();
@@ -453,6 +454,38 @@ function tip(ev, html) {
 function hideTip() { $('tip').style.display = 'none'; }
 let rsT = null; addEventListener('resize', () => { clearTimeout(rsT); rsT = setTimeout(() => { if (S.tab === 'stats') renderStats(); }, 150); });
 
+// ---------------------------------------------------------------- talkgroup directory
+const TGV = { data: null, filter: 'all', limit: 150 };
+async function loadTalkgroups() {
+    try { TGV.data = await api('GET', '/api/talkgroups'); } catch (e) { toast(e.message, true); return; }
+    S.info.tg_names = TGV.data.names;
+    renderTalkgroups();
+}
+function renderTalkgroups() {
+    const d = TGV.data; if (!d) return;
+    const q = $('tgSearch').value.trim().toLowerCase();
+    const own = new Set(d.own);
+    const all = new Set([...Object.keys(d.names), ...Object.keys(d.activity)]);
+    let rows = [...all].map(tg => ({ tg, name: d.names[tg] || '', a: d.activity[tg], own: own.has(tg) }));
+    if (TGV.filter === 'heard') rows = rows.filter(r => r.a);
+    if (TGV.filter === 'own') rows = rows.filter(r => r.own);
+    if (q) rows = rows.filter(r => r.tg.startsWith(q) || r.name.toLowerCase().includes(q));
+    rows.sort((x, y) => TGV.filter === 'heard' ? (y.a.duration - x.a.duration) : (Number(x.tg) - Number(y.tg)));
+    $('tgCount').textContent = rows.length.toLocaleString('de-DE');
+    const shown = rows.slice(0, TGV.limit);
+    $('tgBody').innerHTML = shown.length ? shown.map(r => `<tr><td><b class="mono">${esc(r.tg)}</b></td>
+        <td style="white-space:normal">${esc(r.name) || '<span class="dim">–</span>'} ${r.own ? '<span class="pill" style="font-size:10.5px;padding:1px 7px">own</span>' : ''}</td>
+        <td class="num">${r.a ? r.a.calls : '<span class="dim">–</span>'}</td><td class="num hide-sm">${r.a ? fmtDur(r.a.duration, true) : ''}</td>
+        <td class="hide-sm">${r.a ? ago(r.a.last) : ''}</td></tr>`).join('') : '<tr><td colspan="5" class="empty">No talkgroup found.</td></tr>';
+    $('tgMore').classList.toggle('hidden', rows.length <= TGV.limit);
+    $('tgMore').textContent = `Show all ${rows.length.toLocaleString('de-DE')}`;
+    $('tgSource').innerHTML = d.list.enabled ? `List of the N8schicht: ${d.list.count.toLocaleString('de-DE')} names${d.list.updated ? ', updated ' + fmtDate(d.list.updated) : ''} · <a href="https://github.com/dhartmann1979/n8schicht/blob/main/talkgroup_ids.json" target="_blank" rel="noopener">talkgroup_ids.json</a>` : 'Talkgroup list switched off (Admin → Settings → Dashboard)';
+}
+let tgT = null;
+$('tgSearch').addEventListener('input', () => { clearTimeout(tgT); tgT = setTimeout(() => { TGV.limit = 150; renderTalkgroups(); }, 120); });
+$('tgMore').addEventListener('click', () => { TGV.limit = 100000; renderTalkgroups(); });
+bindSeg('tgFilter', v => { TGV.filter = v; TGV.limit = 150; renderTalkgroups(); });
+
 // ---------------------------------------------------------------- admin
 function showAdmin(a) {
     S.admin.tab = a;
@@ -480,6 +513,12 @@ async function loadSettings() {
             ${sec.fields.map(fieldHtml).join('')}
             <div class="actions"><button class="btn primary">Save</button></div>
         </form>`).join('')}</div>`;
+    const portIn = document.querySelector('[name="modem.port"]');
+    if (portIn) {
+        const w = document.createElement('div'); w.className = 'pw-wrap';
+        portIn.replaceWith(w); w.appendChild(portIn);
+        w.insertAdjacentHTML('beforeend', '<button type="button" class="btn small" title="Find the modem" onclick="openSerialScan()">🔍 Find</button>');
+    }
     const preset = document.querySelector('[name="modem.preset"]');
     if (preset) preset.addEventListener('change', () => {
         const p = d.modem_presets[preset.value]; if (!p || !p.port) return;
@@ -519,6 +558,49 @@ async function saveSection(form) {
         setRestart(r.restart_needed);
         const info = await api('GET', '/api/info'); S.info = { ...S.info, ...info }; renderHeader(); renderInfo(); renderSlots();
     } catch (e) { toast(e.message, true); }
+}
+
+// find the modem (serial port scan)
+const PORT_INFO = [
+    ['/dev/ttyAMA0', 'Hat on the GPIO header (MMDVM_HS_Hat, Dual Hat, …). Needs the UART switched on and Bluetooth off – the installer does that.'],
+    ['/dev/serial0', 'Alias of the GPIO UART; points to ttyAMA0 (or ttyS0 while Bluetooth is on).'],
+    ['/dev/ttyS0', 'Mini UART of the Pi. A hat only lands here while Bluetooth is on – unreliable, re-run the installer.'],
+    ['/dev/ttyACM0', 'USB with native USB serial: ZUMspot, MMDVM_HS via USB, STM32 repeater boards.'],
+    ['/dev/ttyUSB0', 'Board behind a USB-serial adapter (CH340, CP210x, FTDI).'],
+];
+async function openSerialScan() {
+    modal(`<h2>🔍 Where is the modem?</h2>
+        <p class="dim" style="margin:4px 0 10px">The scan lists all serial ports and asks each free one for its MMDVM firmware. The port MMDVMHost already uses is not touched; its modem info comes from MMDVMHost.</p>
+        <div class="tbl-wrap"><table class="tbl" style="font-size:12.5px"><tbody>${PORT_INFO.map(([p, t]) => `<tr><td class="mono" style="vertical-align:top"><b>${p}</b></td><td style="white-space:normal">${t}</td></tr>`).join('')}</tbody></table></div>
+        <div id="scanOut" style="margin-top:14px"><div class="empty">⏳ Scanning … (up to 15 seconds)</div></div>
+        <div class="actions"><button class="btn" onclick="openSerialScan()">↻ Scan again</button><button class="btn primary" onclick="closeModal()">Close</button></div>`);
+    $('ov').querySelector('.modal').classList.add('wide');
+    let d;
+    try { d = await api('POST', '/api/admin/serial/scan', {}); } catch (e) { $('scanOut').innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+    const st = p => ({ modem: `<span class="pill ok">✓ MMDVM modem</span>`, busy: `<span class="pill ${p.modem ? 'ok' : 'warn'}">in use by ${esc(p.users.map(u => u.name).join(', '))}</span>`,
+        silent: '<span class="pill">no answer</span>', alias: `<span class="pill">→ ${esc(p.alias_of)}</span>`, 'no-permission': '<span class="pill bad">no permission</span>',
+        error: `<span class="pill bad">error</span>` }[p.status] || `<span class="pill">${esc(p.status)}</span>`);
+    const kind = p => ({ gpio: 'GPIO UART', 'gpio-mini': 'GPIO mini UART', usb: 'USB', other: 'serial' }[p.kind] || p.kind);
+    const usb = p => p.usb && (p.usb.product || p.usb.idVendor) ? `<br><span class="dim">${esc([p.usb.manufacturer, p.usb.product].filter(Boolean).join(' ') || '')} ${p.usb.idVendor ? `(${esc(p.usb.idVendor)}:${esc(p.usb.idProduct || '')}${p.usb.driver ? ', ' + esc(p.usb.driver) : ''})` : ''}</span>` : '';
+    const found = d.ports.filter(p => p.modem);
+    $('scanOut').innerHTML = (found.length ? `<div class="banner" style="margin:0 0 10px;background:linear-gradient(135deg,rgba(48,209,88,.2),rgba(48,209,88,.05));border:1px solid rgba(48,209,88,.4)">
+            <span>✓ Modem found on <b class="mono">${esc(found[0].port)}</b>: ${esc(found[0].modem.description)}</span></div>` :
+            `<div class="banner warn" style="margin:0 0 10px"><span>No modem answered. Is the board plugged in? On a GPIO hat: reboot once after the installation.</span></div>`) +
+        `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Port</th><th>Type</th><th>Status</th><th class="hide-sm">Firmware</th><th></th></tr></thead><tbody>${d.ports.map(p => `
+        <tr><td class="mono"><b>${esc(p.port)}</b>${p.port === d.configured ? ' <span class="pill tg" style="font-size:10.5px;padding:1px 7px">set</span>' : ''}</td>
+        <td style="white-space:normal">${kind(p)}${usb(p)}</td><td>${st(p)}</td>
+        <td class="hide-sm" style="white-space:normal;font-size:12px">${p.modem ? esc(p.modem.description) + (p.speed ? ` <span class="dim">@ ${p.speed}</span>` : '') : ''}</td>
+        <td class="num">${p.status === 'alias' ? '' : `<button class="btn small" onclick='usePort(${JSON.stringify({ port: p.port, speed: p.speed, kind: p.kind, desc: p.modem ? p.modem.description : "" })})'>Use</button>`}</td></tr>`).join('')}
+        </tbody></table></div>`;
+}
+function usePort(p) {
+    const set = (n, v) => { const e = document.querySelector(`[name="${n}"]`); if (e) { if (e.type === 'checkbox') e.checked = v; else e.value = v; } };
+    set('modem.port', p.port);
+    if (p.speed) set('modem.speed', String(p.speed));
+    const dual = /dual|duplex|repeater/i.test(p.desc || '');
+    set('modem.preset', p.kind === 'usb' ? (dual ? 'rpt_usb' : 'hs_usb') : (dual ? 'hs_dual' : 'hs_hat'));
+    set('modem.duplex', dual);
+    closeModal(); toast(`${p.port} set – press Save in “Modem”`);
 }
 
 // calibration
@@ -684,6 +766,10 @@ async function loadSystem() {
             <div class="kv"><div class="k">IDs</div><div class="v">${d.idlist.count.toLocaleString('de-DE')}</div><div class="k">Updated</div><div class="v">${d.idlist.updated ? fmtDate(d.idlist.updated) : 'never'}</div>
             ${d.idlist.error ? `<div class="k">Error</div><div class="v" style="color:#ff8a80;white-space:normal">${esc(d.idlist.error)}</div>` : ''}</div>
             <div class="actions"><button class="btn" onclick="refreshIds(this)">⟳ Update now</button></div></div>
+        <div class="tile"><h3>🗂️ Talkgroup list</h3><div class="subt">Names from github.com/dhartmann1979/n8schicht, plus your own.</div>
+            <div class="kv"><div class="k">Names</div><div class="v">${d.talkgroups.enabled ? d.talkgroups.count.toLocaleString('de-DE') : 'off'}${d.talkgroups.own ? ` <span class="dim">+ ${d.talkgroups.own} own</span>` : ''}</div>
+            <div class="k">Updated</div><div class="v">${d.talkgroups.updated ? fmtDate(d.talkgroups.updated) : 'copy shipped with N8-Hotspot'}</div>
+            ${d.talkgroups.error ? `<div class="k">Error</div><div class="v" style="color:#ff8a80;white-space:normal">${esc(d.talkgroups.error)}</div>` : ''}</div></div>
         <div class="tile"><h3>🛡️ FreeRadioID.net</h3><div class="subt">Registered IDs (FRID badge) and avatars, loaded with the ID list.</div>
             <div class="kv"><div class="k">Registered IDs</div><div class="v">${d.frid.enabled ? d.frid.registered.toLocaleString('de-DE') : 'off'}</div>
             <div class="k">Avatars cached</div><div class="v">${d.frid.avatars.with_avatar} <span class="dim">(${d.frid.avatars.without} without picture)</span></div>
@@ -703,7 +789,7 @@ async function power(a) {
 }
 async function refreshIds(btn) {
     btn.disabled = true; btn.textContent = 'Loading …';
-    try { const r = await api('POST', '/api/admin/idlist/refresh', {}); toast(`${r.count.toLocaleString('de-DE')} IDs loaded`); loadSystem(); } catch (e) { toast(e.message, true); btn.disabled = false; btn.textContent = '⟳ Update now'; }
+    try { const r = await api('POST', '/api/admin/idlist/refresh', {}); toast(`${r.count.toLocaleString('de-DE')} IDs${r.talkgroups ? ', ' + r.talkgroups.toLocaleString('de-DE') + ' talkgroups' : ''} loaded`); loadSystem(); } catch (e) { toast(e.message, true); btn.disabled = false; btn.textContent = '⟳ Update now'; }
 }
 
 // logs

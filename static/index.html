@@ -39,7 +39,8 @@
 
     <nav class="tabs" id="mainTabs">
         <button data-tab="live" class="active">🎙️ Live</button>
-        <button data-tab="stats">📈 Statistics</button>
+        <button data-tab="stats">📈 <span class="t-long">Statistics</span><span class="t-short">Stats</span></button>
+        <button data-tab="tgs">🗂️ <span class="t-long">Talkgroups</span><span class="t-short">TGs</span></button>
         <button data-tab="admin" id="tabAdminBtn" class="hidden">⚙️ Admin</button>
     </nav>
 
@@ -98,6 +99,22 @@
                 <div class="panel"><h3><span>Most active stations</span></h3><div class="tbl-wrap"><table class="tbl">
                     <thead><tr><th>Station</th><th class="num">Calls</th><th class="num">Airtime</th><th class="hide-sm">Last</th></tr></thead><tbody id="stStTable"></tbody></table></div></div>
             </div>
+        </div>
+    </section>
+
+    <!-- ================= TALKGROUPS ================= -->
+    <section id="tab-tgs" class="hidden">
+        <h2 class="section-header">🗂️ Talkgroups <span class="count" id="tgCount"></span></h2>
+        <div class="card" style="padding:16px">
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <input type="text" id="tgSearch" placeholder="🔎 Search: number or name, e.g. 262 or Bayern" style="max-width:420px" autocomplete="off">
+                <div class="seg" id="tgFilter"><button data-v="all" class="active">All</button><button data-v="heard">📻 Heard here</button><button data-v="own">✏️ Own names</button></div>
+            </div>
+            <div class="tbl-wrap"><table class="tbl">
+                <thead><tr><th>TG</th><th>Name</th><th class="num">Calls (30 d)</th><th class="num hide-sm">Airtime</th><th class="hide-sm">Last heard</th></tr></thead>
+                <tbody id="tgBody"></tbody>
+            </table></div>
+            <div class="actions" style="justify-content:space-between;align-items:center"><span class="dim" id="tgSource" style="font-size:12.5px"></span><button class="btn small hidden" id="tgMore">Show more</button></div>
         </div>
     </section>
 

@@ -54,6 +54,26 @@ ok "$MODEL · $OSN"
 PORTS=""
 for p in /dev/ttyAMA0 /dev/ttyACM0 /dev/ttyUSB0; do [ -e "$p" ] && PORTS="$PORTS $p"; done
 ok "Serielle Schnittstellen:${PORTS:- keine gefunden}"
+echo -e "   ${D}Suche das Modem (fragt jede freie Schnittstelle nach ihrer MMDVM-Firmware) …${N}"
+SCAN="$(cd "$SRC" && timeout 40 python3 -m n8hotspot scan-serial 2>/dev/null || echo '[]')"
+MODEM_PORT=""; MODEM_DESC=""
+eval "$(python3 - "$SCAN" <<'EOF'
+import json, shlex, sys
+try:
+    ports = json.loads(sys.argv[1])
+except ValueError:
+    ports = []
+for p in ports:
+    if p.get("modem"):
+        print(f"MODEM_PORT={shlex.quote(p['port'])}; MODEM_DESC={shlex.quote(p['modem'].get('description', ''))}")
+        break
+    if p.get("status") == "busy":
+        print(f"MODEM_PORT={shlex.quote(p['port'])}; MODEM_DESC={shlex.quote('in Benutzung von ' + ', '.join(u['name'] for u in p['users']))}")
+        break
+EOF
+)"
+if [ -n "$MODEM_PORT" ]; then ok "Modem auf ${B}$MODEM_PORT${N}: $MODEM_DESC"
+else hint "Kein Modem geantwortet (GPIO-Hat: erst nach dem Neustart nach der Installation; USB: eingesteckt?)."; fi
 
 # ---------------------------------------------------------------------------
 step 2 "Station"
@@ -91,6 +111,8 @@ step 3 "Modem & Frequenz"
 DEFBOARD="$(cur modem.preset '')"
 if [ -z "$DEFBOARD" ] || [ "$CUR" = "{}" ]; then
     DEFBOARD=hs_hat; [[ " $PORTS " == *ttyACM0* ]] && [[ " $PORTS " != *ttyAMA0* ]] && DEFBOARD=hs_usb
+    case "$MODEM_PORT" in /dev/ttyACM*|/dev/ttyUSB*) DEFBOARD=hs_usb;; esac
+    [[ "$MODEM_DESC" =~ [Dd]ual ]] && { [[ "$MODEM_PORT" == /dev/ttyAMA* ]] && DEFBOARD=hs_dual || DEFBOARD=rpt_usb; }
 fi
 echo "     1) MMDVM_HS_Hat auf der Stiftleiste (Simplex)      → /dev/ttyAMA0"
 echo "     2) MMDVM_HS_Dual_Hat auf der Stiftleiste (Duplex)  → /dev/ttyAMA0"
@@ -101,6 +123,7 @@ N2B=(x hs_hat hs_dual hs_usb rpt_usb)
 while :; do ask BN "Board" "${B2N[$DEFBOARD]:-1}"; [[ "$BN" =~ ^[1-4]$ ]] && break; done
 BOARD=${N2B[$BN]}
 case $BOARD in hs_hat|hs_dual) PORT=/dev/ttyAMA0;; *) PORT=/dev/ttyACM0;; esac
+case "$MODEM_PORT" in /dev/ttyACM*|/dev/ttyUSB*) [[ $BOARD == hs_usb || $BOARD == rpt_usb ]] && PORT=$MODEM_PORT;; esac
 DUPLEX=0; [[ $BOARD == hs_dual || $BOARD == rpt_usb ]] && DUPLEX=1
 [ -e "$PORT" ] || hint "$PORT gibt es (noch) nicht – bei GPIO-Boards nach dem Neustart, bei USB wenn eingesteckt."
 mhz() { python3 -c "import sys; v=float(sys.argv[1].replace(',','.')); hz=round(v*1e6) if v<10000 else round(v); assert 1e8<=hz<=1e9; print(hz)" "$1" 2>/dev/null; }

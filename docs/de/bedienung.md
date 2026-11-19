@@ -51,6 +51,27 @@ Ein Klick auf ein Rufzeichen, egal ob in Last Heard, auf der ON-AIR-Karte oder i
 
 <p align="center"><img src="../images/station.png" alt="Stationsansicht" width="60%"></p>
 
+## 🗂️ Talkgroups
+
+<p align="center">
+  <img src="../images/talkgroups.png" alt="Talkgroup-Verzeichnis" width="72%">
+  &nbsp;
+  <img src="../images/talkgroups-mobile.png" alt="Talkgroups am Smartphone" width="22%">
+</p>
+
+Der Tab **🗂️ Talkgroups** (am Smartphone „TGs“) ist das Verzeichnis aller Talkgroups. Die Namen kommen aus der **Talkgroup-Liste der N8schicht** ([`talkgroup_ids.json`](https://github.com/dhartmann1979/n8schicht/blob/main/talkgroup_ids.json), rund 1.400 Einträge) und deinen eigenen Namen aus dem Adminbereich (*own*).
+
+- **Suche** nach Nummer (Anfang, z. B. `262`) oder Namen (z. B. `bayern`)
+- **📻 Heard here**: nur Talkgroups, die dein Hotspot in den letzten 30 Tagen gehört hat, sortiert nach Sprechzeit, mit Gesprächen und „zuletzt gehört“
+- **✏️ Own names**: nur deine eigenen Namen
+
+<p align="center">
+  <img src="../images/talkgroups-heard.png" alt="Gehörte Talkgroups" width="48%">
+  <img src="../images/talkgroups-search.png" alt="Suche" width="48%">
+</p>
+
+Die Namen stehen auch überall sonst: auf der ON-AIR-Karte, in Last Heard, in der Statistik und in der Stationsansicht. Die Liste wird täglich mit der ID-Liste aktualisiert. Bis dahin nutzt der Hotspot eine mitgelieferte Kopie, die Namen gibt es also auch ohne Internet.
+
 ## 📈 Statistik
 
 <p align="center"><img src="../images/stats.png" alt="Statistik" width="95%"></p>

@@ -26,7 +26,7 @@
 | Was | Wo |
 |---|---|
 | Weboberfläche | `/opt/n8hotspot` (Python-Paket `n8hotspot/`, Oberfläche `static/`) |
-| Datenbank | `/opt/n8hotspot/data/n8hotspot.db` mit den Tabellen `settings`, `users`, `sessions`, `audit`, `calls`, `dmrids`, `frid_ids` (FreeRadioID-registrierte IDs), `frid_avatars` (192-px-WebP) |
+| Datenbank | `/opt/n8hotspot/data/n8hotspot.db` mit den Tabellen `settings`, `users`, `sessions`, `audit`, `calls`, `dmrids`, `frid_ids` (FreeRadioID-registrierte IDs), `frid_avatars` (192-px-WebP), `tg_list` (Talkgroup-Namen der N8schicht) |
 | Erzeugte Konfiguration | `/opt/n8hotspot/data/MMDVM-Host.ini`, `DMRGateway.ini` |
 | ID-Liste für MMDVMHost | `/opt/n8hotspot/data/DMRIds.dat` (aus der FreeRadioID-Liste, täglich neu) |
 | Programme | `/usr/local/bin/MMDVMHost`, `DMRGateway`, `MMDVMCal`; Quellen in `/usr/local/src/g4klx` |
@@ -42,6 +42,7 @@
 | FreeRadioID-registrierte IDs | `freeradioid.net/api/local_subscriber_ids.json` | mit der ID-Liste |
 | Avatare | `freeradioid.net/api/idimg-<ID>.png` | wenn eine registrierte Station gehört wird; neu geprüft wöchentlich bzw. täglich |
 | Profile | `freeradioid.net/api/dmr/user/?id=<ID>` | beim Öffnen der Stationsansicht, eine Stunde zwischengespeichert |
+| Talkgroup-Namen | `raw.githubusercontent.com/dhartmann1979/n8schicht/main/talkgroup_ids.json` (Kopie liegt bei) | mit der ID-Liste |
 | Quellcode G4KLX | `github.com/g4klx` | nur bei Installation/Update |
 
 ## Ports
@@ -75,6 +76,8 @@ Alle Antworten sind JSON. Die Oberfläche nutzt dieselbe API.
 | `GET /api/stats?range=today\|24h\|7d\|30d` | Sichtbereich | Statistik wie in den Diagrammen |
 | `GET /api/station/{id}` | Sichtbereich | Stationsansicht: FreeRadioID-Profil, Gespräche und Talkgroups der letzten 30 Tage, letzte Gespräche |
 | `GET /api/avatar/{id}` | Sichtbereich | Avatar (WebP) für bei FreeRadioID registrierte IDs, sonst 404 |
+| `GET /api/talkgroups` | Sichtbereich | alle Talkgroup-Namen (Liste + eigene) und was der Hotspot in 30 Tagen darauf gehört hat |
+| `POST /api/admin/serial/scan` | Admin | serielle Schnittstellen mit Typ, USB-Daten, Belegung und MMDVM-Antwort |
 | `WS /ws` | Sichtbereich | Live-Ereignisse `status`, `slot`, `heard`; für Admins zusätzlich `log`, `cal` |
 | `POST /api/auth/login`, `logout`, `password` | – | Anmeldung, eigenes Konto |
 | `GET/POST /api/admin/settings`, `POST /api/admin/apply` | Admin | Einstellungen lesen/speichern, Dienste neu starten |

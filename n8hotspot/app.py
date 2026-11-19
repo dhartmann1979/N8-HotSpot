@@ -29,6 +29,7 @@ from .calib import KEYS, CalSession
 from .db import DB
 from .freeradioid import FreeRadioID
 from .idlist import IdList
+from .talkgroups import Talkgroups
 from .live import Live
 from .settings import MASTER_PRESETS, MODEM_PRESETS, Settings, SettingsError, hotspot_id, tg_names
 from .system import SERVICES, System
@@ -49,6 +50,7 @@ class Ctx:
         self.settings = Settings(self.db)
         self.ids = IdList(self.db, DATA)
         self.frid = FreeRadioID(self.db)
+        self.tgs = Talkgroups(self.db)
         self.live = Live(self.db, self.lookup)
         self.system = System(demo=DEMO)
         cal_bin = os.environ.get("N8HS_MMDVMCAL") or (
@@ -69,9 +71,20 @@ class Ctx:
             d["frid"] = True
         return d
 
+    def tg_names(self) -> Dict[int, str]:
+        """Talkgroup names: the N8schicht list, overridden/completed by the own names."""
+        names = dict(self.tgs.names()) if self.settings.get("dashboard.tg_list") else {}
+        names.update(tg_names(self.settings.get("dashboard.tg_names")))
+        return names
+
     def refresh_ids(self) -> Dict[str, Any]:
         """ID list (CSV) and the FreeRadioID registered IDs (blocking; runs in a thread)."""
         out: Dict[str, Any] = {}
+        if self.settings.get("dashboard.tg_list"):
+            try:
+                out["talkgroups"] = self.tgs.refresh(self.settings.get("dashboard.tg_url"))
+            except Exception as e:
+                out["tg_error"] = str(e)
         out["ids"] = self.ids.refresh(self.settings.get("dashboard.idlist_url"))
         if self.settings.get("frid.ids"):
             try:
@@ -193,7 +206,7 @@ def station_info() -> Dict[str, Any]:
         "color_code": s["dmr.color_code"], "slot1": duplex and s["dmr.slot1"], "slot2": s["dmr.slot2"],
         "network": s["network.name"] if s["network.enabled"] else "", "network_host": s["network.host"],
         "modem": MODEM_PRESETS.get(s["modem.preset"], ("",))[0], "public": s["dashboard.public"],
-        "tg_names": {str(k): v for k, v in tg_names(s["dashboard.tg_names"]).items()},
+        "tg_names": {str(k): v for k, v in ctx.tg_names().items()},
         "version": __version__, "demo": DEMO, "avatars": bool(s["frid.avatars"]),
     }
 
@@ -226,7 +239,7 @@ async def api_stats(request: Request, range: str = "today"):
     need_view(request)
     if range not in stats.RANGES:
         raise HTTPError(400, "range must be today, 24h, 7d or 30d")
-    names = tg_names(ctx.settings.get("dashboard.tg_names"))
+    names = ctx.tg_names()
     return await asyncio.to_thread(stats.summary, ctx.db, range, names, ctx.lookup)
 
 
@@ -396,6 +409,9 @@ async def system_info(request: Request):
     calls = ctx.db.q("SELECT COUNT(*) AS n, MIN(ts) AS first FROM calls")[0]
     return {"info": ctx.system.info(), "versions": await ctx.system.versions(), "services": ctx.services,
             "idlist": ctx.ids.status(),
+            "talkgroups": {"enabled": ctx.settings.get("dashboard.tg_list"), "count": ctx.tgs.count(),
+                           "own": len(tg_names(ctx.settings.get("dashboard.tg_names"))), "updated": ctx.tgs.updated,
+                           "error": ctx.tgs.error},
             "frid": {"enabled": ctx.settings.get("frid.ids"), "registered": ctx.frid.count(), "updated": ctx.frid.updated,
                      "error": ctx.frid.error, "avatars": ctx.frid.avatar_stats()},
             "calls": calls["n"], "calls_since": calls["first"],
@@ -457,8 +473,56 @@ async def idlist_refresh(request: Request):
         r = await asyncio.to_thread(ctx.refresh_ids)
     except Exception as e:
         raise HTTPError(502, f"Download failed: {e}")
-    ctx.auth.audit("idlist_refresh", u["username"], f"{r['ids']} IDs, {r.get('frid', 0)} FreeRadioID", ip_of(request))
-    return {"ok": True, "count": r["ids"], "frid": r.get("frid"), "frid_error": r.get("frid_error")}
+    ctx.auth.audit("idlist_refresh", u["username"], f"{r['ids']} IDs, {r.get('frid', 0)} FreeRadioID, {r.get('talkgroups', 0)} TGs", ip_of(request))
+    await broadcast({"type": "info", "info": station_info()})
+    return {"ok": True, "count": r["ids"], "frid": r.get("frid"), "frid_error": r.get("frid_error"),
+            "talkgroups": r.get("talkgroups"), "tg_error": r.get("tg_error")}
+
+
+# ---------------------------------------------------------------- admin: find the modem
+DEMO_SCAN = [
+    {"port": "/dev/ttyAMA0", "real": "", "kind": "gpio", "usb": {}, "users": [{"pid": 812, "name": "MMDVMHost"}],
+     "status": "busy", "modem": None, "speed": None},
+    {"port": "/dev/serial0", "real": "/dev/ttyAMA0", "kind": "gpio", "usb": {}, "users": [], "status": "alias",
+     "alias_of": "/dev/ttyAMA0", "modem": None, "speed": None},
+    {"port": "/dev/ttyS0", "real": "", "kind": "gpio-mini", "usb": {}, "users": [], "status": "silent", "modem": None, "speed": None},
+    {"port": "/dev/ttyACM0", "real": "", "kind": "usb", "users": [], "status": "modem", "speed": 115200,
+     "usb": {"idVendor": "0483", "idProduct": "5740", "manufacturer": "STMicroelectronics", "product": "ZUMspot", "driver": "cdc_acm"},
+     "modem": {"protocol": 1, "description": "ZUMspot-v1.6.1 20230805 14.7456MHz ADF7021 FW by CA6JAU GitID #f3bd9ab"}},
+]
+
+
+@app.post("/api/admin/serial/scan")
+async def serial_scan(request: Request):
+    """Serial ports with their MMDVM answer; ports in use (by MMDVMHost) are not touched."""
+    need_admin(request)
+    if DEMO:
+        await asyncio.sleep(1.5)
+        ports = DEMO_SCAN
+    else:
+        from . import serialscan
+        ports = await asyncio.to_thread(serialscan.scan)
+    s = ctx.settings.all()
+    modem = ctx.live.modem if ctx.live.modem.get("open") else None
+    for p in ports:          # the port MMDVMHost has open: what it reported via MQTT
+        if p["status"] == "busy" and modem and os.path.realpath(s["modem.port"]) in (p["port"], p.get("real") or p["port"]):
+            p["modem"] = {"protocol": modem.get("protocol"), "description": modem.get("description", ""), "via": "MMDVMHost"}
+    return {"ports": ports, "configured": s["modem.port"], "speed": s["modem.speed"],
+            "mmdvmhost": ctx.services.get("mmdvmhost", "unknown")}
+
+
+# ---------------------------------------------------------------- talkgroups
+@app.get("/api/talkgroups")
+async def talkgroups(request: Request):
+    """All talkgroup names (list + own) and what this hotspot heard on them in 30 days."""
+    need_view(request)
+    since = time.time() - 30 * 86400
+    rows = ctx.db.q("SELECT dst_id, COUNT(*) AS n, SUM(duration) AS d, MAX(ts) AS last FROM calls "
+                    "WHERE grp = 1 AND ts >= ? GROUP BY dst_id", (since,))
+    own = tg_names(ctx.settings.get("dashboard.tg_names"))
+    return {"names": {str(k): v for k, v in ctx.tg_names().items()}, "own": [str(k) for k in own],
+            "activity": {str(r["dst_id"]): {"calls": r["n"], "duration": round(r["d"] or 0, 1), "last": r["last"]} for r in rows},
+            "list": {"enabled": ctx.settings.get("dashboard.tg_list"), "count": ctx.tgs.count(), "updated": ctx.tgs.updated}}
 
 
 # ---------------------------------------------------------------- admin: calibration
@@ -592,7 +656,7 @@ async def station(rid: int, request: Request):
                    "GROUP BY dst_id ORDER BY d DESC LIMIT 5", (rid, since))
     recent = ctx.db.q("SELECT ts, source, slot, dst_id, grp, duration, ber, loss, rssi FROM calls WHERE src_id = ? "
                       "ORDER BY ts DESC LIMIT 8", (rid,))
-    names = tg_names(ctx.settings.get("dashboard.tg_names"))
+    names = ctx.tg_names()
     return {
         "id": rid, "callsign": (prof or {}).get("callsign") or info.get("callsign", ""),
         "frid": bool(info.get("frid")) or bool(prof and prof.get("registered")),

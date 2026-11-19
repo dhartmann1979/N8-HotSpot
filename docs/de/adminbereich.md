@@ -34,9 +34,36 @@ Jeder Abschnitt hat einen eigenen **Save**-Knopf. Die Werte landen in SQLite, un
 | 📡 **Modem** | Board-Vorlage, die Port, Geschwindigkeit und Simplex/Duplex einträgt: *MMDVM_HS_Hat GPIO*, *Dual Hat GPIO*, *ZUMspot/HS per USB*, *Repeater-Board USB*. Dazu RX/TX-Frequenz in MHz, **RX/TX-Offset** (aus der [Kalibrierung](kalibrierung.md)), RX/TX-Pegel, RF-Leistung, Invertierungen, TX- und DMR-Delay. |
 | 🛰️ **DMR network** | Verbindung an/aus. Server-Vorlage: **DMR Die N8schicht** (`dmr.die-n8schicht.de:62031`) oder ein eigener HomeBrew-Server. Dazu Name, Adresse, Port, **Passwort**, *Options* (z. B. `TS1=262;TS2=26500`, wenn der Server das erlaubt) und Jitter-Puffer. |
 | 🎚️ **DMR mode** | Color Code, Zeitschlitz 1 (nur Duplex) und 2, *nur eigene ID darf senden*, Talker Alias, Call-/TX-Hang, Timeout, Mode-Hang, CW-ID |
-| 🌐 **Dashboard** | Titel, **Public view** (Sichtbereich ohne Login), Sitzungsdauer, DMR-ID-Liste (**FreeRadioID.net**, Vorgabe, oder radioid.net), Uhrzeit des täglichen Updates, Aufbewahrung der Gespräche, **Talkgroup-Namen** (`262 = Deutschland`, eine pro Zeile) |
+| 🌐 **Dashboard** | Titel, **Public view** (Sichtbereich ohne Login), Sitzungsdauer, DMR-ID-Liste (**FreeRadioID.net**, Vorgabe, oder radioid.net), Uhrzeit des täglichen Updates, Aufbewahrung der Gespräche, **Talkgroup-Liste der N8schicht** an/aus und ihre URL, **eigene Talkgroup-Namen** (`26500 = N8schicht Ortsrunde`, eine pro Zeile; sie überschreiben die Liste oder ergänzen fehlende Talkgroups) |
 | 🛡️ **FreeRadioID.net** | registrierte IDs laden (FRID), **Avatare** anzeigen, **Profile** abrufen; siehe [FreeRadioID](freeradioid.md) |
 | 🧪 **Expert** | Zusätzliche Zeilen für `MMDVM-Host.ini` und `DMRGateway.ini` im ini-Format. Sie ersetzen gleichnamige Schlüssel oder ergänzen ganze Abschnitte, z. B. `[Modem]` + `Trace=1`. |
+
+### 🔍 Wo steckt das Modem?
+
+Neben **Serial port** im Abschnitt *Modem* öffnet **🔍 Find** ein Fenster mit:
+- einer kurzen Erklärung, welche Schnittstelle wofür steht
+- einem **Scan** aller seriellen Schnittstellen
+
+<p align="center"><img src="../images/serial-scan.png" alt="Modem suchen" width="70%"></p>
+
+| Schnittstelle | Typisch für |
+|---|---|
+| `/dev/ttyAMA0` | Hat auf der Stiftleiste (MMDVM_HS_Hat, Dual Hat …); UART an, Bluetooth aus, das erledigt der Installer |
+| `/dev/serial0` | Alias der GPIO-Schnittstelle |
+| `/dev/ttyS0` | Mini-UART des Pi; ein Hat landet nur hier, solange Bluetooth an ist (unzuverlässig, Installer erneut laufen lassen) |
+| `/dev/ttyACM0` | USB mit eingebautem USB-Seriell: ZUMspot, MMDVM_HS per USB, STM32-Repeaterboards |
+| `/dev/ttyUSB0` | Board hinter einem USB-Seriell-Adapter (CH340, CP210x, FTDI) |
+
+Der Scan schickt jeder freien Schnittstelle die MMDVM-Abfrage *GET_VERSION* (bei 115200 und 460800 Baud) und zeigt die Antwort, also Board, Firmware und Version.
+- **Belegt:** Die Schnittstelle, die MMDVMHost gerade benutzt, fasst der Scan nicht an. Er zeigt, wer sie belegt, und nimmt die Modem-Daten von MMDVMHost.
+- **USB:** Bei USB-Geräten stehen Hersteller, Produkt und USB-ID dabei.
+- **Übernehmen:** **Use** trägt Port und Geschwindigkeit ein und wählt die passende Board-Vorlage (Simplex/Duplex). Danach **Save**.
+
+Dieselbe Suche macht die [geführte Einrichtung](installation.md#geführte-einrichtung-setupsh) in Schritt 1, und sie gibt es auf der Kommandozeile:
+
+```bash
+cd /opt/n8hotspot && sudo python3 -m n8hotspot scan-serial
+```
 
 > 💡 **Passwortfeld:** Bleibt es leer oder zeigt `••••••••`, behält N8-Hotspot das alte Passwort. Mit 👁 siehst du, was du tippst.
 
@@ -64,6 +91,9 @@ Anlegen rechts. Mit **Edit** änderst du Name, Rolle und Passwort, kannst sperre
 - **Versionen** von MMDVMHost, DMRGateway, MMDVMCal und N8-Hotspot, Status der MQTT-Live-Daten
 - **DMR ID list**: Zahl der IDs, letztes Update, **⟳ Update now** (lädt auch die FreeRadioID-Liste)
 - **FreeRadioID.net**: registrierte IDs, gespeicherte Avatare, letztes Update
+- **Talkgroup list**: Zahl der Namen aus der N8schicht-Liste und der eigenen Namen, letztes Update (wird mit **⟳ Update now** neu geladen)
+
+<p align="center"><img src="../images/system-tg.png" alt="Kachel Talkgroup list" width="60%"></p>
 - **Data**: gespeicherte Gespräche und Datenordner
 
 ## 📜 Logs

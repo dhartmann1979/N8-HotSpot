@@ -81,7 +81,7 @@ sudo ./scripts/setup.sh
 
 | Schritt | Fragen | Hinweise |
 |---|---|---|
-| 1 System | – | zeigt Board und Betriebssystem und welche seriellen Schnittstellen da sind (`/dev/ttyAMA0` = GPIO, `/dev/ttyACM0` = USB) |
+| 1 System | – | zeigt Board und Betriebssystem und **sucht das Modem**: Jede freie serielle Schnittstelle wird nach ihrer MMDVM-Firmware gefragt (`/dev/ttyAMA0` = GPIO, `/dev/ttyACM0`/`ttyUSB0` = USB). Das gefundene Modem bestimmt die Vorgabe in Schritt 3. Ein GPIO-Hat antwortet oft erst nach dem Neustart, den die Installation verlangt. |
 | 2 Station | **DMR-ID**, Rufzeichen, Hotspot-Suffix, Standort | Die ID wird **live bei FreeRadioID.net geprüft**. Das Skript schlägt Rufzeichen und Ort vor und sagt, ob die ID dort registriert ist, also ob ein persönliches Passwort möglich ist. |
 | 3 Modem & Frequenz | **Board** 1–4, Frequenz in MHz (Komma oder Punkt), bei Duplex RX und TX, Color Code | Das Board legt Port, Geschwindigkeit und Simplex/Duplex fest. Die Frequenz wird geprüft (100–1000 MHz). |
 | 4 DMR-Server | N8schicht oder anderer Server, **Passwort** | Bei der N8schicht: FreeRadioID-Passwort, Enter = Gast `passw0rd`. Auf einem eingerichteten Hotspot behält Enter das bisherige Passwort. |

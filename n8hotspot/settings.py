@@ -133,9 +133,14 @@ FIELDS: List[Field] = [
           choices=[(FREERADIOID_CSV, "FreeRadioID.net (radioid.net + FreeRadioID)"), (RADIOID_CSV, "radioid.net only")]),
     Field("dashboard.idlist_time", "dashboard", "Daily ID list update", "time", "03:27", restart=False),
     Field("dashboard.keep_days", "dashboard", "Keep calls for (days)", "int", 30, min=1, max=365, restart=False),
-    Field("dashboard.tg_names", "dashboard", "Talkgroup names", "longtext",
-          "262 = Deutschland\n2620 = Baden-Württemberg\n26500 = N8schicht\n26501 = Gäste\n9 = Lokal",
-          "One per line: 262 = Deutschland", restart=False),
+    Field("dashboard.tg_list", "dashboard", "Talkgroup list of the N8schicht", "bool", True,
+          "Names of ~1400 talkgroups (github.com/dhartmann1979/n8schicht), updated daily with the ID list",
+          restart=False),
+    Field("dashboard.tg_url", "dashboard", "Talkgroup list URL", "text",
+          "https://raw.githubusercontent.com/dhartmann1979/n8schicht/main/talkgroup_ids.json",
+          "JSON in the format of talkgroup_ids.json", restart=False),
+    Field("dashboard.tg_names", "dashboard", "Own talkgroup names", "longtext", "",
+          "One per line: 26500 = N8schicht Ortsrunde. Override the list or add missing talkgroups", restart=False),
 
     # FreeRadioID
     Field("frid.ids", "freeradioid", "Load registered FreeRadioID IDs", "bool", True,

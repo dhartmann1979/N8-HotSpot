@@ -5,6 +5,7 @@ Write ini files:  python -m n8hotspot write-config
 Current values:   python -m n8hotspot show-settings          (JSON, used by setup.sh)
 Apply setup:      python -m n8hotspot apply-setup FILE.json  (JSON from setup.sh / build-image.sh)
 DMR ID lookup:    python -m n8hotspot lookup-id 2621234      (JSON: callsign, name, FreeRadioID)
+Find the modem:   python -m n8hotspot scan-serial            (JSON: serial ports and MMDVM answers)
 """
 import getpass
 import json
@@ -89,6 +90,10 @@ def main(argv):
         return 0
     if cmd == "apply-setup":
         return apply_setup(argv[2])
+    if cmd == "scan-serial":
+        from .serialscan import scan
+        print(json.dumps(scan(), ensure_ascii=False))
+        return 0
     if cmd == "lookup-id":
         return lookup_id(int(argv[2]))
     import uvicorn
