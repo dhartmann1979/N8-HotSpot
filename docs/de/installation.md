@@ -1,6 +1,6 @@
 # 📦 Installation & Image
 
-[← Übersicht](../../readme.md) · **Installation** · [Live & Statistik](bedienung.md) · [Adminbereich](adminbereich.md) · [Kalibrierung](kalibrierung.md) · [FreeRadioID](freeradioid.md) · [Technik](technik.md) · [Fehlersuche](fehlersuche.md)
+[← Übersicht](../../readme.md) · **Installation** · [Live & Statistik](bedienung.md) · [Adminbereich](adminbereich.md) · [Updates](updates.md) · [Kalibrierung](kalibrierung.md) · [FreeRadioID](freeradioid.md) · [Technik](technik.md) · [Fehlersuche](fehlersuche.md)
 
 ---
 
@@ -139,6 +139,11 @@ Hast du das Image mit Hotspot-Einstellungen gebaut oder `setup.sh` benutzt, sind
 6. Einmal die [Kalibrierung](kalibrierung.md) machen.
 
 ## Aktualisieren
+
+Am einfachsten im Browser: **Admin → ⬆️ Updates → Update now** (ab Version 1.1.0). Der Hotspot prüft jede Stunde selbst,
+ob es eine neue Version gibt, und zeigt Admins dann einen Hinweis. Details: **[⬆️ Updates & Versionen](updates.md)**.
+
+Auf der Konsole:
 
 ```bash
 sudo /opt/n8hotspot/scripts/update.sh              # Weboberfläche (git pull, Python-Pakete, Neustart)

@@ -1,6 +1,6 @@
 # ⚙️ Adminbereich
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · [Live & Statistik](bedienung.md) · **Adminbereich** · [Kalibrierung](kalibrierung.md) · [FreeRadioID](freeradioid.md) · [Technik](technik.md) · [Fehlersuche](fehlersuche.md)
+[← Übersicht](../../readme.md) · [Installation](installation.md) · [Live & Statistik](bedienung.md) · **Adminbereich** · [Updates](updates.md) · [Kalibrierung](kalibrierung.md) · [FreeRadioID](freeradioid.md) · [Technik](technik.md) · [Fehlersuche](fehlersuche.md)
 
 ---
 
@@ -82,13 +82,71 @@ Eigene Seite: [Kalibrierung](kalibrierung.md).
 
 Anlegen rechts. Mit **Edit** änderst du Name, Rolle und Passwort, kannst sperren oder löschen. Der letzte Admin kann weder gelöscht noch herabgestuft werden; du kannst dich auch nicht selbst sperren.
 
+## 🎨 Appearance
+
+<p align="center"><img src="../images/admin-appearance.png" alt="Aussehen" width="95%"></p>
+
+Das Farbschema der ganzen Oberfläche – für alle Besucher, auch vor dem Login. Es ist dieselbe Farb-Engine
+(**N8 Theme**) wie im Dashboard von HBlink4-FreeRadioID und in der FRN-Weboberfläche.
+
+- **Colour profile:** sieben fertige Profile – *N8 Night* (Vorgabe), *Ocean*, *Aurora*, *Ember*, *Violet*, *Graphite* und das helle *Daylight*.
+- **Own colours:** Jede Farbe lässt sich einzeln überschreiben: *Accent* (Knöpfe, aktive Tabs, Werte), *Accent 2* (Verlauf der Knöpfe und des Titels),
+  *Background*, die drei Leuchtfarben (*Glow top left / top right / bottom*), *Text* und *Card tint*.
+  „from profile“ heißt: die Farbe kommt aus dem Profil; ↺ setzt eine eigene Farbe wieder zurück.
+- **Regler:** *Background glow* (0 = flacher Hintergrund), *Card brightness*, *Roundness* der Ecken und *Glass blur*
+  (aus = schneller auf alten Handys).
+- **Vorschau:** Unten im Kasten siehst du Titel, Tab, Zahl und Knopf in den neuen Farben, dazu die **Lesbarkeit**
+  (Kontrast von Text zu Hintergrund; unter 4,5 : 1 gibt es eine Warnung).
+
+Alles wirkt sofort als Vorschau auf der ganzen Seite, gespeichert wird erst mit **Save**. **Undo** holt das gespeicherte Schema zurück,
+**↺ Default** das Werks-Schema. Rechts unter **Export / import** steht das Schema als JSON: **📋 Copy** kopiert es,
+**⤵ Take over** übernimmt ein eingefügtes Schema (z. B. aus HBlink4-FreeRadioID → Appearance). So sehen alle N8-Dashboards gleich aus.
+
+<p align="center">
+  <img src="../images/theme-daylight.png" alt="Profil Daylight" width="49%">
+  <img src="../images/theme-ember.png" alt="Profil Ember" width="49%">
+</p>
+<p align="center"><img src="../images/appearance-mobile.png" alt="Aussehen am Smartphone" width="28%"></p>
+
+## 🔗 Links
+
+<p align="center"><img src="../images/admin-links.png" alt="Link-Menü bearbeiten" width="95%"></p>
+
+Eigene Links für das Menü **🔗 Links** oben rechts – sichtbar für alle Besucher.
+
+| Spalte | Bedeutung |
+|---|---|
+| **Icon** | Emoji, das angezeigt wird, solange es kein Site-Icon gibt |
+| **Name** | Text im Menü (max. 40 Zeichen) |
+| **Address** | `https://…`, `http://…`, `mailto:…` oder eine Adresse auf dem Hotspot (`/…`, `#…`) |
+| **Site icon** | holt das Favicon der verlinkten Seite (✓ = im Cache, – = keins gefunden) |
+| **New tab** | Link in einem neuen Tab öffnen |
+
+Mit ↑ änderst du die Reihenfolge, ✕ entfernt einen Link, **＋ Link** fügt einen hinzu. Mit *Show the link menu* blendest du das Menü ganz aus,
+*Button text* ändert die Beschriftung.
+
+<p align="center"><img src="../images/links-menu.png" alt="Link-Menü in der Kopfzeile" width="60%"></p>
+
+**Site-Icons:** Nach dem Speichern lädt der Hotspot im Hintergrund das Icon jeder Seite (aus `<link rel="icon">` der Startseite oder
+`/favicon.ico`) und legt es in seiner SQLite-Datenbank ab (Tabelle `link_icons`, 30 Tage gültig; fehlt eins, wird es nach einer Stunde neu versucht). Der Browser holt es dann vom Hotspot,
+nicht von der fremden Seite. Ohne Internet bleibt das Emoji stehen. Abgefragt werden nur öffentliche Adressen (keine Adressen im
+Heimnetz), höchstens 256 KB, und SVG-Dateien mit Skripten werden abgelehnt.
+
+## ⬆️ Updates
+
+<p align="center"><img src="../images/admin-updates.png" alt="Updates" width="95%"></p>
+
+Installierte Version, Stand auf GitHub, Änderungen der neuen Version, **⟳ Check now** und **⬆️ Update now** (mit Passwortabfrage).
+Rechts: stündliche Prüfung, automatische Updates zu einer festen Stunde und ob MMDVMHost/DMRGateway mit neu starten.
+Alles dazu – auch wie die Dienste ohne Änderung an `sudoers` neu starten – steht unter **[⬆️ Updates & Versionen](updates.md)**.
+
 ## 🖥️ System
 
 <p align="center"><img src="../images/admin-system.png" alt="System" width="90%"></p>
 
 - **Hardware**: Board, Betriebssystem, Hostname, IP, **CPU-Temperatur** (grün < 60 °C), Last, Speicher, SD-Karte, Laufzeit; dazu **Reboot** und **Shut down**
 - **Services**: MMDVMHost, DMRGateway, MQTT-Broker und die Weboberfläche mit Status; Start, Stop, Restart
-- **Versionen** von MMDVMHost, DMRGateway, MMDVMCal und N8-Hotspot, Status der MQTT-Live-Daten
+- **Versionen** von MMDVMHost, DMRGateway, MMDVMCal und N8-Hotspot, Status der MQTT-Live-Daten (Updates für N8-Hotspot: Tab *⬆️ Updates*)
 - **DMR ID list**: Zahl der IDs, letztes Update, **⟳ Update now** (lädt auch die FreeRadioID-Liste)
 - **FreeRadioID.net**: registrierte IDs, gespeicherte Avatare, letztes Update
 - **Talkgroup list**: Zahl der Namen aus der N8schicht-Liste und der eigenen Namen, letztes Update (wird mit **⟳ Update now** neu geladen)

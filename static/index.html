@@ -7,7 +7,11 @@
     <title>N8 Hotspot</title>
     <link rel="icon" href="/static/n8schicht-icon.svg">
     <link rel="apple-touch-icon" href="/static/n8schicht-icon-192.png">
-    <link rel="stylesheet" href="/static/app.css?v=1">
+    <link rel="stylesheet" href="/static/app.css?v=2">
+    <link rel="stylesheet" href="/static/n8-extra.css?v=1">
+    <link rel="stylesheet" href="/static/n8-theme.css?v=1">
+    <link rel="stylesheet" href="/static/n8-light.css?v=1">
+    <script src="/static/n8-theme.js?v=1"></script>
 </head>
 <body>
 <div class="container">
@@ -24,6 +28,7 @@
             <span class="chip" id="chipModem">Modem</span>
             <span class="chip" id="chipNet">DMR server</span>
             <span class="chip" id="chipMode">Idle</span>
+            <div class="links-menu" id="linksMenu" hidden><button type="button" class="btn links-btn" onclick="toggleLinks(event)" title="Links"><span class="links-label">🔗 Links</span> ▾</button><div class="links-pop"></div></div>
             <span id="userArea"></span>
         </div>
     </header>
@@ -31,6 +36,10 @@
     <div class="banner warn hidden" id="defaultBanner">
         <span>⚠️ <b>The factory login n8schicht / n8schicht is still active.</b> Anyone on your network could change your hotspot. Please set your own password.</span>
         <button class="btn primary" onclick="openAccount(true)">Change now</button>
+    </div>
+    <div class="banner info hidden" id="updateBanner">
+        <span>⬆️ <b id="updateText">An update is available</b> for N8-Hotspot.</span>
+        <button class="btn primary" onclick="showTab('admin','updates')">Show</button>
     </div>
     <div class="banner info hidden" id="restartBanner">
         <span>⚙️ <b>Settings saved.</b> MMDVMHost and DMRGateway use them after a restart.</span>
@@ -124,7 +133,10 @@
             <button data-a="settings" class="active">⚙️ Settings</button>
             <button data-a="cal">🎛️ Calibration</button>
             <button data-a="users">👥 Users</button>
+            <button data-a="appearance">🎨 Appearance</button>
+            <button data-a="links">🔗 Links</button>
             <button data-a="system">🖥️ System</button>
+            <button data-a="updates">⬆️ Updates</button>
             <button data-a="logs">📜 Logs</button>
             <button data-a="files">🧾 Config files</button>
             <button data-a="audit">🔑 Sessions &amp; log</button>
@@ -132,16 +144,25 @@
         <div id="admin-settings"></div>
         <div id="admin-cal" class="hidden"></div>
         <div id="admin-users" class="hidden"></div>
+        <div id="admin-appearance" class="hidden"></div>
+        <div id="admin-links" class="hidden"></div>
         <div id="admin-system" class="hidden"></div>
+        <div id="admin-updates" class="hidden"></div>
         <div id="admin-logs" class="hidden"></div>
         <div id="admin-files" class="hidden"></div>
         <div id="admin-audit" class="hidden"></div>
     </section>
 
-    <footer>N8-Hotspot <span id="ver"></span> · MMDVMHost &amp; DMRGateway by G4KLX · Design: DMR Die N8schicht</footer>
+    <footer class="site-footer">
+        <span>© <span id="footerYear"></span> Die N8schicht</span>
+        <span class="ft-sep">·</span><span id="ver" title="Installed version">N8-Hotspot</span>
+        <span class="ft-sep">·</span><span id="footerDate" title="Date of the installed version"></span>
+        <span class="ft-sep">·</span><span>MMDVMHost &amp; DMRGateway by G4KLX</span>
+    </footer>
 </div>
 <div class="tip" id="tip"></div>
 <div id="modalRoot"></div>
-<script src="/static/app.js?v=1"></script>
+<script src="/static/app.js?v=2"></script>
+<script src="/static/n8-admin.js?v=1"></script>
 </body>
 </html>

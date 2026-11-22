@@ -61,15 +61,17 @@ async function boot() {
     try {
         const info = await api('GET', '/api/info');
         S.info = info; S.me = info.user || null;
+        applyUI(info);
         if (info.login_required && !S.me) { renderHeader(); openLogin(true); return; }
         renderAll();
         connectWS();
         loadToday();
+        checkUpdateQuiet();
         const h = location.hash.replace('#', '');
         if (h) { const [t, a] = h.split('/'); if (t === 'stats' || t === 'tgs') showTab(t); else if (t === 'admin' && isAdmin()) showTab('admin', a); }
     } catch (e) { console.error(e); setTimeout(boot, 3000); }
 }
-function renderAll() { renderHeader(); renderUser(); renderInfo(); renderSlots(); renderLH(); $('ver').textContent = S.info.version ? 'v' + S.info.version : ''; }
+function renderAll() { renderHeader(); renderUser(); renderInfo(); renderSlots(); renderLH(); renderFooter(S.info.build); }
 
 function renderHeader() {
     const i = S.info || {};
@@ -82,7 +84,7 @@ function renderHeader() {
 function renderUser() {
     const el = $('userArea');
     if (!S.me) { el.innerHTML = '<button class="btn primary" onclick="openLogin()">🔐 Login</button>'; return; }
-    el.innerHTML = `<button class="btn" onclick="userMenu(event)">👤 ${esc(S.me.display_name || S.me.username)} ▾</button>`;
+    el.innerHTML = `<button class="btn" onclick="userMenu(event)" title="${esc(S.me.display_name || S.me.username)}">👤 <span class="u-name">${esc(S.me.display_name || S.me.username)}</span> ▾</button>`;
 }
 function userMenu(ev) {
     ev.stopPropagation();
@@ -90,7 +92,7 @@ function userMenu(ev) {
     const r = ev.target.getBoundingClientRect();
     const m = document.createElement('div');
     m.className = 'glass'; m.id = 'umenu';
-    m.style.cssText = `position:fixed;top:${r.bottom + 8}px;right:${Math.max(8, innerWidth - r.right)}px;z-index:300;border-radius:16px;padding:6px;min-width:200px;background:rgba(22,28,48,.95)`;
+    m.style.cssText = `position:fixed;top:${r.bottom + 8}px;right:${Math.max(8, innerWidth - r.right)}px;z-index:300;border-radius:16px;padding:6px;min-width:200px;background:var(--surface-2, rgba(22,28,48,.95))`;
     m.innerHTML = `<div style="padding:8px 12px" class="dim">${esc(S.me.username)} · ${esc(S.me.role)}</div>
         ${isAdmin() ? '<button class="btn" style="width:100%;border-radius:10px;margin:2px 0" onclick="showTab(\'admin\')">⚙️ Admin</button>' : ''}
         <button class="btn" style="width:100%;border-radius:10px;margin:2px 0" onclick="openAccount()">🔑 My account</button>
@@ -224,6 +226,9 @@ function onEvent(ev) {
             clearTimeout(todayTimer); todayTimer = setTimeout(() => { loadToday(); if (S.tab === 'stats') loadStats(); }, 1500);
             break;
         case 'info': S.info = { ...S.info, ...ev.info }; renderHeader(); renderInfo(); break;
+        case 'ui': S.info = { ...S.info, theme: ev.theme, links: ev.links, build: ev.build };
+            if (!(S.tab === 'admin' && S.admin.tab === 'appearance')) applyUI(S.info); else { renderLinks(ev.links); renderFooter(ev.build); } break;
+        case 'update': checkUpdateQuiet(); break;
         case 'log': S.admin.logs.push(ev.entry); if (S.admin.logs.length > 600) S.admin.logs.shift(); appendLog(ev.entry); break;
         case 'cal': S.admin.cal = ev.cal; renderCalState(); break;
         case 'cal_line': appendCalLine(ev.line); break;
@@ -233,7 +238,7 @@ function onEvent(ev) {
 // ---------------------------------------------------------------- live
 function renderChips() {
     const L = S.live || {};
-    const set = (id, cls, text) => { const e = $(id); e.className = 'chip ' + cls; e.textContent = text; };
+    const set = (id, cls, text) => { const e = $(id); e.className = 'chip ' + cls + (id === 'chipLive' || id === 'chipModem' ? ' st' : ''); e.textContent = text; e.title = text; };
     set('chipLive', S.wsOk ? 'ok' : 'bad', S.wsOk ? '✓ Live data' : '✕ Live data');
     const svc = L.services || {};
     if (svc.mmdvmhost && svc.mmdvmhost !== 'active') set('chipModem', 'bad', '✕ MMDVMHost stopped');
@@ -490,8 +495,11 @@ bindSeg('tgFilter', v => { TGV.filter = v; TGV.limit = 150; renderTalkgroups(); 
 function showAdmin(a) {
     S.admin.tab = a;
     document.querySelectorAll('#adminTabs button').forEach(b => b.classList.toggle('active', b.dataset.a === a));
-    ['settings', 'cal', 'users', 'system', 'logs', 'files', 'audit'].forEach(x => $('admin-' + x).classList.toggle('hidden', x !== a));
-    ({ settings: loadSettings, cal: loadCal, users: loadUsers, system: loadSystem, logs: loadLogs, files: loadFiles, audit: loadAudit })[a]();
+    const ab = document.querySelector(`#adminTabs button[data-a="${a}"]`);
+    if (ab && ab.scrollIntoView) ab.scrollIntoView({ block: 'nearest', inline: 'center' });
+    ['settings', 'cal', 'users', 'appearance', 'links', 'system', 'updates', 'logs', 'files', 'audit'].forEach(x => $('admin-' + x).classList.toggle('hidden', x !== a));
+    ({ settings: loadSettings, cal: loadCal, users: loadUsers, appearance: loadAppearance, links: loadLinksAdmin,
+       updates: () => loadUpdates(false), system: loadSystem, logs: loadLogs, files: loadFiles, audit: loadAudit })[a]();
     if (S.tab === 'admin') history.replaceState(null, '', '#admin/' + a);
 }
 $('adminTabs').addEventListener('click', e => { const b = e.target.closest('button[data-a]'); if (b) showAdmin(b.dataset.a); });

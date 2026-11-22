@@ -23,13 +23,14 @@ from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, configgen, demo, stats
+from . import __version__, configgen, demo, siteicons, stats, updater
 from .auth import Auth, AuthError, DEFAULT_PASSWORD, DEFAULT_USER
 from .calib import KEYS, CalSession
 from .db import DB
 from .freeradioid import FreeRadioID
 from .idlist import IdList
 from .talkgroups import Talkgroups
+from .uiconfig import UIConfig
 from .live import Live
 from .settings import MASTER_PRESETS, MODEM_PRESETS, Settings, SettingsError, hotspot_id, tg_names
 from .system import SERVICES, System
@@ -59,6 +60,10 @@ class Ctx:
         self.sockets: Dict[WebSocket, Dict[str, Any]] = {}
         self.services: Dict[str, str] = {}
         self.restart_needed = False
+        self.ui = UIConfig(self.db)
+        self.icons = siteicons.IconCache(DATA / "n8hotspot.db")
+        self.update_lock = asyncio.Lock()
+        self.update_last_try = 0.0
 
     def lookup(self, rid: int) -> Dict[str, Any]:
         """Callsign/name/place from the ID list, completed by FreeRadioID; 'frid' = registered there."""
@@ -222,8 +227,185 @@ async def api_info(request: Request):
     u = user_of(request)
     info = station_info()
     if not u and not info["public"]:
-        return {"title": info["title"], "public": False, "user": None, "login_required": True}
-    return {**info, "user": u, "default_login": bool(u and u.get("default_pw"))}
+        return {"title": info["title"], "public": False, "user": None, "login_required": True, **ui_public()}
+    return {**info, "user": u, "default_login": bool(u and u.get("default_pw")), **ui_public()}
+
+
+# ---------------------------------------------------------------- appearance, links, updates
+def ui_public() -> Dict[str, Any]:
+    """Colour scheme, link menu and version: needed before login (the login page uses the theme too)."""
+    links = ctx.ui.get("links")
+    def key(i):
+        k = siteicons.key_for(i["url"]) if i.get("site_icon") else None
+        return k if k and (not DEMO or ctx.icons.cached(k)) else None
+    items = [{**i, "icon_key": key(i)} for i in links["items"]]
+    v = updater.local_version()
+    return {"theme": ctx.ui.get("theme"), "links": {**links, "items": items},
+            "build": {"version": v["version"] or __version__, "commit": v["short"], "date": v["date"]}}
+
+
+def link_icon_urls() -> list:
+    return [i["url"] for i in ctx.ui.get("links")["items"] if i.get("site_icon")]
+
+
+async def refresh_link_icons(force: bool = False) -> None:
+    if DEMO and not os.environ.get("N8HS_FETCH_ICONS"):
+        # demo without internet: the N8schicht logo stands in for the site icon of dmr.die-n8schicht.de
+        ctx.icons.store("https://dmr.die-n8schicht.de", (STATIC / "n8schicht-icon-192.png").read_bytes(), "image/png")
+        return
+    try:
+        await asyncio.to_thread(ctx.icons.refresh_many, link_icon_urls(), force)
+    except Exception as e:      # never fatal
+        log.debug(f"link icons: {e}")
+
+
+@app.get("/api/link-icon/{key}")
+async def link_icon(key: str):
+    """Site icon of a configured link (from the SQLite cache; fetched once when missing)."""
+    urls = {siteicons.key_for(u): u for u in link_icon_urls()}
+    if key not in urls:
+        raise HTTPError(404, "unknown link")
+    hit = ctx.icons.cached(key)
+    if hit is None and not DEMO:
+        await asyncio.to_thread(ctx.icons.refresh_one, urls[key])
+        hit = ctx.icons.cached(key)
+    if not hit:
+        raise HTTPError(404, "no icon")
+    return Response(hit["data"], media_type=hit["content_type"],
+                    headers={"Cache-Control": "public, max-age=86400", "X-Content-Type-Options": "nosniff",
+                             "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'"})
+
+
+@app.get("/api/admin/ui")
+async def get_ui(request: Request):
+    need_admin(request)
+    links = ctx.ui.get("links")
+    return {"theme": ctx.ui.get("theme"), "links": links, "update": ctx.ui.get("update"),
+            "icons": {i["url"]: ctx.icons.status(siteicons.key_for(i["url"]) or "") for i in links["items"]
+                      if i.get("site_icon")}}
+
+
+@app.post("/api/admin/ui/{name}")
+async def set_ui(name: str, request: Request):
+    u = need_admin(request)
+    if name not in ("theme", "links", "update"):
+        raise HTTPError(404, "unknown")
+    v = ctx.ui.set(name, await body(request), u["username"])
+    ctx.auth.audit("ui_changed", u["username"], name, ip_of(request))
+    if name == "links":
+        asyncio.ensure_future(refresh_link_icons(force=True))
+    await broadcast({"type": "ui", **ui_public()})
+    return {"ok": True, name: v}
+
+
+def _update_cfg() -> Dict[str, Any]:
+    return ctx.ui.get("update")
+
+
+async def update_check(force: bool = False) -> Dict[str, Any]:
+    c = _update_cfg()
+    return await asyncio.to_thread(updater.check, c["repo"], c["branch"], c["interval_hours"] * 3600, force)
+
+
+@app.get("/api/admin/update")
+async def admin_update(request: Request, force: bool = False):
+    need_admin(request)
+    c = _update_cfg()
+    if not c["enabled"] and not force:
+        return {"enabled": False, "available": False, "local": updater.local_version(), "config": c}
+    res = await update_check(force)
+    try:
+        import pwd
+        owner = pwd.getpwuid(updater.REPO_ROOT.stat().st_uid).pw_name
+    except Exception:
+        owner = ""
+    return {"enabled": c["enabled"], **res, "config": c, "can_install": bool(res["local"].get("commit")),
+            "systemd": bool(os.environ.get("INVOCATION_ID")), "origin": await asyncio.to_thread(updater.origin_url),
+            "path": str(updater.REPO_ROOT), "owner": owner, "demo": DEMO}
+
+
+async def run_update(expected: str, who: str, ip: str) -> Dict[str, Any]:
+    """Fast-forward, packages, ini files, then restart the services. Shared by "Update now" and auto mode."""
+    async with ctx.update_lock:
+        ctx.update_last_try = time.time()
+        c = _update_cfg()
+        try:
+            res = await asyncio.to_thread(updater.install, c["branch"], expected)
+        except updater.UpdateError as e:
+            ctx.auth.audit("update_failed", who, str(e)[:200], ip)
+            raise HTTPError(409, str(e))
+        if not res["changed"]:
+            return {**res, "steps": [], "restart": "none"}
+        steps = []
+        if res["requirements_changed"]:
+            err = await asyncio.to_thread(updater.pip_install)
+            steps.append({"step": "Python packages", "ok": not err, "detail": err})
+        if res.get("config_changed") or c["restart_radio"]:
+            try:
+                write_config()
+                steps.append({"step": "ini files written", "ok": True, "detail": ""})
+            except Exception as e:
+                steps.append({"step": "ini files written", "ok": False, "detail": str(e)[:200]})
+            if c["restart_radio"] and not DEMO:
+                for svc in ("dmrgateway", "mmdvmhost"):
+                    ok = await asyncio.to_thread(updater.systemctl, "restart", svc)
+                    steps.append({"step": f"{svc} restarted", "ok": ok, "detail": "" if ok else "sudo rule missing?"})
+        ctx.auth.audit("update", who, f"{res['old'][:7]} → {res['new'][:7]}", ip)
+        log.info(f"⬆️ Updated by {who}: {res['old'][:7]} → {res['new'][:7]} ({len(res['files'])} files)")
+        how = "manual"
+        if DEMO:
+            how = "none"
+        elif os.environ.get("INVOCATION_ID") or os.geteuid() == 0:
+            how = "service"
+            loop = asyncio.get_running_loop()
+            # sudo rule from install.sh allows "systemctl restart n8hotspot.service"; without it systemd
+            # (Restart=always) starts the process again after it ended itself.
+            def _restart():
+                if not updater.systemctl("restart", "n8hotspot"):
+                    import signal as _signal
+                    os.kill(os.getpid(), _signal.SIGTERM)
+            loop.call_later(1.5, lambda: loop.run_in_executor(None, _restart))
+        return {**res, "steps": steps, "restart": how}
+
+
+@app.post("/api/admin/update/install")
+async def admin_update_install(request: Request):
+    u = need_admin(request)
+    b = await body(request)
+    ip = ip_of(request)
+    try:
+        ctx.auth.confirm_password(u, str(b.get("password") or ""), ip)
+    except AuthError as e:
+        raise HTTPError(403, str(e))
+    if ctx.update_lock.locked() or time.time() - ctx.update_last_try < 30:
+        raise HTTPError(429, "An update is already running – please wait a moment.")
+    res = await run_update(str(b.get("expected") or ""), u["username"], ip)
+    return {"ok": True, **res, "version": updater.local_version()}
+
+
+async def update_task():
+    """Check GitHub every interval (default hourly); in auto mode install at the chosen hour when idle."""
+    await asyncio.sleep(60)
+    while True:
+        c = _update_cfg()
+        try:
+            if c["enabled"]:
+                res = await update_check(force=True)
+                if res.get("available"):
+                    log.info(f"⬆️ Update available: {res['behind']} new change(s) "
+                             f"({res['local'].get('short')} → {(res.get('latest') or {}).get('short')})")
+                    await broadcast({"type": "update", "available": True,
+                                     "version": res.get("remote_version") or "", "behind": res["behind"]}, admin_only=True)
+                    busy = any(ctx.live.slots.values())       # somebody is transmitting right now
+                    if c["auto"] and updater.in_window(c["auto_hour"]) and not busy and not ctx.cal.running \
+                            and not ctx.update_lock.locked():
+                        try:
+                            await run_update((res.get("latest") or {}).get("commit", ""), "auto-update", "")
+                        except HTTPError as e:
+                            log.warning(f"auto update: {e}")
+        except Exception as e:
+            log.debug(f"update check failed: {e}")
+        await asyncio.sleep(c["interval_hours"] * 3600 if not c["auto"] else min(3600, c["interval_hours"] * 3600))
 
 
 @app.get("/api/live")
@@ -738,6 +920,8 @@ async def startup():
         ctx.live.start_mqtt(loop, os.environ.get("N8HS_MQTT_HOST", "127.0.0.1"), int(os.environ.get("N8HS_MQTT_PORT", "1883")))
     asyncio.ensure_future(services_task())
     asyncio.ensure_future(daily_task())
+    asyncio.ensure_future(update_task())
+    asyncio.ensure_future(refresh_link_icons())
     log.info(f"🌙 N8-Hotspot {__version__} started{' (demo mode)' if DEMO else ''}; data in {DATA}")
 
 

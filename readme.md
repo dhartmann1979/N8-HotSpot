@@ -4,7 +4,8 @@
 
 <p align="center">
   <b>Eigener DMR-Hotspot mit MMDVMHost, DMRGateway und einer Weboberfläche im Design von DMR Die N8schicht</b><br>
-  Fertiges Image auf Basis von DietPi · Live-Ansicht · Statistiken · Kalibrierung · Adminbereich · alles in SQLite und Python
+  Fertiges Image auf Basis von DietPi · Live-Ansicht · Statistiken · Kalibrierung · Adminbereich · Updates im Browser · alles in SQLite und Python<br>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/github/v/release/dhartmann1979/N8-HotSpot?label=Version&color=5ac8fa" alt="Version"></a>
 </p>
 
 <p align="center">
@@ -12,6 +13,7 @@
   <a href="docs/de/installation.md">Installation &amp; Image</a> ·
   <a href="docs/de/bedienung.md">Live &amp; Statistik</a> ·
   <a href="docs/de/adminbereich.md">Adminbereich</a> ·
+  <a href="docs/de/updates.md">Updates</a> ·
   <a href="docs/de/kalibrierung.md">Kalibrierung</a> ·
   <a href="docs/de/freeradioid.md">FreeRadioID</a> ·
   <a href="docs/de/technik.md">Technik</a> ·
@@ -33,6 +35,9 @@
 | 📈 **Statistiken** | Talkgroups, Sprechzeit, RF und Netz, aktivste Stationen; heute, 24 h, 7 oder 30 Tage, als Diagramm und Tabelle |
 | 🎛️ **Kalibrierung** | Frequenzabgleich mit MMDVMCal im Browser: BER live, Frequenz per Knopf verschieben, Offset mit einem Klick speichern |
 | ⚙️ **Adminbereich** | Station, Modem, Frequenzen, DMR-Server, Zeitschlitze, Expertenzeilen. Dazu Benutzer, Dienste, Logs, System-Infos, Neustart. |
+| ⬆️ **Updates im Browser** | stündliche Prüfung auf GitHub, Hinweis für Admins, **Update now** mit Passwortabfrage, danach Neustart von MMDVMHost, DMRGateway und Weboberfläche; auf Wunsch automatisch nachts |
+| 🎨 **Eigene Farben** | N8 Theme wie im HBlink4-Dashboard: 7 Profile (auch hell), jede Farbe frei wählbar, Export/Import zwischen allen N8-Dashboards |
+| 🔗 **Link-Menü** | eigene Links oben rechts, mit den Favicons der verlinkten Seiten (im Hotspot zwischengespeichert) |
 | 👁️ **Sichtbereich** | Die Live-Ansicht ist öffentlich (abschaltbar). Benutzer der Rolle *Viewer* sehen alles, ändern aber nichts. |
 | 🔐 **Standard-Login** | `n8schicht` / `n8schicht`. Bis zur Änderung im Adminbereich erscheint eine deutliche Warnung. |
 | 🗄️ **SQLite + Python** | Einstellungen, Benutzer, Gespräche und ID-Liste liegen in einer Datenbank; daraus entstehen `MMDVM-Host.ini` und `DMRGateway.ini`. |
@@ -92,6 +97,14 @@ Ohne vorher eingetragene Hotspot-Einstellungen geht es im Browser weiter: **Logi
 <td><img src="docs/images/admin-system.png" alt="System"><br><b>🖥️ System</b>: Temperatur, Speicher, Dienste starten/stoppen, ID-Liste, FreeRadioID, Neustart.</td>
 <td><img src="docs/images/setup-2.png" alt="Zusammenfassung"><br><b>🧭 Geführte Einrichtung</b>: Zusammenfassung, Installation, fertig.</td>
 </tr>
+<tr>
+<td><img src="docs/images/admin-updates.png" alt="Updates"><br><b>⬆️ Updates</b>: Version, Änderungen, Update now, automatische Updates.</td>
+<td><img src="docs/images/admin-appearance.png" alt="Aussehen"><br><b>🎨 Appearance</b>: Farbprofile, eigene Farben, Vorschau mit Lesbarkeit.</td>
+</tr>
+<tr>
+<td><img src="docs/images/theme-daylight.png" alt="Daylight"><br><b>☀️ Daylight</b>: helles Profil für Tageslicht.</td>
+<td><img src="docs/images/admin-links.png" alt="Links"><br><b>🔗 Links</b>: Link-Menü mit Site-Icons.</td>
+</tr>
 </table>
 
 ## Dokumentation
@@ -100,13 +113,17 @@ Ohne vorher eingetragene Hotspot-Einstellungen geht es im Browser weiter: **Logi
 |---|---|
 | 📦 [Installation & Image](docs/de/installation.md) | Hardware, Image bauen und flashen, geführte Einrichtung, Installation ohne Fragen, erster Start, Aktualisieren |
 | 🎙️ [Live & Statistik](docs/de/bedienung.md) | Kopfzeile, Zeitschlitze, Last Heard, Talkgroup-Verzeichnis, Statistik-Diagramme |
-| ⚙️ [Adminbereich](docs/de/adminbereich.md) | Standard-Login, alle Einstellungen, Modem finden, Benutzer, System, Logs, Konfigurationsdateien |
+| ⚙️ [Adminbereich](docs/de/adminbereich.md) | Standard-Login, alle Einstellungen, Modem finden, Benutzer, Aussehen, Links, System, Logs, Konfigurationsdateien |
+| ⬆️ [Updates & Versionen](docs/de/updates.md) | Update-Prüfung, Update now, automatische Updates, Neustart der Dienste, sudo-Regel, Versionsnummern, [Änderungen](CHANGELOG.md) |
 | 🎛️ [Kalibrierung](docs/de/kalibrierung.md) | Frequenz-Offset mit MMDVMCal finden, weitere Tests |
 | 🛡️ [FreeRadioID](docs/de/freeradioid.md) | Avatare, FRID, Profile, ID-Datenbank, Stationsansicht |
 | 🧩 [Technik](docs/de/technik.md) | Aufbau (MMDVMHost ↔ DMRGateway ↔ MQTT), Dateien, Ports, API, Sicherheit |
 | 🩺 [Fehlersuche](docs/de/fehlersuche.md) | Modem, Verbindung, Passwort vergessen, Logs, Sicherung |
 
 ## Aktualisieren
+
+Im Browser: **Admin → ⬆️ Updates → Update now** – der Hotspot prüft stündlich selbst und meldet neue Versionen
+(➡️ [Updates & Versionen](docs/de/updates.md), alle Änderungen in [CHANGELOG.md](CHANGELOG.md)). Auf der Konsole:
 
 ```bash
 sudo /opt/n8hotspot/scripts/update.sh              # Weboberfläche

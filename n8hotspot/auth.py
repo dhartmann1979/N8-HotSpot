@@ -105,6 +105,18 @@ class Auth:
         self.audit("login", row["username"], "", ip)
         return {"token": token, "user": self.public(row), "max_age": int(hours * 3600)}
 
+    def confirm_password(self, user: Dict[str, Any], password: str, ip: str = "") -> None:
+        """Ask for the own password again before a risky action (update). Shares the login throttle."""
+        key = f"{ip}|{(user.get('username') or '').lower()}"
+        if self._throttled(key):
+            raise AuthError("Too many failed attempts. Please wait 15 minutes.")
+        rows = self.db.q("SELECT password_hash FROM users WHERE id = ? AND disabled = 0", (user.get("id"),))
+        if not rows or not verify_password(password or "", rows[0]["password_hash"]):
+            self._fails.setdefault(key, []).append(time.time())
+            self.audit("confirm_failed", user.get("username", ""), "", ip)
+            raise AuthError("Wrong password.")
+        self._fails.pop(key, None)
+
     def session_user(self, token: Optional[str]) -> Optional[Dict[str, Any]]:
         if not token:
             return None

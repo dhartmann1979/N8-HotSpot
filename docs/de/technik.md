@@ -1,6 +1,6 @@
 # 🧩 Technik
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · [Live & Statistik](bedienung.md) · [Adminbereich](adminbereich.md) · [Kalibrierung](kalibrierung.md) · **Technik** · [Fehlersuche](fehlersuche.md)
+[← Übersicht](../../readme.md) · [Installation](installation.md) · [Live & Statistik](bedienung.md) · [Adminbereich](adminbereich.md) · [Updates](updates.md) · [Kalibrierung](kalibrierung.md) · **Technik** · [Fehlersuche](fehlersuche.md)
 
 ---
 
@@ -63,6 +63,9 @@ Eingehende Ports im Router sind **nicht** nötig.
 - Ändernde Anfragen brauchen den Header `X-N8: 1` (Schutz gegen CSRF).
 - **Login-Sperre:** Nach 5 Fehlversuchen ist der Login 15 Minuten gesperrt. Das Protokoll zeichnet alle Änderungen mit IP auf.
 - **Passwörter in den Configs:** Das DMR-Passwort steht nur in `DMRGateway.ini` (lesbar nur für `n8hotspot`); Anzeigen in der Oberfläche blenden es aus.
+- **Updates im Browser** nur für Admins und nur mit erneuter Passwortabfrage. Installiert wird ausschließlich per Fast-Forward vom Git-Remote `origin`, der auf dem Hotspot eingetragen ist (nie eine Adresse aus dem Browser), und nur der Commit, der angezeigt wurde. Git läuft dabei ohne Hooks, ohne `file://`/`ext::`-Transporte und ohne Shell. Siehe [Updates](updates.md).
+- **sudo-Regel** `/etc/sudoers.d/n8hotspot`: nur Start/Stopp/Neustart der eigenen Dienste, Reboot und Shutdown – keine Shell, keine anderen Programme.
+- **Site-Icons** des Link-Menüs werden nur von öffentlichen Adressen geholt (keine privaten/lokalen IPs, auch nicht nach Weiterleitungen), höchstens 256 KB, nur echte Bilddateien; SVG mit Skripten wird verworfen. Ausgeliefert werden sie mit strenger Content-Security-Policy.
 - Die Weboberfläche ist für das **lokale Netz** gedacht. Nicht per Portweiterleitung ins Internet stellen, sondern bei Bedarf über VPN zugreifen.
 
 ## API
@@ -71,21 +74,26 @@ Alle Antworten sind JSON. Die Oberfläche nutzt dieselbe API.
 
 | Methode & Pfad | Zugriff | Inhalt |
 |---|---|---|
-| `GET /api/info` | Sichtbereich | Station, Frequenz, Netz, Talkgroup-Namen, angemeldeter Benutzer |
+| `GET /api/info` | öffentlich* | Station, Frequenz, Netz, Talkgroup-Namen, angemeldeter Benutzer; immer `theme`, `links` und `build` (Version) |
 | `GET /api/live` | Sichtbereich | Modem, Modus, Verbindung, aktive Zeitschlitze, Last Heard, Dienste |
 | `GET /api/stats?range=today\|24h\|7d\|30d` | Sichtbereich | Statistik wie in den Diagrammen |
 | `GET /api/station/{id}` | Sichtbereich | Stationsansicht: FreeRadioID-Profil, Gespräche und Talkgroups der letzten 30 Tage, letzte Gespräche |
 | `GET /api/avatar/{id}` | Sichtbereich | Avatar (WebP) für bei FreeRadioID registrierte IDs, sonst 404 |
 | `GET /api/talkgroups` | Sichtbereich | alle Talkgroup-Namen (Liste + eigene) und was der Hotspot in 30 Tagen darauf gehört hat |
 | `POST /api/admin/serial/scan` | Admin | serielle Schnittstellen mit Typ, USB-Daten, Belegung und MMDVM-Antwort |
-| `WS /ws` | Sichtbereich | Live-Ereignisse `status`, `slot`, `heard`; für Admins zusätzlich `log`, `cal` |
+| `WS /ws` | Sichtbereich | Live-Ereignisse `status`, `slot`, `heard`, `ui` (neues Farbschema/Links); für Admins zusätzlich `log`, `cal`, `update` |
 | `POST /api/auth/login`, `logout`, `password` | – | Anmeldung, eigenes Konto |
 | `GET/POST /api/admin/settings`, `POST /api/admin/apply` | Admin | Einstellungen lesen/speichern, Dienste neu starten |
 | `GET /api/admin/config-files` | Admin | erzeugte ini-Dateien (Passwörter ausgeblendet) |
 | `…/admin/users`, `…/sessions`, `…/audit` | Admin | Benutzer, Sitzungen, Protokoll |
 | `GET /api/admin/system`, `POST …/service`, `…/power`, `…/idlist/refresh` | Admin | System, Dienste, Reboot/Shutdown, ID-Liste und FreeRadioID-Liste |
 | `GET /api/admin/logs`, `…/journal?service=` | Admin | Live-Log, systemd-Journal |
+| `GET /api/link-icon/{key}` | öffentlich | Site-Icon eines eingetragenen Links aus dem SQLite-Cache |
+| `GET /api/admin/ui`, `POST /api/admin/ui/theme\|links\|update` | Admin | Farbschema, Link-Menü, Update-Einstellungen |
+| `GET /api/admin/update?force=true`, `POST /api/admin/update/install` | Admin | Update prüfen; installieren (Body: `password`, `expected` = Commit) |
 | `…/admin/cal`, `…/cal/start`, `…/cal/key`, `…/cal/freq`, `…/cal/save`, `…/cal/stop` | Admin | Kalibrierung |
+
+\* Ist die öffentliche Ansicht aus, liefert `/api/info` ohne Login nur Titel, Farbschema, Links und Version.
 
 ## Entwicklung und Demo-Modus
 
@@ -95,7 +103,7 @@ N8HS_DEMO=1 N8HS_DATA=/tmp/n8demo N8HS_PORT=8090 ./venv/bin/python -m n8hotspot 
 ./venv/bin/python -m pytest -q
 ```
 
-Im Demo-Modus zeigt N8-Hotspot ausgedachte Stationen; die Avatare sind gezeichnete Landschaften statt echter Fotos. Er erzeugt dieselben MQTT-Nachrichten, die MMDVMHost und DMRGateway schicken würden, und füllt die Statistik. Die Kalibrierung läuft dann gegen `tools/fake_mmdvmcal.py`. Damit sind auch die Screenshots in dieser Doku entstanden. Getestet wurde zusätzlich mit echtem MMDVMHost (Null-Modem), DMRGateway und einem HBlink4-Server der N8schicht: Anmeldung, Gastzugang und falsches Passwort.
+Im Demo-Modus zeigt N8-Hotspot ausgedachte Stationen; die Avatare sind gezeichnete Landschaften statt echter Fotos. Er erzeugt dieselben MQTT-Nachrichten, die MMDVMHost und DMRGateway schicken würden, und füllt die Statistik. Die Kalibrierung läuft dann gegen `tools/fake_mmdvmcal.py`. Ohne Internet steht das N8schicht-Logo als Site-Icon für dmr.die-n8schicht.de im Cache; mit `N8HS_FETCH_ICONS=1` holt auch die Demo echte Icons. Damit sind auch die Screenshots in dieser Doku entstanden. Getestet wurde zusätzlich mit echtem MMDVMHost (Null-Modem), DMRGateway und einem HBlink4-Server der N8schicht: Anmeldung, Gastzugang und falsches Passwort.
 
 ---
 

@@ -1,6 +1,6 @@
 # 🛡️ FreeRadioID.net
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · [Live & Statistik](bedienung.md) · [Adminbereich](adminbereich.md) · [Kalibrierung](kalibrierung.md) · **FreeRadioID** · [Technik](technik.md) · [Fehlersuche](fehlersuche.md)
+[← Übersicht](../../readme.md) · [Installation](installation.md) · [Live & Statistik](bedienung.md) · [Adminbereich](adminbereich.md) · [Updates](updates.md) · [Kalibrierung](kalibrierung.md) · **FreeRadioID** · [Technik](technik.md) · [Fehlersuche](fehlersuche.md)
 
 ---
 

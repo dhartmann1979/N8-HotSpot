@@ -1,6 +1,6 @@
 # 🎙️ Live & Statistik
 
-[← Übersicht](../../readme.md) · [Installation](installation.md) · **Live & Statistik** · [Adminbereich](adminbereich.md) · [Kalibrierung](kalibrierung.md) · [FreeRadioID](freeradioid.md) · [Technik](technik.md) · [Fehlersuche](fehlersuche.md)
+[← Übersicht](../../readme.md) · [Installation](installation.md) · **Live & Statistik** · [Adminbereich](adminbereich.md) · [Updates](updates.md) · [Kalibrierung](kalibrierung.md) · [FreeRadioID](freeradioid.md) · [Technik](technik.md) · [Fehlersuche](fehlersuche.md)
 
 ---
 
@@ -21,6 +21,14 @@ Dieser Teil ist der **Sichtbereich**: ohne Login sichtbar, solange *Public view*
 | **✓ Modem** | MMDVMHost läuft und hat das Modem geöffnet. Rot: *Modem* (nicht gefunden) oder *MMDVMHost stopped*. |
 | **✓ N8schicht** | DMRGateway ist beim DMR-Server angemeldet. Rot mit Grund, z. B. *password wrong*, *timeout* oder *gateway stopped*. |
 | **💤 Idle / 📡 DMR** | aktueller Modus von MMDVMHost |
+| **🔗 Links ▾** | Link-Menü mit Site-Icons der verlinkten Seiten (im Adminbereich unter *Links* einstellbar) |
+| **👤 Name ▾** | eigenes Konto, Adminbereich, Abmelden (ohne Login: **🔐 Login**) |
+
+Am **Smartphone** ist die Kopfzeile kompakter: *Live data* und *Modem* sind zwei Statuspunkte (grün = ok, gelb = wartet, rot = Fehler;
+antippen bzw. lange drücken zeigt den Text), Links und Benutzer sind nur Symbole. Die Fußzeile zeigt © Die N8schicht,
+die installierte Version mit Commit und deren Datum.
+
+<p align="center"><img src="../images/links-menu.png" alt="Link-Menü" width="55%"></p>
 
 ## Zeitschlitze
 
