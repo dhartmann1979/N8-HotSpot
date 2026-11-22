@@ -13,9 +13,11 @@ Der Modem-Scan funktioniert wieder zuverlässig, und N8-Hotspot prüft und repar
   falschen Port, fand der Scan das Modem nie. Jetzt hält ein Knopf MMDVMHost für ein paar Sekunden an, fragt alle Schnittstellen
   direkt und startet MMDVMHost danach wieder (nicht während einer Kalibrierung; steht im Protokoll).
 - Darf die Weboberfläche eine Schnittstelle nicht öffnen, zeigt der Scan oben den Grund und den Befehl zum Reparieren.
-- **Ursache des Fehlers:** Die Weboberfläche lief ohne die Gruppe `dialout` (der Dienst hatte – anders als MMDVMHost – kein
-  `SupplementaryGroups=dialout`, und bei älteren Installationen fehlte die Gruppe ganz). Dann ist jede Schnittstelle *no permission*.
-  `n8hotspot.service` hat die Gruppe jetzt fest eingetragen.
+- **Warum der Scan scheitern konnte:** (1) MMDVMHost hält die Modem-Schnittstelle offen – der Scan fasst sie nicht an, und hängt
+  MMDVMHost am falschen Port, meldet niemand ein Modem; (2) der Weboberfläche fehlt die Gruppe `dialout` (ältere Installation, Gruppe
+  nachträglich gesetzt, Dienst nicht neu gestartet) – dann ist jede Schnittstelle *no permission*; (3) eine Login-Konsole belegt den UART.
+  Für (1) gibt es den neuen Knopf, (2) und (3) prüft und repariert die neue Berechtigungsprüfung. `n8hotspot.service` hat die
+  Gruppe jetzt zusätzlich fest eingetragen (`SupplementaryGroups=dialout`, wie MMDVMHost).
 
 ### 🔐 Berechtigungen
 - Neue Kachel **Admin → Updates → 🔐 Permissions** (auch `GET /api/admin/permissions`): Gruppe `dialout`, Zugriff auf jede
