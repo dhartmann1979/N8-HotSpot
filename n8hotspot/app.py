@@ -298,6 +298,18 @@ async def set_ui(name: str, request: Request):
     return {"ok": True, name: v}
 
 
+@app.post("/api/admin/site-icons/refresh")
+async def admin_refresh_site_icons(request: Request):
+    u = need_admin(request)
+    await refresh_link_icons(force=True)
+    links = ctx.ui.get("links")["items"]
+    statuses = [ctx.icons.status(siteicons.key_for(item["url"]) or "") for item in links if item.get("site_icon")]
+    cached = sum(bool(status and status["ok"]) for status in statuses)
+    unavailable = len(statuses) - cached
+    ctx.auth.audit("site_icons_refresh", u["username"], f"{cached} cached, {unavailable} unavailable", ip_of(request))
+    return {"ok": True, "total": len(statuses), "cached": cached, "unavailable": unavailable}
+
+
 def _update_cfg() -> Dict[str, Any]:
     return ctx.ui.get("update")
 
@@ -396,6 +408,11 @@ async def update_task():
     await asyncio.sleep(60)
     while True:
         c = _update_cfg()
+        interval_hours = 1 if c["auto"] else c["interval_hours"]
+        now = datetime.now()
+        next_check = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        while next_check.hour % interval_hours:
+            next_check += timedelta(hours=1)
         try:
             if c["enabled"]:
                 res = await update_check(force=True)
@@ -413,7 +430,21 @@ async def update_task():
                             log.warning(f"auto update: {e}")
         except Exception as e:
             log.debug(f"update check failed: {e}")
-        await asyncio.sleep(c["interval_hours"] * 3600 if not c["auto"] else min(3600, c["interval_hours"] * 3600))
+        await asyncio.sleep(max(1, (next_check - datetime.now()).total_seconds()))
+
+
+async def midnight_site_icon_refresh() -> None:
+    """Refresh the configured website icons at local midnight."""
+    while True:
+        now = time.time()
+        tomorrow = datetime.fromtimestamp(now).date() + timedelta(days=1)
+        midnight = time.mktime((tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0, -1, -1, -1))
+        await asyncio.sleep(max(1, midnight - now))
+        try:
+            await refresh_link_icons(force=True)
+            log.info("Midnight site icon refresh completed (%d links)", len(link_icon_urls()))
+        except Exception:
+            log.exception("Midnight site icon refresh failed")
 
 
 @app.get("/api/live")
@@ -977,6 +1008,7 @@ async def startup():
     asyncio.ensure_future(daily_task())
     asyncio.ensure_future(update_task())
     asyncio.ensure_future(refresh_link_icons())
+    asyncio.ensure_future(midnight_site_icon_refresh())
     log.info(f"🌙 N8-Hotspot {__version__} started{' (demo mode)' if DEMO else ''}; data in {DATA}")
 
 

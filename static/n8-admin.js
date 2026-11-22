@@ -89,7 +89,8 @@ async function loadLinksAdmin() {
         <div class="row"><label for="lnLabel">Button text</label><input type="text" id="lnLabel" value="${esc(d.links.label)}" maxlength="30"></div>
         <div class="ln-head"><span>Icon</span><span>Name</span><span>Address</span><span title="Fetch the favicon of the page">Site icon</span><span title="Open in a new tab">New tab</span><span></span></div>
         <div id="lnList"></div>
-        <div class="actions"><button type="button" class="btn" onclick="lnAdd()">＋ Link</button><button class="btn primary">Save</button></div>
+        <div class="actions"><button type="button" class="btn" onclick="lnAdd()">＋ Link</button><button class="btn primary">Save</button>
+            <button type="button" class="btn" onclick="refreshSiteIcons(this)">↻ Refresh site icons now</button></div>
     </form>`;
     lnRows();
 }
@@ -121,6 +122,16 @@ async function saveLinks() {
         setTimeout(() => { if (S.admin.tab === 'links') loadLinksAdmin(); }, 4000);
         lnItems = r.links.items;
     } catch (e) { toast(e.message, true); }
+}
+async function refreshSiteIcons(btn) {
+    const label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Refreshing…';
+    try {
+        const r = await api('POST', '/api/admin/site-icons/refresh', {});
+        toast(`Site icons refreshed: ${r.cached}/${r.total} cached${r.unavailable ? `, ${r.unavailable} unavailable` : ''}.`, !!r.unavailable);
+        await loadLinksAdmin();
+    } catch (e) { toast(e.message, true); }
+    finally { btn.disabled = false; btn.textContent = label; }
 }
 
 // ---------------------------------------------------------------- admin: updates

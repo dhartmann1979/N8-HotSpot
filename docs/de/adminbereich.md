@@ -135,7 +135,7 @@ Mit ↑ änderst du die Reihenfolge, ✕ entfernt einen Link, **＋ Link** fügt
 **Site-Icons:** Nach dem Speichern lädt der Hotspot im Hintergrund das Icon jeder Seite (aus `<link rel="icon">` der Startseite oder
 `/favicon.ico`) und legt es in seiner SQLite-Datenbank ab (Tabelle `link_icons`, 30 Tage gültig; fehlt eins, wird es nach einer Stunde neu versucht). Der Browser holt es dann vom Hotspot,
 nicht von der fremden Seite. Ohne Internet bleibt das Emoji stehen. Abgefragt werden nur öffentliche Adressen (keine Adressen im
-Heimnetz), höchstens 256 KB, und SVG-Dateien mit Skripten werden abgelehnt.
+Heimnetz), höchstens 256 KB, und SVG-Dateien mit Skripten werden abgelehnt. Alle Site-Icons werden täglich um Mitternacht neu geladen; **Refresh site icons now** erzwingt den Abruf sofort.
 
 ## ⬆️ Updates
 

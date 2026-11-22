@@ -4,6 +4,11 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.2.1] – 2026-11-22
+
+- Website-Site-Icons werden täglich um Mitternacht neu geladen; unter **Admin → Links** gibt es **Refresh site icons now** für einen sofortigen Neuabruf.
+- Automatische GitHub-Updateprüfungen laufen zu vollen Stunden.
+
 ## [1.2.0] – 2026-11-22
 
 Der Modem-Scan funktioniert wieder zuverlässig, und N8-Hotspot prüft und repariert jetzt seine Berechtigungen – bei jedem Update.
