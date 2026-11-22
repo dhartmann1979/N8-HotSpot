@@ -12,21 +12,37 @@ Dieser Teil ist der **Sichtbereich**: ohne Login sichtbar, solange *Public view*
   <img src="../images/live-mobile.png" alt="Live am Smartphone" width="22%">
 </p>
 
-## Kopfzeile
+## Kopfzeile und Statusleiste
+
+Oben gibt es **ein** Menü: links Logo, Titel und Untertitel, in der Mitte die Reiter, rechts Links und Anmeldung.
+Direkt darunter hängt eine schmale **Statusleiste**, die nur zeigt, wie es den Diensten geht – sie ist bewusst
+niedriger als das Menü. Beides bleibt beim Scrollen oben stehen.
+
+<p align="center"><img src="../images/header-desktop.png" alt="Kopfzeile mit Menü und Statusleiste" width="95%"></p>
+
+**Menü**
+
+| Eintrag | Bedeutung |
+|---|---|
+| Titel, Untertitel | Titel aus dem Adminbereich; darunter Rufzeichen, Hotspot-ID, Frequenz, Color Code |
+| **🎙️ Live · 📈 Statistics · 🗂️ Talkgroups** | die Ansichten |
+| **⚙️ Admin** | erscheint nach dem Login für Admins als eigener Menüpunkt (gestrichelt umrandet) |
+| **🔗 Links ▾** | Link-Menü mit Site-Icons der verlinkten Seiten (im Adminbereich unter *Links* einstellbar) |
+| **🔐 Login** | ganz rechts; nach dem Anmelden steht dort dein **👤 Name** (Klick = *My account*, Passwort ändern) und daneben **⏻** zum Abmelden – ohne Aufklappmenü |
+
+**Statusleiste** – ein farbiger Punkt sagt den Zustand: grün = ok, gelb = wartet, rot = Fehler, blau = aktiv, grau = aus.
 
 | Anzeige | Bedeutung |
 |---|---|
-| Titel, Untertitel | Titel aus dem Adminbereich; darunter Rufzeichen, Hotspot-ID, Frequenz, Color Code |
-| **✓ Live data** | Der Browser bekommt Live-Daten. Rot bedeutet, die Verbindung zum Hotspot ist weg; sie wird automatisch wieder aufgebaut. |
-| **✓ Modem** | MMDVMHost läuft und hat das Modem geöffnet. Rot: *Modem* (nicht gefunden) oder *MMDVMHost stopped*. |
-| **✓ N8schicht** | DMRGateway ist beim DMR-Server angemeldet. Rot mit Grund, z. B. *password wrong*, *timeout* oder *gateway stopped*. |
-| **💤 Idle / 📡 DMR** | aktueller Modus von MMDVMHost |
-| **🔗 Links ▾** | Link-Menü mit Site-Icons der verlinkten Seiten (im Adminbereich unter *Links* einstellbar) |
-| **👤 Name ▾** | eigenes Konto, Adminbereich, Abmelden (ohne Login: **🔐 Login**) |
+| **Live data** | Der Browser bekommt Live-Daten. Rot (*Live data offline*): Verbindung zum Hotspot weg; sie wird automatisch wieder aufgebaut. |
+| **Modem** | MMDVMHost läuft und hat das Modem geöffnet. Rot: *Modem not found* oder *MMDVMHost stopped*. |
+| **N8schicht** (Name des DMR-Servers) | DMRGateway ist beim DMR-Server angemeldet. Gelb: *connecting*; rot mit Grund, z. B. *password wrong*, *timeout* oder *gateway stopped*. |
+| **💤 Idle / 📡 DMR** (rechts) | aktueller Modus von MMDVMHost |
 
-Am **Smartphone** ist die Kopfzeile kompakter: *Live data* und *Modem* sind zwei Statuspunkte (grün = ok, gelb = wartet, rot = Fehler;
-antippen bzw. lange drücken zeigt den Text), Links und Benutzer sind nur Symbole. Die Fußzeile zeigt © Die N8schicht,
-die installierte Version mit Commit und deren Datum.
+Am **Smartphone** rutschen die Reiter in eine zweite Zeile (kurze Namen *Stats*, *TGs*), Links und Benutzer sind nur Symbole.
+Die Statusleiste bleibt eine Zeile. Die Fußzeile zeigt © Die N8schicht, die installierte Version mit Commit und deren Datum.
+
+<p align="center"><img src="../images/header-mobile.png" alt="Kopfzeile am Smartphone" width="40%"></p>
 
 <p align="center"><img src="../images/links-menu.png" alt="Link-Menü" width="55%"></p>
 

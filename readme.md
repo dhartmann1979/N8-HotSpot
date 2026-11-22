@@ -37,6 +37,7 @@
 | ⚙️ **Adminbereich** | Station, Modem, Frequenzen, DMR-Server, Zeitschlitze, Expertenzeilen. Dazu Benutzer, Dienste, Logs, System-Infos, Neustart. |
 | ⬆️ **Updates im Browser** | stündliche Prüfung auf GitHub, Hinweis für Admins, **Update now** mit Passwortabfrage, danach Neustart von MMDVMHost, DMRGateway und Weboberfläche; auf Wunsch automatisch nachts |
 | 🎨 **Eigene Farben** | N8 Theme wie im HBlink4-Dashboard: 7 Profile (auch hell), jede Farbe frei wählbar, Export/Import zwischen allen N8-Dashboards |
+| 🧭 **Ein Menü + Statusleiste** | Kopfzeile mit Logo, Reitern, Links und Login ganz rechts (ohne Aufklappmenü, **⚙️ Admin** nach dem Login als Menüpunkt); darunter eine schmale Statusleiste für Live-Daten, Modem, DMR-Server und Modus |
 | 🔗 **Link-Menü** | eigene Links oben rechts, mit den Favicons der verlinkten Seiten (im Hotspot zwischengespeichert) |
 | 👁️ **Sichtbereich** | Die Live-Ansicht ist öffentlich (abschaltbar). Benutzer der Rolle *Viewer* sehen alles, ändern aber nichts. |
 | 🔐 **Standard-Login** | `n8schicht` / `n8schicht`. Bis zur Änderung im Adminbereich erscheint eine deutliche Warnung. |

@@ -84,21 +84,10 @@ function renderHeader() {
 function renderUser() {
     const el = $('userArea');
     if (!S.me) { el.innerHTML = '<button class="btn primary" onclick="openLogin()">🔐 Login</button>'; return; }
-    el.innerHTML = `<button class="btn" onclick="userMenu(event)" title="${esc(S.me.display_name || S.me.username)}">👤 <span class="u-name">${esc(S.me.display_name || S.me.username)}</span> ▾</button>`;
-}
-function userMenu(ev) {
-    ev.stopPropagation();
-    closeModal();
-    const r = ev.target.getBoundingClientRect();
-    const m = document.createElement('div');
-    m.className = 'glass'; m.id = 'umenu';
-    m.style.cssText = `position:fixed;top:${r.bottom + 8}px;right:${Math.max(8, innerWidth - r.right)}px;z-index:300;border-radius:16px;padding:6px;min-width:200px;background:var(--surface-2, rgba(22,28,48,.95))`;
-    m.innerHTML = `<div style="padding:8px 12px" class="dim">${esc(S.me.username)} · ${esc(S.me.role)}</div>
-        ${isAdmin() ? '<button class="btn" style="width:100%;border-radius:10px;margin:2px 0" onclick="showTab(\'admin\')">⚙️ Admin</button>' : ''}
-        <button class="btn" style="width:100%;border-radius:10px;margin:2px 0" onclick="openAccount()">🔑 My account</button>
-        <button class="btn" style="width:100%;border-radius:10px;margin:2px 0" onclick="logout()">🚪 Log out</button>`;
-    document.body.appendChild(m);
-    setTimeout(() => document.addEventListener('click', () => m.remove(), { once: true }), 0);
+    // logged in: name (click = my account) and log out – no drop-down; ⚙️ Admin is a menu item
+    const name = esc(S.me.display_name || S.me.username);
+    el.innerHTML = `<span class="n8-user"><button class="btn" onclick="openAccount()" title="${name} · ${esc(S.me.role)} – my account">👤 <span class="u-name">${name}</span></button>
+        <button class="btn n8-logout" onclick="logout()" title="Log out" aria-label="Log out">⏻</button></span>`;
 }
 
 // ---------------------------------------------------------------- modals
@@ -238,22 +227,23 @@ function onEvent(ev) {
 // ---------------------------------------------------------------- live
 function renderChips() {
     const L = S.live || {};
-    const set = (id, cls, text) => { const e = $(id); e.className = 'chip ' + cls + (id === 'chipLive' || id === 'chipModem' ? ' st' : ''); e.textContent = text; e.title = text; };
-    set('chipLive', S.wsOk ? 'ok' : 'bad', S.wsOk ? '✓ Live data' : '✕ Live data');
+    // status strip under the menu: a coloured dot says it, the text stays short
+    const set = (id, cls, text) => { const e = $(id); e.className = 'n8-ss ' + cls; e.textContent = text; e.title = text; };
+    set('chipLive', S.wsOk ? 'ok' : 'bad', S.wsOk ? 'Live data' : 'Live data offline');
     const svc = L.services || {};
-    if (svc.mmdvmhost && svc.mmdvmhost !== 'active') set('chipModem', 'bad', '✕ MMDVMHost stopped');
-    else if (L.modem && L.modem.open === true) set('chipModem', 'ok', '✓ Modem');
-    else if (L.modem && L.modem.open === false) set('chipModem', 'bad', '✕ Modem');
-    else set('chipModem', 'warn', '… Modem');
+    if (svc.mmdvmhost && svc.mmdvmhost !== 'active') set('chipModem', 'bad', 'MMDVMHost stopped');
+    else if (L.modem && L.modem.open === true) set('chipModem', 'ok', 'Modem');
+    else if (L.modem && L.modem.open === false) set('chipModem', 'bad', 'Modem not found');
+    else set('chipModem', 'warn', 'Modem');
     const ln = L.link || {};
     const net = S.info && S.info.network;
-    if (!net) set('chipNet', '', '🛰️ No network');
-    else if (svc.dmrgateway && svc.dmrgateway !== 'active') set('chipNet', 'bad', `✕ ${net} (gateway stopped)`);
-    else if (ln.state === 'connected') set('chipNet', 'ok', `✓ ${net}`);
-    else if (ln.state === 'failed') set('chipNet', 'bad', `✕ ${net}${ln.reason === 'auth' ? ': password wrong' : ln.reason ? ': ' + ln.reason : ''}`);
-    else set('chipNet', 'warn', `… ${net}`);
+    if (!net) set('chipNet', 'idle', 'No network');
+    else if (svc.dmrgateway && svc.dmrgateway !== 'active') set('chipNet', 'bad', `${net} (gateway stopped)`);
+    else if (ln.state === 'connected') set('chipNet', 'ok', net);
+    else if (ln.state === 'failed') set('chipNet', 'bad', `${net}${ln.reason === 'auth' ? ': password wrong' : ln.reason ? ': ' + ln.reason : ''}`);
+    else set('chipNet', 'warn', `${net} connecting`);
     const mode = svc.mmdvmhost && svc.mmdvmhost !== 'active' ? 'Stopped' : (L.mode || 'Idle');
-    set('chipMode', mode === 'Idle' ? '' : ['Lockout', 'Error', 'Stopped'].includes(mode) ? 'bad' : 'info', mode === 'Idle' ? '💤 Idle' : mode === 'Stopped' ? '⏸ Stopped' : `📡 ${mode}`);
+    set('chipMode', mode === 'Idle' ? 'plain' : ['Lockout', 'Error', 'Stopped'].includes(mode) ? 'bad' : 'info', mode === 'Idle' ? '💤 Idle' : mode === 'Stopped' ? '⏸ Stopped' : `📡 ${mode}`);
 }
 function renderInfo() {
     const i = S.info; if (!i) return;

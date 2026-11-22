@@ -18,7 +18,7 @@ Ab Werk gibt es einen Admin: **Benutzer `n8schicht`, Passwort `n8schicht`**. Sol
 - **Im Adminbereich** steht oben eine gelbe Warnung mit **Change now**.
 - **In der Benutzerliste** steht beim Benutzer *factory password*.
 
-Nach der Änderung werden alle Sitzungen beendet und der Werks-Login funktioniert nicht mehr. *My account* erreichst du jederzeit über das Menü oben rechts.
+Nach der Änderung werden alle Sitzungen beendet und der Werks-Login funktioniert nicht mehr. *My account* erreichst du jederzeit über deinen Namen oben rechts.
 
 Nach 5 falschen Passwörtern ist der Login für 15 Minuten gesperrt. Mit *Stay logged in* bleibst du 30 Tage angemeldet, sonst so lange wie unter *Session length* eingestellt.
 

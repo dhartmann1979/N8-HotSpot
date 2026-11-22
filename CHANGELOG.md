@@ -4,6 +4,39 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.3.0] – 2026-11-22
+
+Neue Kopfzeile: statt zwei Leisten (Status-Chips oben, Reiter darunter) gibt es jetzt **ein Menü** und darunter eine schmale
+**Statusleiste** – im gleichen Aufbau wie bei HBlink4-FreeRadioID und frn_adn.
+
+### 🧭 Ein Menü in der Kopfzeile
+- Die Reiter **🎙️ Live · 📈 Statistics · 🗂️ Talkgroups** sitzen jetzt in der Kopfzeile zwischen Logo/Titel und den Knöpfen rechts.
+  Die Kopfzeile bleibt beim Scrollen stehen, die Ansicht wechselst du also von überall.
+- **⚙️ Admin** ist nach dem Login (Rolle Admin) ein eigener Menüpunkt, gestrichelt umrandet, statt im Benutzermenü versteckt.
+- **🔐 Login** steht ganz rechts. Angemeldet zeigt der Platz deinen **👤 Namen** (Klick öffnet *My account*) und daneben **⏻ Abmelden**.
+  Das Aufklappmenü unter dem Namen entfällt.
+- Logo und Titel sind etwas kompakter (44 px), der Untertitel wird bei Platzmangel gekürzt statt umzubrechen.
+- Unter 1180 px rutschen die Reiter in eine zweite Zeile über die volle Breite; am Smartphone mit kurzen Namen (*Stats*, *TGs*),
+  ohne Untertitel, Links und Benutzer als Symbole.
+
+### 🟢 Statusleiste unter dem Menü
+- Neue, nur 22 px hohe Leiste direkt unter der Kopfzeile, bewusst kleiner als das Menü: **Live data**, **Modem**, **DMR-Server**
+  (Name des Netzes) und rechts der **Modus** (💤 Idle / 📡 DMR / ⏸ Stopped).
+- Der Zustand steht als farbiger Punkt davor (grün ok, gelb wartet, rot Fehler, blau aktiv, grau aus); die Texte sind kurz und ohne ✓/✕,
+  z. B. *Modem not found*, *N8schicht connecting*, *N8schicht: password wrong*, *Live data offline*.
+- Am Smartphone bleibt sie einstellig; die bisherigen Statuspunkte in der Kopfzeile entfallen.
+
+### 🛠️ Technik
+- Neue gemeinsame Datei `static/n8-header.css` (identisch mit frn_adn): `.n8-topbar`, `.n8-strip`, `.n8-ss` mit den Punkt-Klassen
+  `ok / warn / bad / info / idle / plain`, `.n8-user`, `.n8-logout`, `.n8-menu-admin`, helles Theme und Smartphone-Regeln.
+- `userMenu()` entfällt; `renderUser()` baut Name + ⏻, `renderChips()` schreibt in die Statusleiste. Die Element-IDs
+  (`chipLive`, `chipModem`, `chipNet`, `chipMode`, `mainTabs`, `tabAdminBtn`) sind gleich geblieben.
+
+### 📚 Doku
+- *Live & Statistik*: neuer Abschnitt **Kopfzeile und Statusleiste** mit den Screenshots `header-desktop.png` / `header-mobile.png`.
+- Alle Screenshots mit Kopfzeile neu: Live, Statistik, Talkgroups (Desktop und Smartphone) und alle Admin-Seiten.
+- Installation und Adminbereich verweisen auf Statusleiste bzw. den Namen oben rechts statt auf das alte Menü.
+
 ## [1.2.1] – 2026-11-22
 
 - Website-Site-Icons werden täglich um Mitternacht neu geladen; unter **Admin → Links** gibt es **Refresh site icons now** für einen sofortigen Neuabruf.

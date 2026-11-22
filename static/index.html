@@ -12,9 +12,11 @@
     <link rel="stylesheet" href="/static/n8-theme.css?v=1">
     <link rel="stylesheet" href="/static/n8-light.css?v=1">
     <script src="/static/n8-theme.js?v=1"></script>
+    <link rel="stylesheet" href="/static/n8-header.css?v=1">
 </head>
 <body>
 <div class="container">
+    <div class="n8-topbar">
     <header>
         <div class="brand">
             <img src="/static/n8schicht-icon.svg" alt="DMR Die N8schicht">
@@ -23,15 +25,26 @@
                 <div class="sub" id="subtitle">&nbsp;</div>
             </div>
         </div>
+        <nav class="tabs" id="mainTabs">
+            <button data-tab="live" class="active">🎙️ Live</button>
+            <button data-tab="stats">📈 <span class="t-long">Statistics</span><span class="t-short">Stats</span></button>
+            <button data-tab="tgs">🗂️ <span class="t-long">Talkgroups</span><span class="t-short">TGs</span></button>
+            <button data-tab="admin" id="tabAdminBtn" class="hidden n8-menu-admin">⚙️ Admin</button>
+        </nav>
         <div class="chips">
-            <span class="chip" id="chipLive">Live data</span>
-            <span class="chip" id="chipModem">Modem</span>
-            <span class="chip" id="chipNet">DMR server</span>
-            <span class="chip" id="chipMode">Idle</span>
             <div class="links-menu" id="linksMenu" hidden><button type="button" class="btn links-btn" onclick="toggleLinks(event)" title="Links"><span class="links-label">🔗 Links</span> ▾</button><div class="links-pop"></div></div>
             <span id="userArea"></span>
         </div>
     </header>
+    <!-- status of the services: one slim line under the menu -->
+    <div class="n8-strip" id="statusStrip" role="status">
+        <span class="n8-ss" id="chipLive">Live data</span>
+        <span class="n8-ss" id="chipModem">Modem</span>
+        <span class="n8-ss" id="chipNet">DMR server</span>
+        <span class="n8-sp"></span>
+        <span class="n8-ss" id="chipMode">Idle</span>
+    </div>
+    </div><!-- /n8-topbar -->
 
     <div class="banner warn hidden" id="defaultBanner">
         <span>⚠️ <b>The factory login n8schicht / n8schicht is still active.</b> Anyone on your network could change your hotspot. Please set your own password.</span>
@@ -46,12 +59,6 @@
         <button class="btn primary" onclick="applyRestart(this)">Restart now</button>
     </div>
 
-    <nav class="tabs" id="mainTabs">
-        <button data-tab="live" class="active">🎙️ Live</button>
-        <button data-tab="stats">📈 <span class="t-long">Statistics</span><span class="t-short">Stats</span></button>
-        <button data-tab="tgs">🗂️ <span class="t-long">Talkgroups</span><span class="t-short">TGs</span></button>
-        <button data-tab="admin" id="tabAdminBtn" class="hidden">⚙️ Admin</button>
-    </nav>
 
     <!-- ================= LIVE ================= -->
     <section id="tab-live">

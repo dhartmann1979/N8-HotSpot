@@ -77,3 +77,29 @@ a.btn { color: var(--text); text-decoration: none; display: inline-flex; align-i
 .perm-cmd { display: flex; gap: 8px; align-items: center; margin-top: 6px; padding: 8px 10px; border-radius: 10px;
             background: rgba(0, 0, 0, .25); border: 1px solid var(--glass-border); }
 .perm-cmd code { flex: 1; font-family: var(--mono); font-size: 12px; word-break: break-all; }
+
+/* ---------- N8 header 2: one menu in the header (brand | tabs | links + login), status strip under it ---------- */
+header { flex-wrap: nowrap; justify-content: flex-start; gap: 14px; padding: 8px 14px; }
+header .brand { flex: 0 1 auto; min-width: 0; }
+header .brand > div { min-width: 0; }
+header .brand img { height: 44px; width: 44px; border-radius: 11px; }
+header .brand h1 { white-space: nowrap; font-size: 21px; }
+header .brand .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+header .tabs { margin: 0 auto; flex: 0 0 auto; padding: 3px; gap: 3px; background: rgba(255, 255, 255, 0.04); }
+header .tabs button { padding: 7px 14px; font-size: 13.5px; }
+header .chips { flex: 0 0 auto; justify-content: flex-end; flex-wrap: nowrap; width: auto; }
+@media (max-width: 1180px) {
+    header { flex-wrap: wrap; }
+    header .brand { flex: 1 1 auto; }
+    header .tabs { order: 3; flex: 1 1 100%; width: 100%; margin: 2px 0 0; }
+    header .tabs button { flex: 1 1 0; justify-content: center; }
+}
+@media (max-width: 600px) {
+    header .brand img { height: 34px; width: 34px; }
+    header .brand h1 { font-size: 17px; }
+    header .brand .sub { display: none; }
+    header .chips { width: auto; }
+    header .tabs button { padding: 6px 4px; font-size: 12px; }
+    header .tabs .t-long { display: none; }
+    header .tabs .t-short { display: inline; }
+}

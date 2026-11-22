@@ -135,7 +135,7 @@ Hast du das Image mit Hotspot-Einstellungen gebaut oder `setup.sh` benutzt, sind
    - **📡 Modem**: Board auswählen, das trägt Port, Geschwindigkeit und Simplex/Duplex ein. Dazu die Frequenz.
    - **🛰️ DMR network**: Server (Vorgabe **DMR Die N8schicht**) und **Passwort**. Bei der N8schicht ist das dein persönliches FreeRadioID-Passwort; mit dem allgemeinen Gast-Passwort darfst du nur auf die Gast-Talkgroups senden.
 4. Bei jedem Abschnitt **Save**, dann oben **Restart now**.
-5. Oben rechts müssen **✓ Modem** und **✓ N8schicht** grün sein.
+5. In der Statusleiste unter dem Menü müssen **Modem** und **N8schicht** einen grünen Punkt haben.
 6. Einmal die [Kalibrierung](kalibrierung.md) machen.
 
 ## Aktualisieren
