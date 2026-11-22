@@ -576,22 +576,31 @@ const PORT_INFO = [
     ['/dev/ttyACM0', 'USB with native USB serial: ZUMspot, MMDVM_HS via USB, STM32 repeater boards.'],
     ['/dev/ttyUSB0', 'Board behind a USB-serial adapter (CH340, CP210x, FTDI).'],
 ];
-async function openSerialScan() {
+async function openSerialScan(stopMmdvm) {
     modal(`<h2>🔍 Where is the modem?</h2>
         <p class="dim" style="margin:4px 0 10px">The scan lists all serial ports and asks each free one for its MMDVM firmware. The port MMDVMHost already uses is not touched; its modem info comes from MMDVMHost.</p>
         <div class="tbl-wrap"><table class="tbl" style="font-size:12.5px"><tbody>${PORT_INFO.map(([p, t]) => `<tr><td class="mono" style="vertical-align:top"><b>${p}</b></td><td style="white-space:normal">${t}</td></tr>`).join('')}</tbody></table></div>
-        <div id="scanOut" style="margin-top:14px"><div class="empty">⏳ Scanning … (up to 15 seconds)</div></div>
+        <div id="scanOut" style="margin-top:14px"><div class="empty">⏳ ${stopMmdvm ? 'Stopping MMDVMHost, scanning, starting it again …' : 'Scanning …'} (up to 15 seconds)</div></div>
         <div class="actions"><button class="btn" onclick="openSerialScan()">↻ Scan again</button><button class="btn primary" onclick="closeModal()">Close</button></div>`);
     $('ov').querySelector('.modal').classList.add('wide');
     let d;
-    try { d = await api('POST', '/api/admin/serial/scan', {}); } catch (e) { $('scanOut').innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+    try { d = await api('POST', '/api/admin/serial/scan', { stop_mmdvmhost: !!stopMmdvm }); } catch (e) { $('scanOut').innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
     const st = p => ({ modem: `<span class="pill ok">✓ MMDVM modem</span>`, busy: `<span class="pill ${p.modem ? 'ok' : 'warn'}">in use by ${esc(p.users.map(u => u.name).join(', '))}</span>`,
         silent: '<span class="pill">no answer</span>', alias: `<span class="pill">→ ${esc(p.alias_of)}</span>`, 'no-permission': '<span class="pill bad">no permission</span>',
         error: `<span class="pill bad">error</span>` }[p.status] || `<span class="pill">${esc(p.status)}</span>`);
     const kind = p => ({ gpio: 'GPIO UART', 'gpio-mini': 'GPIO mini UART', usb: 'USB', other: 'serial' }[p.kind] || p.kind);
     const usb = p => p.usb && (p.usb.product || p.usb.idVendor) ? `<br><span class="dim">${esc([p.usb.manufacturer, p.usb.product].filter(Boolean).join(' ') || '')} ${p.usb.idVendor ? `(${esc(p.usb.idVendor)}:${esc(p.usb.idProduct || '')}${p.usb.driver ? ', ' + esc(p.usb.driver) : ''})` : ''}</span>` : '';
     const found = d.ports.filter(p => p.modem);
-    $('scanOut').innerHTML = (found.length ? `<div class="banner" style="margin:0 0 10px;background:linear-gradient(135deg,rgba(48,209,88,.2),rgba(48,209,88,.05));border:1px solid rgba(48,209,88,.4)">
+    const busy = d.ports.some(p => p.status === 'busy' && p.users.some(u => /mmdvm/i.test(u.name)));
+    const perm = d.permissions || { ok: true, problems: [] };
+    const permHtml = perm.ok ? '' : `<div class="banner warn" style="margin:0 0 10px;flex-direction:column;align-items:flex-start;gap:6px">
+            <span>🔐 <b>Permissions are not complete</b> – the scan may not be able to open every port:</span>
+            <ul style="margin:0 0 0 18px;padding:0;font-size:13px">${perm.problems.map(i => `<li><b>${esc(i.label)}</b>${i.detail ? ' – ' + esc(i.detail) : ''}</li>`).join('')}</ul>
+            <span style="font-size:13px">Repair once on the console: <code class="mono">${esc(perm.fix)}</code></span></div>`;
+    const busyHtml = busy ? `<div class="banner info" style="margin:0 0 10px"><span>⏸ MMDVMHost has a port open, so it is not asked directly.${found.some(p => p.modem && p.modem.via) ? '' : ' MMDVMHost itself has no modem connection.'}
+            For a full scan MMDVMHost can be stopped for a few seconds and started again afterwards.</span>
+            <button class="btn primary" onclick="openSerialScan(true)">Stop MMDVMHost &amp; scan</button></div>` : '';
+    $('scanOut').innerHTML = permHtml + busyHtml + (d.stopped ? '<div class="dim" style="margin:0 0 8px;font-size:12.5px">MMDVMHost was stopped for the scan and is running again.</div>' : '') + (found.length ? `<div class="banner" style="margin:0 0 10px;background:linear-gradient(135deg,rgba(48,209,88,.2),rgba(48,209,88,.05));border:1px solid rgba(48,209,88,.4)">
             <span>✓ Modem found on <b class="mono">${esc(found[0].port)}</b>: ${esc(found[0].modem.description)}</span></div>` :
             `<div class="banner warn" style="margin:0 0 10px"><span>No modem answered. Is the board plugged in? On a GPIO hat: reboot once after the installation.</span></div>`) +
         `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Port</th><th>Type</th><th>Status</th><th class="hide-sm">Firmware</th><th></th></tr></thead><tbody>${d.ports.map(p => `

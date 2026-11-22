@@ -80,7 +80,8 @@ Alle Antworten sind JSON. Die Oberfläche nutzt dieselbe API.
 | `GET /api/station/{id}` | Sichtbereich | Stationsansicht: FreeRadioID-Profil, Gespräche und Talkgroups der letzten 30 Tage, letzte Gespräche |
 | `GET /api/avatar/{id}` | Sichtbereich | Avatar (WebP) für bei FreeRadioID registrierte IDs, sonst 404 |
 | `GET /api/talkgroups` | Sichtbereich | alle Talkgroup-Namen (Liste + eigene) und was der Hotspot in 30 Tagen darauf gehört hat |
-| `POST /api/admin/serial/scan` | Admin | serielle Schnittstellen mit Typ, USB-Daten, Belegung und MMDVM-Antwort |
+| `POST /api/admin/serial/scan` | Admin | serielle Schnittstellen mit Typ, USB-Daten, Belegung und MMDVM-Antwort; Body `{"stop_mmdvmhost": true}` hält MMDVMHost dafür kurz an; dazu fehlende Berechtigungen |
+| `GET /api/admin/permissions` | Admin | Berechtigungsprüfung (dialout, Schnittstellen, Konsole, sudo-Regel, Programmordner, venv) |
 | `WS /ws` | Sichtbereich | Live-Ereignisse `status`, `slot`, `heard`, `ui` (neues Farbschema/Links); für Admins zusätzlich `log`, `cal`, `update` |
 | `POST /api/auth/login`, `logout`, `password` | – | Anmeldung, eigenes Konto |
 | `GET/POST /api/admin/settings`, `POST /api/admin/apply` | Admin | Einstellungen lesen/speichern, Dienste neu starten |

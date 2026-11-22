@@ -35,3 +35,4 @@ html[data-theme-mode="light"] .logview .e { color: #990c00 !important; }
 html[data-theme-mode="light"] .logview .g { color: #005199 !important; }
 html[data-theme-mode="light"] .ln-row { border-top: 1px solid rgba(20, 40, 80, 0.1) !important; }
 html[data-theme-mode="light"] .upd-dialog .upd-facts { background: rgba(20, 40, 80, 0.055) !important; }
+html[data-theme-mode="light"] .perm-cmd { background: rgba(20, 40, 80, 0.0625) !important; }

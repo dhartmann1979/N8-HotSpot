@@ -4,6 +4,32 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.2.0] – 2026-11-22
+
+Der Modem-Scan funktioniert wieder zuverlässig, und N8-Hotspot prüft und repariert jetzt seine Berechtigungen – bei jedem Update.
+
+### 🔍 Modem-Scan
+- **Stop MMDVMHost & scan:** Hält MMDVMHost eine Schnittstelle offen, wurde sie bisher nur „in use“ gemeldet – hing MMDVMHost am
+  falschen Port, fand der Scan das Modem nie. Jetzt hält ein Knopf MMDVMHost für ein paar Sekunden an, fragt alle Schnittstellen
+  direkt und startet MMDVMHost danach wieder (nicht während einer Kalibrierung; steht im Protokoll).
+- Darf die Weboberfläche eine Schnittstelle nicht öffnen, zeigt der Scan oben den Grund und den Befehl zum Reparieren.
+- **Ursache des Fehlers:** Die Weboberfläche lief ohne die Gruppe `dialout` (der Dienst hatte – anders als MMDVMHost – kein
+  `SupplementaryGroups=dialout`, und bei älteren Installationen fehlte die Gruppe ganz). Dann ist jede Schnittstelle *no permission*.
+  `n8hotspot.service` hat die Gruppe jetzt fest eingetragen.
+
+### 🔐 Berechtigungen
+- Neue Kachel **Admin → Updates → 🔐 Permissions** (auch `GET /api/admin/permissions`): Gruppe `dialout`, Zugriff auf jede
+  Modem-Schnittstelle, Linux-Konsole auf dem UART, Bluetooth/Mini-UART am Pi, sudo-Regel für Neustarts, Schreibrechte für
+  Programmordner und Python-Umgebung – jeweils mit Grund und Lösung.
+- Neues Skript **`scripts/permissions.sh`** (root): prüft (`--check`) und repariert Gruppen, systemd-Dienste (Port bleibt erhalten),
+  sudo-Regel, Besitzer des Programmordners, Login-Konsole auf der Modem-Schnittstelle und die Kernel-Konsole am Pi.
+- **`scripts/update.sh` ruft es bei jedem Update auf**, `install.sh` ebenso. Nach einem Update im Browser wird die Prüfung
+  angezeigt; ändern sich Dienst-Dateien oder fehlt etwas, nennt der Update-Dialog den einmaligen Befehl.
+- `update.sh` ist gegen das Ersetzen während des Laufs geschützt (bash liest das Skript jetzt vollständig vor dem `git pull`).
+
+### Doku
+- Adminbereich (Modem-Scan), Updates (neuer Abschnitt *Berechtigungen*), Fehlersuche, Technik (API); neue Screenshots.
+
 ## [1.1.0] – 2026-11-22
 
 Updates direkt im Browser, frei einstellbare Farben und ein Link-Menü – N8-Hotspot bekommt damit denselben Adminbereich

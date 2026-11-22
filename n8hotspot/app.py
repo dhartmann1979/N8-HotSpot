@@ -23,7 +23,7 @@ from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, configgen, demo, siteicons, stats, updater
+from . import __version__, configgen, demo, permcheck, siteicons, stats, updater
 from .auth import Auth, AuthError, DEFAULT_PASSWORD, DEFAULT_USER
 from .calib import KEYS, CalSession
 from .db import DB
@@ -320,6 +320,7 @@ async def admin_update(request: Request, force: bool = False):
     except Exception:
         owner = ""
     return {"enabled": c["enabled"], **res, "config": c, "can_install": bool(res["local"].get("commit")),
+            "permissions": await permissions(),
             "systemd": bool(os.environ.get("INVOCATION_ID")), "origin": await asyncio.to_thread(updater.origin_url),
             "path": str(updater.REPO_ROOT), "owner": owner, "demo": DEMO}
 
@@ -350,6 +351,13 @@ async def run_update(expected: str, who: str, ip: str) -> Dict[str, Any]:
                 for svc in ("dmrgateway", "mmdvmhost"):
                     ok = await asyncio.to_thread(updater.systemctl, "restart", svc)
                     steps.append({"step": f"{svc} restarted", "ok": ok, "detail": "" if ok else "sudo rule missing?"})
+        perms = await permissions()
+        if not perms["ok"]:
+            steps.append({"step": "Permissions", "ok": False,
+                          "detail": f"{perms['problems']} problem(s) – run once on the console: {perms['fix']}"})
+        if any(f.startswith(("systemd/", "scripts/permissions.sh")) for f in res["files"]):
+            steps.append({"step": "Service files changed", "ok": False,
+                          "detail": f"they need root – run once on the console: {perms['fix']}"})
         ctx.auth.audit("update", who, f"{res['old'][:7]} → {res['new'][:7]}", ip)
         log.info(f"⬆️ Updated by {who}: {res['old'][:7]} → {res['new'][:7]} ({len(res['files'])} files)")
         how = "manual"
@@ -674,23 +682,70 @@ DEMO_SCAN = [
 ]
 
 
+DEMO_PERMS = {"ok": True, "problems": 0, "critical": False, "fix": "sudo /opt/n8hotspot/scripts/permissions.sh", "items": [
+    {"key": "dialout", "label": "Web interface is in the group dialout (modem scan, calibration)", "ok": True, "detail": "", "level": "ok"},
+    {"key": "port:/dev/ttyAMA0", "label": "Serial port /dev/ttyAMA0 can be opened", "ok": True, "detail": "group dialout, mode 660", "level": "ok"},
+    {"key": "console", "label": "No Linux console on the modem UART", "ok": True, "detail": "", "level": "ok"},
+    {"key": "sudo", "label": "sudo rule for service restarts (/etc/sudoers.d/n8hotspot)", "ok": True, "detail": "", "level": "ok"},
+    {"key": "repo", "label": "Program folder /opt/n8hotspot is writable (Update now)", "ok": True, "detail": "", "level": "ok"},
+    {"key": "venv", "label": "Python environment is writable (new packages after an update)", "ok": True, "detail": "", "level": "ok"}]}
+
+
+async def permissions() -> Dict[str, Any]:
+    if DEMO:
+        return DEMO_PERMS
+    return await asyncio.to_thread(permcheck.check, ctx.settings.get("modem.port"))
+
+
+@app.get("/api/admin/permissions")
+async def admin_permissions(request: Request):
+    """Does the web interface have every permission it needs (serial ports, sudo rule, program folder)?"""
+    need_admin(request)
+    return await permissions()
+
+
 @app.post("/api/admin/serial/scan")
 async def serial_scan(request: Request):
-    """Serial ports with their MMDVM answer; ports in use (by MMDVMHost) are not touched."""
-    need_admin(request)
+    """Serial ports with their MMDVM answer. Ports in use (by MMDVMHost) are not touched –
+    unless the admin asks to stop MMDVMHost for the scan ({"stop_mmdvmhost": true}); it is started again afterwards."""
+    u = need_admin(request)
+    b = await body(request)
+    stopped = False
     if DEMO:
         await asyncio.sleep(1.5)
-        ports = DEMO_SCAN
+        ports = [dict(p) for p in DEMO_SCAN]
+        if b.get("stop_mmdvmhost"):
+            stopped = True
+            for p in ports:
+                if p["status"] == "busy":
+                    p.update(status="modem", users=[], speed=115200,
+                             modem={"protocol": 1, "description": "MMDVM_HS_Hat-v1.6.1 20231115 14.7456MHz ADF7021 FW by CA6JAU"})
     else:
         from . import serialscan
-        ports = await asyncio.to_thread(serialscan.scan)
+        if b.get("stop_mmdvmhost"):
+            if ctx.cal.running:
+                raise HTTPError(409, "The calibration is running – stop it first.")
+            stopped = await asyncio.to_thread(updater.systemctl, "stop", "mmdvmhost")
+            if not stopped:
+                raise HTTPError(500, "MMDVMHost could not be stopped (sudo rule missing?). " + permcheck.fix_command())
+            await asyncio.sleep(1.5)
+        try:
+            ports = await asyncio.to_thread(serialscan.scan)
+        finally:
+            if stopped:
+                await asyncio.to_thread(updater.systemctl, "start", "mmdvmhost")
+        if stopped:
+            ctx.auth.audit("service", u["username"], "mmdvmhost stopped for the modem scan", ip_of(request))
     s = ctx.settings.all()
     modem = ctx.live.modem if ctx.live.modem.get("open") else None
     for p in ports:          # the port MMDVMHost has open: what it reported via MQTT
         if p["status"] == "busy" and modem and os.path.realpath(s["modem.port"]) in (p["port"], p.get("real") or p["port"]):
             p["modem"] = {"protocol": modem.get("protocol"), "description": modem.get("description", ""), "via": "MMDVMHost"}
-    return {"ports": ports, "configured": s["modem.port"], "speed": s["modem.speed"],
-            "mmdvmhost": ctx.services.get("mmdvmhost", "unknown")}
+    perms = await permissions()
+    return {"ports": ports, "configured": s["modem.port"], "speed": s["modem.speed"], "stopped": stopped,
+            "mmdvmhost": ctx.services.get("mmdvmhost", "unknown"),
+            "permissions": {"ok": perms["ok"], "fix": perms["fix"],
+                            "problems": [i for i in perms["items"] if not i["ok"]]}}
 
 
 # ---------------------------------------------------------------- talkgroups

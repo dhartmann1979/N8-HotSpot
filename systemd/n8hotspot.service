@@ -7,6 +7,8 @@ Wants=network-online.target
 Type=simple
 User=n8hotspot
 Group=n8hotspot
+# dialout: the modem scan opens the serial ports (MMDVMHost has the same)
+SupplementaryGroups=dialout
 WorkingDirectory=/opt/n8hotspot
 Environment=N8HS_DATA=/opt/n8hotspot/data
 Environment=N8HS_PORT=80

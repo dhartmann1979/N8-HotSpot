@@ -139,20 +139,9 @@ fi
 
 # ---------------------------------------------------------------------------
 step "7/7 Dienste"
-for s in mmdvmhost dmrgateway n8hotspot; do
-    install -m 644 "$N8_DIR/systemd/$s.service" "/etc/systemd/system/$s.service"
-done
-sed -i "s#/opt/n8hotspot#${N8_DIR}#g; s#N8HS_PORT=80#N8HS_PORT=${N8_PORT}#" /etc/systemd/system/{mmdvmhost,dmrgateway,n8hotspot}.service
-SC=$(command -v systemctl)
-cat > /etc/sudoers.d/n8hotspot <<EOF
-# N8-Hotspot: the web interface may start/stop/restart its services and reboot
-$SVC_USER ALL=(root) NOPASSWD: $SC start mmdvmhost.service, $SC stop mmdvmhost.service, $SC restart mmdvmhost.service, \\
-    $SC start dmrgateway.service, $SC stop dmrgateway.service, $SC restart dmrgateway.service, \\
-    $SC start mosquitto.service, $SC stop mosquitto.service, $SC restart mosquitto.service, \\
-    $SC restart n8hotspot.service, $SC reboot, $SC poweroff
-EOF
-chmod 440 /etc/sudoers.d/n8hotspot
-visudo -cq -f /etc/sudoers.d/n8hotspot || fail "sudoers-Regel fehlerhaft"
+# units, sudo rule, groups, owner – the same script update.sh uses to repair them
+N8_DIR="$N8_DIR" N8_PORT="$N8_PORT" SVC_USER="$SVC_USER" N8_SKIP_UART=1 N8_NO_RESTART=1 bash "$N8_DIR/scripts/permissions.sh" \
+    || warn "Nicht alles ließ sich einrichten – siehe oben (sudo $N8_DIR/scripts/permissions.sh --check)"
 systemctl daemon-reload
 systemctl enable -q dmrgateway mmdvmhost n8hotspot
 systemctl restart dmrgateway mmdvmhost n8hotspot

@@ -153,6 +153,7 @@ async function loadUpdates(force) {
                 ${d.url ? `<a class="btn" href="${esc(d.url)}" target="_blank" rel="noopener">GitHub ↗</a>` : ''}</div>
             ${!d.can_install ? '<div class="help">This installation is not a git checkout – update with <code>sudo /opt/n8hotspot/scripts/update.sh</code>.</div>' : ''}
         </div>
+        ${permTile(d.permissions)}
         <form class="tile" onsubmit="event.preventDefault(); saveUpdateCfg(this)"><h3>⚙️ Update settings</h3>
             <div class="row"><label for="upOn">Check for updates</label><label class="switch"><input type="checkbox" id="upOn" name="enabled" ${c.enabled ? 'checked' : ''}><span></span></label>
                 <div class="help">Asks GitHub every hour (no login, no data about your hotspot is sent).</div></div>
@@ -222,4 +223,21 @@ function renderUpdateBanner() {
 async function checkUpdateQuiet() {
     if (!isAdmin()) return;
     try { S.admin.update = await api('GET', '/api/admin/update'); renderUpdateBanner(); } catch (e) { }
+}
+
+// permissions the web interface needs (modem ports, sudo rule for restarts, program folder)
+function permTile(p) {
+    if (!p) return '';
+    const icon = i => i.ok ? '<span class="pill ok">✓</span>' : i.level === 'warn' ? '<span class="pill warn">!</span>' : '<span class="pill bad">✕</span>';
+    return `<div class="tile perm-tile"><h3>🔐 Permissions</h3>
+        <div class="subt">What the web interface may do: open the modem ports (scan, calibration), restart the services after an update, update its own folder.</div>
+        <div class="perm-list">${p.items.map(i => `<div class="perm-row">${icon(i)}<div><b>${esc(i.label)}</b>${i.detail ? `<div class="dim">${esc(i.detail)}</div>` : ''}</div></div>`).join('')}</div>
+        ${p.ok ? '<div class="help" style="margin-top:8px">✓ Everything in order.</div>'
+               : `<div class="help" style="margin-top:8px">Repair once on the console (needs root, also part of <code>scripts/update.sh</code>):</div>
+                  <div class="perm-cmd"><code>${esc(p.fix)}</code><button class="btn small" onclick="navigator.clipboard && navigator.clipboard.writeText('${esc(p.fix)}').then(() => toast('Copied'))">📋</button></div>`}
+        <div class="actions"><button class="btn" onclick="recheckPerms()">↻ Check again</button></div></div>`;
+}
+async function recheckPerms() {
+    try { const p = await api('GET', '/api/admin/permissions'); if (S.admin.update) S.admin.update.permissions = p; loadUpdates(false); toast(p.ok ? 'Permissions OK' : `${p.problems} problem(s)`, !p.ok); }
+    catch (e) { toast(e.message, true); }
 }

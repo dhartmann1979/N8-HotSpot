@@ -97,3 +97,19 @@ def test_install_rejects_bad_input():
             updater.install("main", exp)
     with pytest.raises(updater.UpdateError):
         updater.install("-x", "a" * 40)
+
+
+def test_permission_check_shape(tmp_path):
+    from n8hotspot import permcheck
+    r = permcheck.check(str(tmp_path / "ttyNOPE"))
+    keys = [i["key"] for i in r["items"]]
+    assert "dialout" in keys and "sudo" in keys and "repo" in keys and "port-missing" in keys
+    assert r["fix"].endswith("scripts/permissions.sh") and r["problems"] == sum(not i["ok"] for i in r["items"])
+
+
+def test_scan_reports_permissions(client):
+    login(client)
+    r = client.post("/api/admin/serial/scan", json={}, headers=H)
+    assert r.status_code == 200 and "permissions" in r.json() and r.json()["stopped"] is False
+    p = client.get("/api/admin/permissions").json()
+    assert {"ok", "items", "fix"} <= set(p)

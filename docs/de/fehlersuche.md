@@ -9,6 +9,7 @@
 | Symptom | Ursache | Lösung |
 |---|---|---|
 | **✕ Modem** rot | falscher Port, Board nicht gesteckt, serielle Konsole oder Bluetooth belegen `/dev/ttyAMA0` | *Settings → Modem → 🔍 Find*: zeigt, wo ein Modem antwortet, und trägt den Port mit **Use** ein. Nach der Installation einmal neu starten. |
+| Modem-Scan findet nichts / *no permission* | Weboberfläche nicht in der Gruppe `dialout`, Login-Konsole auf dem Port, oder MMDVMHost hält den (falschen) Port | Im Scan **Stop MMDVMHost & scan**; *Admin → Updates → 🔐 Permissions* ansehen; einmal `sudo /opt/n8hotspot/scripts/permissions.sh` |
 | **✕ N8schicht: password wrong** | falsches Passwort beim Server | *Settings → DMR network → Password*: bei der N8schicht das FreeRadioID-Passwort oder das Gast-Passwort |
 | **✕ N8schicht: login** | Der Server kennt die ID nicht oder lässt sie nicht zu | DMR-ID und Hotspot-Suffix prüfen (*Station*) |
 | **✕ N8schicht: config** | Die ID ist schon verbunden, z. B. ein zweiter Hotspot mit gleicher ID | anderes Hotspot-Suffix nehmen |

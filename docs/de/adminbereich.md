@@ -44,7 +44,7 @@ Neben **Serial port** im Abschnitt *Modem* öffnet **🔍 Find** ein Fenster mit
 - einer kurzen Erklärung, welche Schnittstelle wofür steht
 - einem **Scan** aller seriellen Schnittstellen
 
-<p align="center"><img src="../images/serial-scan.png" alt="Modem suchen" width="70%"></p>
+<p align="center"><img src="../images/serial-scan.png" alt="Modem suchen" width="49%"> <img src="../images/serial-scan-stopped.png" alt="Scan mit angehaltenem MMDVMHost" width="49%"></p>
 
 | Schnittstelle | Typisch für |
 |---|---|
@@ -56,6 +56,11 @@ Neben **Serial port** im Abschnitt *Modem* öffnet **🔍 Find** ein Fenster mit
 
 Der Scan schickt jeder freien Schnittstelle die MMDVM-Abfrage *GET_VERSION* (bei 115200 und 460800 Baud) und zeigt die Antwort, also Board, Firmware und Version.
 - **Belegt:** Die Schnittstelle, die MMDVMHost gerade benutzt, fasst der Scan nicht an. Er zeigt, wer sie belegt, und nimmt die Modem-Daten von MMDVMHost.
+  Hat MMDVMHost eine Schnittstelle offen, erscheint der Knopf **Stop MMDVMHost & scan**: MMDVMHost wird für ein paar Sekunden angehalten,
+  alle Schnittstellen werden direkt gefragt, danach läuft MMDVMHost wieder. Das hilft, wenn MMDVMHost am falschen Port hängt
+  und deshalb selbst kein Modem meldet. (Während einer Kalibrierung geht das nicht.)
+- **Berechtigungen:** Darf die Weboberfläche eine Schnittstelle nicht öffnen (*no permission*), steht oben ein gelber Kasten mit dem Grund
+  und dem Befehl zum Reparieren: `sudo /opt/n8hotspot/scripts/permissions.sh`. Siehe [Updates → Berechtigungen](updates.md#-berechtigungen).
 - **USB:** Bei USB-Geräten stehen Hersteller, Produkt und USB-ID dabei.
 - **Übernehmen:** **Use** trägt Port und Geschwindigkeit ein und wählt die passende Board-Vorlage (Simplex/Duplex). Danach **Save**.
 
@@ -137,6 +142,8 @@ Heimnetz), höchstens 256 KB, und SVG-Dateien mit Skripten werden abgelehnt.
 <p align="center"><img src="../images/admin-updates.png" alt="Updates" width="95%"></p>
 
 Installierte Version, Stand auf GitHub, Änderungen der neuen Version, **⟳ Check now** und **⬆️ Update now** (mit Passwortabfrage).
+Daneben die Kachel **🔐 Permissions**: ob die Weboberfläche die Modem-Schnittstellen öffnen, die Dienste neu starten und sich selbst
+aktualisieren darf – mit dem Befehl zum Reparieren, falls etwas fehlt.
 Rechts: stündliche Prüfung, automatische Updates zu einer festen Stunde und ob MMDVMHost/DMRGateway mit neu starten.
 Alles dazu – auch wie die Dienste ohne Änderung an `sudoers` neu starten – steht unter **[⬆️ Updates & Versionen](updates.md)**.
 

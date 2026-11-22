@@ -68,6 +68,39 @@ Ein Update wird **abgelehnt**, wenn
 - der Hotspot eigene Commits hat, die es auf GitHub nicht gibt,
 - gerade schon ein Update läuft (Pause von 30 Sekunden zwischen zwei Versuchen).
 
+## 🔐 Berechtigungen
+
+<p align="center"><img src="../images/permissions.png" alt="Kachel Permissions" width="60%"></p>
+
+Die Weboberfläche läuft als Benutzer `n8hotspot`, nicht als root. Damit Modem-Scan, Kalibrierung, Neustarts und Updates
+funktionieren, braucht sie ein paar Rechte. Die Kachel **🔐 Permissions** unter *Admin → Updates* prüft sie bei jedem Öffnen
+(und **↻ Check again**), auch nach jedem Update:
+
+| Prüfung | Wofür | Typische Ursache, wenn rot |
+|---|---|---|
+| Gruppe **dialout** | Modem-Scan und Kalibrierung öffnen `/dev/ttyAMA0`, `/dev/ttyACM0` … | ältere Installation; Gruppe hinzugefügt, aber Dienst nicht neu gestartet |
+| **Serial port … can be opened** | jede Modem-Schnittstelle einzeln | Login-Konsole (getty) belegt den Port (Gruppe `tty`) |
+| **No Linux console on the modem UART** | Kernel schreibt sonst Text auf das Modem | `console=serial0,115200` in `cmdline.txt` |
+| **GPIO UART is the full PL011** | Hat am Pi braucht den richtigen UART | Bluetooth aktiv, `dtoverlay=disable-bt` fehlt |
+| **sudo rule** | Dienste nach Update/Einstellungen neu starten, MMDVMHost für den Scan anhalten | `/etc/sudoers.d/n8hotspot` fehlt oder ist alt |
+| **Program folder writable** | *Update now* | Dateien gehören root (z. B. nach `git pull` als root) |
+| **Python environment writable** | neue Pakete nach einem Update | `venv` gehört root |
+
+Reparieren lässt sich das nur als root – einmal auf der Konsole:
+
+```bash
+sudo /opt/n8hotspot/scripts/permissions.sh            # prüfen und reparieren, danach Dienste neu starten
+sudo /opt/n8hotspot/scripts/permissions.sh --check    # nur anzeigen
+```
+
+Das Skript setzt die Gruppen (`dialout`, `systemd-journal` …), schreibt die systemd-Dienste und die sudo-Regel neu (der Port der
+Weboberfläche bleibt), gibt den Programmordner dem Benutzer `n8hotspot`, schaltet eine Login-Konsole auf der Modem-Schnittstelle ab
+und nimmt am Raspberry Pi die Linux-Konsole vom UART (dann einmal `sudo reboot`). **`scripts/update.sh` ruft es bei jedem Update auf**,
+`install.sh` ebenfalls. Bewusst nicht im Browser: Ein Skript im Programmordner, das die Weboberfläche selbst ändern darf, als root
+auszuführen, wäre eine Hintertür.
+
+Ändert ein Update im Browser die Dienst-Dateien oder fehlt eine Berechtigung, steht das im Update-Dialog als ⚠️ mit genau diesem Befehl.
+
 ## Automatische Updates
 
 Mit **Install automatically** installiert der Hotspot neue Versionen selbst – genauso wie mit *Update now*, nur ohne Klick:
@@ -96,7 +129,7 @@ Weboberfläche nach dem Update selbst, und systemd startet sie wegen `Restart=al
 neu anlegen mit:
 
 ```bash
-sudo /opt/n8hotspot/scripts/install.sh
+sudo /opt/n8hotspot/scripts/permissions.sh
 ```
 
 Prüfen kannst du sie mit `sudo -l -U n8hotspot`.
@@ -106,7 +139,7 @@ Prüfen kannst du sie mit `sudo -l -U n8hotspot`.
 Ohne Browser – oder bei einer Installation ohne Git – geht es wie bisher:
 
 ```bash
-sudo /opt/n8hotspot/scripts/update.sh              # Weboberfläche (git pull, Python-Pakete, Neustart)
+sudo /opt/n8hotspot/scripts/update.sh              # Weboberfläche (git pull, Python-Pakete, Berechtigungen, Neustart)
 sudo /opt/n8hotspot/scripts/update.sh --rebuild    # dazu aktuelle MMDVMHost/DMRGateway/MMDVMCal bauen
 ```
 
