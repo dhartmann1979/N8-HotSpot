@@ -141,7 +141,7 @@ Heimnetz), höchstens 256 KB, und SVG-Dateien mit Skripten werden abgelehnt. All
 
 <p align="center"><img src="../images/admin-updates.png" alt="Updates" width="95%"></p>
 
-Installierte Version, Stand auf GitHub, Änderungen der neuen Version, **⟳ Check now** und **⬆️ Update now** (mit Passwortabfrage).
+Kachel **⬆️ Updates** im N8-Kit-Stil: installierte Version, Stand auf GitHub, zuletzt geprüft, letztes Update (erfolgreich/zurückgenommen), Änderungen der neuen Version, **↻ Jetzt prüfen** und **⬆️ Update jetzt installieren** (mit Passwortabfrage, Fortschritt und automatischem Rollback). Einzelheiten: [Updates](updates.md).
 Daneben die Kachel **🔐 Permissions**: ob die Weboberfläche die Modem-Schnittstellen öffnen, die Dienste neu starten und sich selbst
 aktualisieren darf – mit dem Befehl zum Reparieren, falls etwas fehlt.
 Rechts: stündliche Prüfung, automatische Updates zu einer festen Stunde und ob MMDVMHost/DMRGateway mit neu starten.

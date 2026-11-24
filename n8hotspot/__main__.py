@@ -97,8 +97,10 @@ def main(argv):
     if cmd == "lookup-id":
         return lookup_id(int(argv[2]))
     import uvicorn
+    from .n8_security import UVICORN_KWARGS
     uvicorn.run("n8hotspot.app:app", host=os.environ.get("N8HS_BIND", "0.0.0.0"),
-                port=int(os.environ.get("N8HS_PORT", "80")), log_level="warning", proxy_headers=False)
+                port=int(os.environ.get("N8HS_PORT", "80")), log_level="warning", proxy_headers=False,
+                **UVICORN_KWARGS)          # no "server: uvicorn" header
     return 0
 
 

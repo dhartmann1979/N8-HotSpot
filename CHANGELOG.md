@@ -4,6 +4,39 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.4.0] – 2026-11-24
+
+Sprache **DE | EN**, Updates mit Fortschritt und Rollback und strengere Sicherheits-Header – mit dem **N8 Kit**, das jetzt in N8-HotSpot,
+HBlink4-FreeRadioID, adn-frn-server und N8 Crosslink gleich ist. Ausführlich: [docs/de/sicherheit.md](docs/de/sicherheit.md).
+
+### 🌐 Sprache DE | EN
+- Umschalter **DE | EN** in der Kopfzeile zwischen 🔗 Links und Anmeldung, **Standard Deutsch**. Umschalten ohne Neuladen; die Wahl gilt
+  per Cookie (`n8_lang`) für alle N8schicht-Oberflächen auf dem Gerät. `?lang=en` für Links.
+- Deutsche Texte für Kopfzeile, Statusleiste, Live, Statistik, Talkgroups und den ganzen Adminbereich (Settings mit Modem, DMR-Betrieb,
+  Server, ID-Liste, FreeRadioID, Experte; Kalibrierung; Benutzer; Aussehen; Links; System; Updates mit Berechtigungen; Protokolle;
+  Konfigurationsdateien; Sitzungen) in `static/i18n-app.js`.
+
+### ⬆️ Updates wie in N8 Crosslink
+- **Hinweis** unter der Statusleiste im N8-Kit-Stil: *Update verfügbar: alt → neu* mit **Was ist neu?**, **Jetzt aktualisieren**,
+  **Details**, **Später** (einen Tag). Ersetzt den blauen Balken mit *Show*.
+- **Admin → Updates → ⬆️ Updates**: gleiche Kachel wie in den anderen Projekten (installiert, GitHub, zuletzt geprüft, automatische Prüfung,
+  letztes Update, Quelle, Neuerungen). Die Update-Einstellungen und die Berechtigungen bleiben daneben.
+- **Fortschritt:** Fenster mit Neuerungen, Ablauf und Passwortabfrage, danach *geladen und eingespielt → Dienst startet neu →
+  Weboberfläche wird geprüft*; ein falsches Passwort lässt das Fenster offen. Fehlgeschlagene Teilschritte erscheinen als Hinweis.
+- **Rollback:** Vor dem Neustart wird der alte Stand gemerkt (`data/update.pending`), auch bei automatischen Updates. Die neue Version
+  prüft ihre Weboberfläche; antwortet sie nicht, setzt `scripts/n8-update-guard.sh` (neu als `ExecStartPre` in `n8hotspot.service`)
+  nach drei Starts auf den alten Commit zurück. Ergebnis unter *Letztes Update*. `permissions.sh` (von `update.sh` aufgerufen) erneuert
+  die Unit.
+
+### 🔐 Sicherheit
+- Neue Header: `Content-Security-Policy`, `Strict-Transport-Security` über HTTPS (auch hinter einem Proxy), `Permissions-Policy`,
+  `Cross-Origin-Opener-Policy`/`-Resource-Policy`; kein `server: uvicorn` mehr. Die API-Doku war schon aus; zum Entwickeln `N8_API_DOCS=1`.
+- Doku mit Beispielen für **Caddy** und **nginx** als Reverse-Proxy.
+
+### 🧪 Tests
+- `tests/test_security.py`: API-Doku aus, Header, HSTS hinter Proxy, kein `server`-Header, Rollback nach drei Starts, Bestätigung nach
+  erfolgreichem Start, Unit mit Guard, Kit-Dateien eingebunden.
+
 ## [1.3.0] – 2026-11-22
 
 Neue Kopfzeile: statt zwei Leisten (Status-Chips oben, Reiter darunter) gibt es jetzt **ein Menü** und darunter eine schmale

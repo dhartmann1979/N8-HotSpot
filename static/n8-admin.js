@@ -135,39 +135,36 @@ async function refreshSiteIcons(btn) {
 }
 
 // ---------------------------------------------------------------- admin: updates
+// N8 Kit state: same banner, tile and progress as in the other N8schicht projects
+function kitUpdate(d) {
+    if (!d) return null;
+    const loc = d.local || {}, lat = d.latest || {};
+    const notes = (d.release_notes || []).map(s => `<div class="upd-sec"><b>v${esc(s.version)}</b> <span class="dim">${esc(s.date || '')}</span>
+        <ul>${s.body.split('\n').filter(x => /^\s*[-*]\s/.test(x)).slice(0, 12).map(x => `<li>${esc(x.replace(/^\s*[-*]\s+/, '').replace(/\*\*/g, ''))}</li>`).join('')}</ul></div>`).join('')
+        || ((d.commits || []).length ? '<ul>' + d.commits.slice(0, 10).map(x => `<li><code>${esc(x.short)}</code> ${esc(x.message)}</li>`).join('') + '</ul>' : '');
+    const c = d.config || {};
+    return {
+        available: !!(d.available && !d.error && lat.short), current: `v${loc.version || '?'} · ${loc.short || 'no git'}`,
+        latest: lat.short ? `${d.remote_version ? 'v' + d.remote_version + ' · ' : ''}${lat.short}` : '', notes, checked: d.checked_at,
+        can_install: !!(d.available && d.can_install), error: d.error || '', result: d.result || null,
+        schedule: !d.enabled ? 'aus' : c.auto ? `stündlich zur vollen Stunde, automatisch installieren ${String(c.auto_hour).padStart(2, '0')}:00–${String(c.auto_hour).padStart(2, '0')}:59` : (c.interval_hours > 1 ? `alle ${c.interval_hours} Stunden zur vollen Stunde` : 'stündlich zur vollen Stunde'),
+        reason: d.can_install ? '' : 'This installation is not a git checkout – update with <code>sudo /opt/n8hotspot/scripts/update.sh</code>.',
+        extra: [['Source', `<span class="mono" style="font-size:12px">${esc(d.origin || d.url || '')}</span>`]],
+    };
+}
 async function loadUpdates(force) {
     const el = $('admin-updates');
-    if (force) el.querySelector('.upd-state')?.classList.add('loading');
     let d;
     try { d = await api('GET', '/api/admin/update' + (force ? '?force=true' : '')); }
     catch (e) { el.innerHTML = `<div class="tile"><h3>⬆️ Updates</h3><div class="empty">${esc(e.message)}</div></div>`; return; }
     S.admin.update = d; renderUpdateBanner();
-    const c = d.config, loc = d.local || {}, lat = d.latest || {};
-    const notes = (d.release_notes || []).map(s => `<div class="upd-sec"><b>v${esc(s.version)}</b> <span class="dim">${esc(s.date || '')}</span>
-        <ul>${s.body.split('\n').filter(x => /^\s*[-*]\s/.test(x)).slice(0, 12).map(x => `<li>${esc(x.replace(/^\s*[-*]\s+/, '').replace(/\*\*/g, ''))}</li>`).join('')}</ul></div>`).join('');
-    const commits = (d.commits || []).map(x => `<li><code>${esc(x.short)}</code> ${esc(x.message)}</li>`).join('');
-    const state = d.error ? `<span class="pill bad">Check failed</span> <span class="dim">${esc(d.error)}</span>`
-        : d.available ? `<span class="pill warn">⬆️ ${d.remote_version ? 'Version ' + esc(d.remote_version) : d.behind + ' new change(s)'} available</span>`
-        : `<span class="pill ok">✓ Up to date</span>`;
+    const c = d.config;
     el.innerHTML = `<div class="grid g2">
-        <div class="tile"><h3>⬆️ Version</h3>
-            <div class="kv" style="margin-top:10px">
-                <div class="k">Installed</div><div class="v">v${esc(loc.version || '?')} <span class="dim mono">${esc(loc.short || 'no git')}</span></div>
-                <div class="k">On GitHub</div><div class="v">${lat.short ? `${d.remote_version ? 'v' + esc(d.remote_version) + ' ' : ''}<span class="dim mono">${esc(lat.short)}</span>` : '–'}</div>
-                <div class="k">Status</div><div class="v upd-state">${state}</div>
-                <div class="k">Last check</div><div class="v">${d.checked_at ? fmtDate(d.checked_at) : '–'}</div>
-                <div class="k">Source</div><div class="v mono" style="font-size:12px;white-space:normal">${esc(d.origin || d.url || '')}</div>
-            </div>
-            ${notes ? `<div class="upd-notes">${notes}</div>` : commits ? `<ul class="upd-commits">${commits}</ul>` : ''}
-            <div class="actions"><button class="btn" onclick="loadUpdates(true)">⟳ Check now</button>
-                ${d.available && d.can_install ? '<button class="btn primary" onclick="openUpdateNow()">⬆️ Update now</button>' : ''}
-                ${d.url ? `<a class="btn" href="${esc(d.url)}" target="_blank" rel="noopener">GitHub ↗</a>` : ''}</div>
-            ${!d.can_install ? '<div class="help">This installation is not a git checkout – update with <code>sudo /opt/n8hotspot/scripts/update.sh</code>.</div>' : ''}
-        </div>
+        <div class="tile"><h3>⬆️ Updates</h3><div id="updPanel"></div></div>
         ${permTile(d.permissions)}
         <form class="tile" onsubmit="event.preventDefault(); saveUpdateCfg(this)"><h3>⚙️ Update settings</h3>
             <div class="row"><label for="upOn">Check for updates</label><label class="switch"><input type="checkbox" id="upOn" name="enabled" ${c.enabled ? 'checked' : ''}><span></span></label>
-                <div class="help">Asks GitHub every hour (no login, no data about your hotspot is sent).</div></div>
+                <div class="help">Asks GitHub every full hour (no login, no data about your hotspot is sent).</div></div>
             <div class="row"><label for="upInt">Check every (hours)</label><input type="number" id="upInt" name="interval_hours" min="1" max="168" value="${c.interval_hours}"></div>
             <div class="row"><label for="upAuto">Install automatically</label><label class="switch"><input type="checkbox" id="upAuto" name="auto" ${c.auto ? 'checked' : ''}><span></span></label>
                 <div class="help">Installs a new version by itself during the chosen hour – only when nobody is transmitting and no calibration runs.</div></div>
@@ -179,6 +176,7 @@ async function loadUpdates(force) {
             <div class="actions"><button class="btn primary">Save</button></div>
         </form>
     </div>`;
+    N8Kit.update.panel($('updPanel'), kitUpdate(d), { onCheck: () => loadUpdates(true), onInstall: () => openUpdateNow() });
 }
 async function saveUpdateCfg(form) {
     const v = {};
@@ -187,49 +185,34 @@ async function saveUpdateCfg(form) {
     catch (e) { toast(e.message, true); }
 }
 function openUpdateNow() {
-    const d = S.admin.update, lat = d.latest || {};
-    modal(`<form class="upd-dialog" onsubmit="event.preventDefault(); doUpdateNow(this)">
-        <h2>⬆️ Install update</h2>
-        <div>${d.remote_version ? `Version <b>${esc(d.remote_version)}</b>` : `<b>${d.behind}</b> new change(s)`} from <span class="mono">${esc(d.repo)}</span>.</div>
-        <div class="upd-facts"><span>1. Download exactly <code>${esc(lat.short)}</code> (fast-forward only, no local changes)</span>
+    const d = S.admin.update, k = kitUpdate(d); if (!k) return;
+    N8Kit.update.run({
+        from: k.current, to: k.latest, password: true,
+        text: `${k.notes}<div class="upd-facts"><span>1. Download exactly <code>${esc((d.latest || {}).short || '')}</code> (fast-forward only, no local changes)</span>
             <span>2. Python packages if requirements.txt changed</span>
             <span>3. ini files again${d.config.restart_radio ? ', restart MMDVMHost and DMRGateway' : ''}</span>
-            <span>4. Restart the web interface – the page reloads by itself</span></div>
-        <label for="updPw">Your password to confirm</label>
-        <input type="password" id="updPw" autocomplete="current-password" required>
-        <div class="upd-progress" id="updProg"></div>
-        <div class="actions"><button type="button" class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="updGo">Update now</button></div>
-    </form>`);
-    setTimeout(() => $('updPw').focus(), 50);
-}
-async function doUpdateNow(form) {
-    const btn = $('updGo'), prog = $('updProg');
-    btn.disabled = true; btn.textContent = 'Updating …';
-    prog.innerHTML = '<span>⏳ Downloading …</span>';
-    try {
-        const r = await api('POST', '/api/admin/update/install', { password: $('updPw').value, expected: (S.admin.update.latest || {}).commit });
-        prog.innerHTML = `<span>✓ ${esc(r.old.slice(0, 7))} → ${esc(r.new.slice(0, 7))} (${r.files.length} files)</span>`
-            + r.steps.map(s => `<span>${s.ok ? '✓' : '⚠️'} ${esc(s.step)}${s.detail ? ' – ' + esc(s.detail) : ''}</span>`).join('')
-            + (r.restart === 'service' ? '<span>⏳ Restarting the web interface …</span>' : r.restart === 'manual'
-                ? '<span>⚠️ Please restart N8-Hotspot by hand: <code>sudo systemctl restart n8hotspot</code></span>' : '');
-        if (r.restart === 'service') waitForRestart(r.new);
-        else { btn.textContent = 'Done'; }
-    } catch (e) { prog.innerHTML = `<span style="color:var(--red)">✕ ${esc(e.message)}</span>`; btn.disabled = false; btn.textContent = 'Update now'; }
-}
-function waitForRestart(commit) {
-    let n = 0;
-    const tick = async () => {
-        n++;
-        try { const i = await api('GET', '/api/info'); if (i.build && i.build.commit && commit.startsWith(i.build.commit)) { location.reload(); return; } } catch (e) { }
-        if (n < 60) setTimeout(tick, 2000); else location.reload();
-    };
-    setTimeout(tick, 3000);
+            <span>4. Restart the web interface – the page reloads by itself</span></div>`,
+        install: async (password) => {
+            const r = await api('POST', '/api/admin/update/install', { password, expected: (d.latest || {}).commit });
+            $('updateBanner').hidden = true;
+            const bad = (r.steps || []).filter(s => !s.ok);
+            if (bad.length) toast(bad.map(s => `${s.step}${s.detail ? ' – ' + s.detail : ''}`).join(' · '), true);
+            if (r.restart === 'manual') return { restart: false, message: 'Please restart N8-Hotspot by hand: sudo systemctl restart n8hotspot' };
+            if (r.restart !== 'service') return { restart: false, message: 'Update installed.' };
+            return r;
+        },
+        version: async () => {
+            const r = await fetch('/api/info', { cache: 'no-store', credentials: 'same-origin' });
+            if (!r.ok) throw new Error(r.status);
+            const b = (await r.json()).build || {};
+            return `v${b.version || '?'} · ${b.commit || ''}`;
+        },
+    });
 }
 function renderUpdateBanner() {
-    const d = S.admin.update, el = $('updateBanner');
-    const on = isAdmin() && d && d.available && !d.error;
-    el.classList.toggle('hidden', !on);
-    if (on) $('updateText').textContent = d.remote_version ? `Version ${d.remote_version} is available` : `${d.behind} new change(s) are available`;
+    const el = $('updateBanner');
+    if (!isAdmin()) { el.hidden = true; return; }
+    N8Kit.update.banner(el, kitUpdate(S.admin.update), { app: 'n8hs', onInstall: () => openUpdateNow(), onDetails: () => showTab('admin', 'updates') });
 }
 async function checkUpdateQuiet() {
     if (!isAdmin()) return;

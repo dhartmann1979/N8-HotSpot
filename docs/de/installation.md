@@ -140,7 +140,7 @@ Hast du das Image mit Hotspot-Einstellungen gebaut oder `setup.sh` benutzt, sind
 
 ## Aktualisieren
 
-Am einfachsten im Browser: **Admin → ⬆️ Updates → Update now** (ab Version 1.1.0). Der Hotspot prüft jede Stunde selbst,
+Am einfachsten im Browser: Hinweis **Update verfügbar → Jetzt aktualisieren** oder **Admin → ⬆️ Updates → ⬆️ Update jetzt installieren** (ab Version 1.1.0). Der Hotspot prüft jede volle Stunde selbst,
 ob es eine neue Version gibt, und zeigt Admins dann einen Hinweis. Details: **[⬆️ Updates & Versionen](updates.md)**.
 
 Auf der Konsole:

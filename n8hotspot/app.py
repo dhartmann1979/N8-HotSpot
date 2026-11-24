@@ -23,6 +23,8 @@ from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
+from . import n8_security as _sec
+from . import n8_update_guard as _guard
 from . import __version__, configgen, demo, permcheck, siteicons, stats, updater
 from .auth import Auth, AuthError, DEFAULT_PASSWORD, DEFAULT_USER
 from .calib import KEYS, CalSession
@@ -106,7 +108,7 @@ class Ctx:
 
 
 ctx: Optional[Ctx] = None
-app = FastAPI(title="N8-Hotspot", docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(title="N8-Hotspot", **{"docs_url": None, "redoc_url": None, "openapi_url": None, **_sec.FASTAPI_KWARGS})
 
 
 class HTTPError(Exception):
@@ -135,9 +137,7 @@ async def _mw(request: Request, call_next):
             and request.headers.get("x-n8") != "1":
         return JSONResponse({"error": "Missing X-N8 header."}, status_code=403)
     resp = await call_next(request)
-    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
-    resp.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
-    resp.headers.setdefault("Referrer-Policy", "same-origin")
+    _sec.headers(resp, https=_sec.is_https(request))
     if request.url.path.startswith("/api/"):
         resp.headers.setdefault("Cache-Control", "no-store")
     return resp
@@ -332,6 +332,7 @@ async def admin_update(request: Request, force: bool = False):
     except Exception:
         owner = ""
     return {"enabled": c["enabled"], **res, "config": c, "can_install": bool(res["local"].get("commit")),
+            "result": _guard.last_result(DATA),
             "permissions": await permissions(),
             "systemd": bool(os.environ.get("INVOCATION_ID")), "origin": await asyncio.to_thread(updater.origin_url),
             "path": str(updater.REPO_ROOT), "owner": owner, "demo": DEMO}
@@ -377,6 +378,14 @@ async def run_update(expected: str, who: str, ip: str) -> Dict[str, Any]:
             how = "none"
         elif os.environ.get("INVOCATION_ID") or os.geteuid() == 0:
             how = "service"
+            # N8 update guard: the new code checks its web interface; scripts/n8-update-guard.sh
+            # (ExecStartPre) goes back to the old commit after three starts without an answer
+            try:
+                lv = updater.local_version()
+                _guard.mark_pending(DATA, res["old"], res["new"], f"v{__version__} · {res['old'][:7]}",
+                                    f"v{lv.get('version') or '?'} · {res['new'][:7]}")
+            except (OSError, KeyError) as e:
+                log.warning(f"update guard not armed: {e}")
             loop = asyncio.get_running_loop()
             # sudo rule from install.sh allows "systemctl restart n8hotspot.service"; without it systemd
             # (Restart=always) starts the process again after it ended itself.
@@ -1007,6 +1016,9 @@ async def startup():
     asyncio.ensure_future(services_task())
     asyncio.ensure_future(daily_task())
     asyncio.ensure_future(update_task())
+    if _guard.pending(DATA):
+        asyncio.ensure_future(_guard.startup_check(DATA, _guard.local_url(os.environ.get("N8HS_BIND", "0.0.0.0"),
+                                                                           int(os.environ.get("N8HS_PORT", "80")), "/api/info")))
     asyncio.ensure_future(refresh_link_icons())
     asyncio.ensure_future(midnight_site_icon_refresh())
     log.info(f"🌙 N8-Hotspot {__version__} started{' (demo mode)' if DEMO else ''}; data in {DATA}")

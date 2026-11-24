@@ -11,28 +11,33 @@ eine neue Version gibt, zeigt dir die Änderungen und startet nach dem Update al
 
 <p align="center"><img src="../images/update-banner.png" alt="Hinweis auf ein Update" width="95%"></p>
 
-Einmal pro Stunde fragt der Hotspot bei GitHub nach dem neuesten Stand von `dhartmann1979/N8-HotSpot` (Zweig `main`).
+Zu jeder vollen Stunde fragt der Hotspot bei GitHub nach dem neuesten Stand von `dhartmann1979/N8-HotSpot` (Zweig `main`).
 Dabei wird nur die öffentliche Commit-Liste gelesen, es werden **keine Daten über deinen Hotspot** gesendet.
 
-Gibt es etwas Neues, sehen **nur Admins** oben den blauen Balken *Version x.y.z is available*. **Show** öffnet den Tab *Updates*.
-Besucher und Viewer bekommen davon nichts mit.
+Gibt es etwas Neues, sehen **nur Admins** unter der Statusleiste den Hinweis *Update verfügbar: v1.4.0 · … → v1.5.0 · …* mit
+**Was ist neu?** (klappt die Änderungen auf), **Jetzt aktualisieren**, **Details** (öffnet *Admin → Updates*) und **Später**
+(blendet den Hinweis für diese Version einen Tag aus). Besucher und Viewer bekommen davon nichts mit.
+
+Hinweis, Kachel und Fortschritt kommen aus dem **N8 Kit** und sehen in N8-HotSpot, HBlink4-FreeRadioID, adn-frn-server und
+N8 Crosslink gleich aus (siehe [Sicherheit & N8 Kit](sicherheit.md)).
 
 ## Admin → Updates
 
 <p align="center"><img src="../images/admin-updates.png" alt="Admin → Updates" width="95%"></p>
 
-Links steht die **Version**:
+Links steht die Kachel **⬆️ Updates**:
 
 | Zeile | Bedeutung |
 |---|---|
-| **Installed** | Versionsnummer aus der Datei `VERSION` und der Commit, auf dem der Hotspot steht |
-| **On GitHub** | neueste Version und Commit auf GitHub |
-| **Status** | ✓ *Up to date*, ⬆️ *Version … available* oder *Check failed* mit Grund (z. B. kein Internet) |
-| **Last check** | wann zuletzt nachgesehen wurde |
-| **Source** | woher das Update kommt: der Git-Remote `origin` auf dem Hotspot |
+| **Installiert** | Versionsnummer aus der Datei `VERSION` und der Commit, auf dem der Hotspot steht |
+| **Auf GitHub** | neueste Version und Commit, mit *Update verfügbar* oder *aktuell* |
+| **Zuletzt geprüft** | wann zuletzt nachgesehen wurde |
+| **Automatische Prüfung** | *stündlich zur vollen Stunde*, bei *Install automatically* mit der Stunde fürs Installieren |
+| **Letztes Update** | *erfolgreich* oder *zurückgenommen*, mit Versionen und Zeit |
+| **Quelle** | woher das Update kommt: der Git-Remote `origin` auf dem Hotspot |
 
-Darunter stehen die **Änderungen der neuen Version**, direkt aus [CHANGELOG.md](../../CHANGELOG.md).
-**⟳ Check now** fragt sofort nach, **GitHub ↗** zeigt den Vergleich der beiden Stände.
+Darunter stehen die **Änderungen der neuen Version** (*Was ist neu*), direkt aus [CHANGELOG.md](../../CHANGELOG.md).
+**↻ Jetzt prüfen** fragt sofort nach, **⬆️ Update jetzt installieren** installiert.
 
 Rechts sind die **Update settings**:
 
@@ -45,20 +50,32 @@ Rechts sind die **Update settings**:
 | **Restart MMDVMHost & DMRGateway** | an | nach dem Update die ini-Dateien neu schreiben und beide Funkdienste neu starten |
 | **Repository / Branch** | `dhartmann1979/N8-HotSpot` / `main` | nur ändern, wenn du einen eigenen Fork benutzt |
 
-## Update now
+## Update jetzt installieren
 
-<p align="center"><img src="../images/update-dialog.png" alt="Update installieren" width="50%"></p>
+<p align="center">
+  <img src="../images/update-dialog.png" alt="Update bestätigen" width="42%">
+  <img src="../images/update-dialog-done.png" alt="Update läuft" width="42%">
+</p>
 
-**⬆️ Update now** fragt zur Sicherheit noch einmal **dein Passwort** ab. Nach 5 falschen Versuchen ist 15 Minuten Pause –
-genau wie beim Login. Dann passiert der Reihe nach:
+**⬆️ Update jetzt installieren** (oder **Jetzt aktualisieren** im Hinweis) zeigt die Neuerungen und was passiert, und fragt zur
+Sicherheit noch einmal **dein Passwort** ab. Nach 5 falschen Versuchen ist 15 Minuten Pause – genau wie beim Login; ein falsches
+Passwort lässt das Fenster offen. Dann siehst du drei Schritte: **Update wird geladen und eingespielt → Dienst startet neu →
+Weboberfläche wird geprüft**. Im Einzelnen:
 
 1. **Herunterladen:** `git fetch` vom eingetragenen Remote, danach ein *Fast-Forward* auf **genau den Commit, der dir angezeigt wurde**.
    Ist inzwischen etwas anderes auf GitHub, bricht das Update ab und bittet dich, neu zu prüfen.
 2. **Python-Pakete:** nur wenn sich `requirements.txt` geändert hat, werden sie in die eigene Umgebung (`venv`) installiert.
 3. **Funkdienste:** `MMDVM-Host.ini` und `DMRGateway.ini` werden neu geschrieben, **MMDVMHost** und **DMRGateway** neu gestartet.
-4. **Weboberfläche:** `n8hotspot` startet neu. Die Seite wartet und lädt sich von selbst neu, sobald die neue Version läuft.
+4. **Weboberfläche:** `n8hotspot` startet neu. Die Seite wartet und lädt sich von selbst neu, sobald die neue Version antwortet.
 
-Im Dialog siehst du jeden Schritt mit ✓ oder ⚠️. Einstellungen, Benutzer, Statistik und Kalibrierung bleiben erhalten –
+**Automatisch zurück (Rollback):** Vor dem Neustart merkt sich der Hotspot den alten Stand (`data/update.pending`). Die neue Version
+ruft nach dem Start ihre eigene Weboberfläche auf. Antwortet sie nicht, beendet sie sich; nach **drei erfolglosen Starts** setzt
+`scripts/n8-update-guard.sh` (läuft als `ExecStartPre` vor jedem Start von `n8hotspot`) den Programmordner auf den alten Commit zurück.
+Das Ergebnis steht unter **Letztes Update** und in `data/update.result`. Das gilt auch für automatische Updates. Die Zeile kommt mit
+`permissions.sh` in die installierte Unit – `update.sh` ruft es bei jedem Update auf.
+
+Geht etwas schief (z. B. eine fehlende Berechtigung), erscheint es als Hinweis unten rechts.
+ Einstellungen, Benutzer, Statistik und Kalibrierung bleiben erhalten –
 sie liegen in `/opt/n8hotspot/data/n8hotspot.db`, nicht im Programmordner.
 
 Ein Update wird **abgelehnt**, wenn
@@ -83,7 +100,7 @@ funktionieren, braucht sie ein paar Rechte. Die Kachel **🔐 Permissions** unte
 | **No Linux console on the modem UART** | Kernel schreibt sonst Text auf das Modem | `console=serial0,115200` in `cmdline.txt` |
 | **GPIO UART is the full PL011** | Hat am Pi braucht den richtigen UART | Bluetooth aktiv, `dtoverlay=disable-bt` fehlt |
 | **sudo rule** | Dienste nach Update/Einstellungen neu starten, MMDVMHost für den Scan anhalten | `/etc/sudoers.d/n8hotspot` fehlt oder ist alt |
-| **Program folder writable** | *Update now* | Dateien gehören root (z. B. nach `git pull` als root) |
+| **Program folder writable** | *Update jetzt installieren* | Dateien gehören root (z. B. nach `git pull` als root) |
 | **Python environment writable** | neue Pakete nach einem Update | `venv` gehört root |
 
 Reparieren lässt sich das nur als root – einmal auf der Konsole:
@@ -99,13 +116,13 @@ und nimmt am Raspberry Pi die Linux-Konsole vom UART (dann einmal `sudo reboot`)
 `install.sh` ebenfalls. Bewusst nicht im Browser: Ein Skript im Programmordner, das die Weboberfläche selbst ändern darf, als root
 auszuführen, wäre eine Hintertür.
 
-Ändert ein Update im Browser die Dienst-Dateien oder fehlt eine Berechtigung, steht das im Update-Dialog als ⚠️ mit genau diesem Befehl.
+Ändert ein Update im Browser die Dienst-Dateien oder fehlt eine Berechtigung, erscheint das als Hinweis mit genau diesem Befehl.
 
 ## Automatische Updates
 
-Mit **Install automatically** installiert der Hotspot neue Versionen selbst – genauso wie mit *Update now*, nur ohne Klick:
+Mit **Install automatically** installiert der Hotspot neue Versionen selbst – genauso wie mit *Update jetzt installieren*, nur ohne Klick:
 
-- nur in der gewählten Stunde (Vorgabe 04:00–04:59 Uhr),
+- nur in der gewählten Stunde (Vorgabe 04:00–04:59 Uhr), mit derselben Prüfung und demselben Rollback,
 - nur wenn **niemand sendet** (beide Zeitschlitze frei) und **keine Kalibrierung** läuft,
 - jedes Update steht im Protokoll unter *Sessions & log* mit dem Benutzer `auto-update`.
 

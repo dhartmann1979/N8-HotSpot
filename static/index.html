@@ -13,6 +13,9 @@
     <link rel="stylesheet" href="/static/n8-light.css?v=1">
     <script src="/static/n8-theme.js?v=1"></script>
     <link rel="stylesheet" href="/static/n8-header.css?v=1">
+    <link rel="stylesheet" href="/static/n8-kit.css?v=1">
+    <script src="/static/n8-kit.js?v=1"></script>
+    <script src="/static/i18n-app.js?v=1"></script>
 </head>
 <body>
 <div class="container">
@@ -50,10 +53,8 @@
         <span>⚠️ <b>The factory login n8schicht / n8schicht is still active.</b> Anyone on your network could change your hotspot. Please set your own password.</span>
         <button class="btn primary" onclick="openAccount(true)">Change now</button>
     </div>
-    <div class="banner info hidden" id="updateBanner">
-        <span>⬆️ <b id="updateText">An update is available</b> for N8-Hotspot.</span>
-        <button class="btn primary" onclick="showTab('admin','updates')">Show</button>
-    </div>
+    <!-- update notice (N8 Kit): admins only, when GitHub has a newer version -->
+    <div class="n8-upd" id="updateBanner" hidden></div>
     <div class="banner info hidden" id="restartBanner">
         <span>⚙️ <b>Settings saved.</b> MMDVMHost and DMRGateway use them after a restart.</span>
         <button class="btn primary" onclick="applyRestart(this)">Restart now</button>
@@ -171,5 +172,9 @@
 <div id="modalRoot"></div>
 <script src="/static/app.js?v=2"></script>
 <script src="/static/n8-admin.js?v=1"></script>
+<script>
+    // N8 Kit: DE | EN next to Links and the login (the same switch in all N8schicht pages)
+    (function () { const u = document.getElementById('userArea'); if (u) N8Kit.langSwitch(u.parentNode, { before: u }); })();
+</script>
 </body>
 </html>

@@ -17,7 +17,8 @@
   <a href="docs/de/kalibrierung.md">Kalibrierung</a> ·
   <a href="docs/de/freeradioid.md">FreeRadioID</a> ·
   <a href="docs/de/technik.md">Technik</a> ·
-  <a href="docs/de/fehlersuche.md">Fehlersuche</a>
+  <a href="docs/de/fehlersuche.md">Fehlersuche</a> ·
+  <a href="docs/de/sicherheit.md">Sicherheit</a>
 </p>
 
 ---
@@ -35,7 +36,8 @@
 | 📈 **Statistiken** | Talkgroups, Sprechzeit, RF und Netz, aktivste Stationen; heute, 24 h, 7 oder 30 Tage, als Diagramm und Tabelle |
 | 🎛️ **Kalibrierung** | Frequenzabgleich mit MMDVMCal im Browser: BER live, Frequenz per Knopf verschieben, Offset mit einem Klick speichern |
 | ⚙️ **Adminbereich** | Station, Modem, Frequenzen, DMR-Server, Zeitschlitze, Expertenzeilen. Dazu Benutzer, Dienste, Logs, System-Infos, Neustart. |
-| ⬆️ **Updates im Browser** | stündliche Prüfung auf GitHub, Hinweis für Admins, **Update now** mit Passwortabfrage, danach Neustart von MMDVMHost, DMRGateway und Weboberfläche; auf Wunsch automatisch nachts |
+| ⬆️ **Updates im Browser** | Prüfung zu jeder vollen Stunde auf GitHub, Hinweis für Admins, **Update jetzt installieren** mit Passwortabfrage und Fortschritt, danach Neustart von MMDVMHost, DMRGateway und Weboberfläche; antwortet sie nicht, automatisch zurück zur alten Version; auf Wunsch automatisch nachts |
+| 🌐 **Deutsch / Englisch** | Umschalter **DE \| EN** in der Kopfzeile, Standard Deutsch; gilt für alle N8schicht-Oberflächen auf dem Gerät |
 | 🎨 **Eigene Farben** | N8 Theme wie im HBlink4-Dashboard: 7 Profile (auch hell), jede Farbe frei wählbar, Export/Import zwischen allen N8-Dashboards |
 | 🧭 **Ein Menü + Statusleiste** | Kopfzeile mit Logo, Reitern, Links und Login ganz rechts (ohne Aufklappmenü, **⚙️ Admin** nach dem Login als Menüpunkt); darunter eine schmale Statusleiste für Live-Daten, Modem, DMR-Server und Modus |
 | 🔗 **Link-Menü** | eigene Links oben rechts, mit den Favicons der verlinkten Seiten (im Hotspot zwischengespeichert) |
@@ -114,6 +116,7 @@ Ohne vorher eingetragene Hotspot-Einstellungen geht es im Browser weiter: **Logi
 |---|---|
 | 📦 [Installation & Image](docs/de/installation.md) | Hardware, Image bauen und flashen, geführte Einrichtung, Installation ohne Fragen, erster Start, Aktualisieren |
 | 🎙️ [Live & Statistik](docs/de/bedienung.md) | Kopfzeile, Zeitschlitze, Last Heard, Talkgroup-Verzeichnis, Statistik-Diagramme |
+| 🔐 [Sicherheit & N8 Kit](docs/de/sicherheit.md) | Sicherheits-Header, API-Doku aus, Reverse-Proxy (Caddy/nginx), Sprache DE/EN, Updates mit Prüfung und Rollback |
 | ⚙️ [Adminbereich](docs/de/adminbereich.md) | Standard-Login, alle Einstellungen, Modem finden, Benutzer, Aussehen, Links, System, Logs, Konfigurationsdateien |
 | ⬆️ [Updates & Versionen](docs/de/updates.md) | Update-Prüfung, Update now, automatische Updates, Neustart der Dienste, sudo-Regel, Versionsnummern, [Änderungen](CHANGELOG.md) |
 | 🎛️ [Kalibrierung](docs/de/kalibrierung.md) | Frequenz-Offset mit MMDVMCal finden, weitere Tests |

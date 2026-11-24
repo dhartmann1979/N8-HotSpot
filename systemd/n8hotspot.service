@@ -13,6 +13,8 @@ WorkingDirectory=/opt/n8hotspot
 Environment=N8HS_DATA=/opt/n8hotspot/data
 Environment=N8HS_PORT=80
 Environment=PYTHONUNBUFFERED=1
+# N8 update guard: back to the previous commit if the web interface does not come up after an update
+ExecStartPre=-/bin/sh /opt/n8hotspot/scripts/n8-update-guard.sh /opt/n8hotspot /opt/n8hotspot/data
 ExecStart=/opt/n8hotspot/venv/bin/python -m n8hotspot
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 Restart=always
