@@ -4,6 +4,13 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.4.1] – 2026-11-24
+
+### 🌐 N8 Kit 1.0.1
+- Absätze, die im Quelltext über mehrere Zeilen gehen, werden beim Umschalten **DE | EN** als Ganzes übersetzt (vorher Zeile für Zeile,
+  deshalb blieben längere Hilfetexte manchmal in der Originalsprache). `n8-kit.js` ist wieder in allen vier N8schicht-Projekten gleich
+  (HBlink4-FreeRadioID 1.6.0, adn-frn-server, N8-HotSpot, N8 Crosslink).
+
 ## [1.4.0] – 2026-11-24
 
 Sprache **DE | EN**, Updates mit Fortschritt und Rollback und strengere Sicherheits-Header – mit dem **N8 Kit**, das jetzt in N8-HotSpot,
