@@ -12,6 +12,18 @@ Dieser Teil ist der **Sichtbereich**: ohne Login sichtbar, solange *Public view*
   <img src="../images/live-mobile.png" alt="Live am Smartphone" width="22%">
 </p>
 
+## 🎨 Eine Designsprache mit dem HobbyRadioPortal
+
+Der N8 Hotspot bleibt eigenständig, sieht aber aus wie das [HobbyRadioPortal](https://github.com/dhartmann1979/HobbyRadioPortal):
+gleiches Farbsystem (N8 Theme 2), gleiche Kopfzeile mit Statusleiste und seit 1.4.2 die gemeinsame Datei **N8 Look**
+(`static/n8-look.css`, identisch im Portal). Sie sorgt für den durchgehenden Hintergrund, die farbig leuchtenden Kacheln
+unter **Heute**, die Abschnittsüberschriften und die Fußzeile als Glaskarte:
+
+<p align="center"><img src="../images/footer.png" alt="Fußzeile im N8 Look" width="90%"></p>
+
+Im Portal kann der Hotspot als Verweis erscheinen (Plugin `hotspot`, Vorgabe aus). Das Portal prüft dann nur,
+ob die Oberfläche erreichbar ist, und verlinkt sie im Menü „Links“.
+
 ## Kopfzeile und Statusleiste
 
 Oben gibt es **ein** Menü: links Logo, Titel und Untertitel, in der Mitte die Reiter, rechts Links und Anmeldung.

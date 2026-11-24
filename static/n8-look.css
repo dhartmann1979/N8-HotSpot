@@ -1,0 +1,30 @@
+/* N8 Look 1.0 – gemeinsame Designsprache von HobbyRadioPortal und N8-HotSpot.
+ * Dieselbe Datei in beiden Repositorys (Portal: portal/static/vendor, Hotspot: static). Sie liegt über N8 Theme 2
+ * und gleicht die Feinheiten an: durchgehender Hintergrund, Abschnittsüberschriften, leuchtende Kennzahl-Kacheln,
+ * ON-AIR-Puls und die Fußzeile als Glaskarte mit Icon. Klassen beider Projekte stehen nebeneinander. */
+
+/* Hintergrund des Themes über die ganze Seitenlänge */
+html { background: var(--bg, #070b17); }
+html body { background-attachment: fixed !important; min-height: 100vh; }
+
+/* Abschnittsüberschriften: klein, gesperrt, Großbuchstaben */
+h2.sec, h2.section-header { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-dim); font-weight: 780; }
+
+/* Kennzahl-Kacheln mit farbigem Leuchten unten rechts (Farbe über --c-rgb, sonst Akzent) */
+.kpi, .stat { position: relative; overflow: hidden; }
+.kpi::after, .stat::after { content: ''; position: absolute; right: -30px; bottom: -40px; width: 120px; height: 120px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(var(--c-rgb, var(--accent-rgb, 90, 200, 250)), .2), transparent 70%); pointer-events: none; }
+.stat:nth-child(2) { --c-rgb: 48, 209, 88; } .stat:nth-child(3) { --c-rgb: 255, 159, 10; } .stat:nth-child(4) { --c-rgb: 191, 90, 242; } .stat:nth-child(5) { --c-rgb: 255, 55, 95; }
+
+/* ON AIR: pulsierender Punkt */
+.n8-air { width: 7px; height: 7px; border-radius: 50%; display: inline-block; background: #30d158;
+    box-shadow: 0 0 0 3px rgba(48, 209, 88, .25), 0 0 10px rgba(48, 209, 88, .9); animation: n8AirPulse 1.2s ease-in-out infinite; }
+@keyframes n8AirPulse { 50% { opacity: .35; } }
+
+/* Fußzeile als Glaskarte mit Icon */
+footer.ft, .site-footer { border-radius: var(--radius-lg, 22px) !important; padding: 14px 18px !important; gap: 10px 18px !important;
+    background: var(--glass-bg) !important; border: 1px solid var(--glass-border) !important;
+    box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
+footer.ft img, .site-footer img.n8-ft-icon { width: 22px; height: 22px; border-radius: 7px; vertical-align: middle; }
+.site-footer .ft-sep { display: none; }
+.site-footer a, footer.ft a { text-decoration: none; color: inherit; } .site-footer a:hover, footer.ft a:hover { color: var(--text); }

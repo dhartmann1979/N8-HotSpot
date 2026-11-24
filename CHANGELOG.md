@@ -4,6 +4,19 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.4.2] – 2026-11-24
+
+### 🎨 Eine Designsprache mit dem HobbyRadioPortal
+Der N8 Hotspot bleibt **eigenständig** (eigenes Image, eigene Weboberfläche, kein Plugin im Portal), spricht aber jetzt
+dieselbe Designsprache wie das neue [HobbyRadioPortal](https://github.com/dhartmann1979/HobbyRadioPortal):
+- **N8 Look 1.0** (`static/n8-look.css`) – dieselbe Datei wie im Portal (`portal/static/vendor/n8-look.css`). Sie liegt über N8 Theme 2 und gleicht die Feinheiten an:
+  - der Hintergrund des Themes läuft über die ganze Seitenlänge (vorher endete der Farbverlauf nach einer Bildschirmhöhe),
+  - die Kennzahl-Kacheln unter **Heute** leuchten unten rechts in eigener Farbe (Gespräche blau, Sprechzeit grün, Funk orange, Netz violett, BER rot) wie die Kacheln im Portal,
+  - Abschnittsüberschriften klein, gesperrt und in Großbuchstaben wie im Portal,
+  - die **Fußzeile** ist eine Glaskarte mit dem N8-Icon.
+- Im Portal erscheint der Hotspot (abschaltbar) nur als Verweis mit Erreichbarkeitsprüfung – siehe Plugin `hotspot` im Portal.
+- Doku: Screenshot **Live** neu, neuer Screenshot der Fußzeile (`docs/images/footer.png`), Abschnitt „Aussehen“ in der Bedienung ergänzt.
+
 ## [1.4.1] – 2026-11-24
 
 ### 🌐 N8 Kit 1.0.1
