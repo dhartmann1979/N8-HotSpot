@@ -607,7 +607,8 @@ const ADMIN_OLD = { updates: 'sys-update' };
 function adminGroups() {
     const G = N8Kit.nav.GROUPS;
     return [
-        { id: 'betrieb', label: G.betrieb, items: [{ id: 'settings', label: '⚙️ Settings' }, { id: 'cal', label: '🎛️ Calibration' },
+        { id: 'betrieb', label: G.betrieb, items: [{ id: 'settings', label: '⚙️ Settings',
+            children: ((S.admin.settings || {}).sections || []).map(sec => ({ id: 'settings:' + sec.id, label: sec.title })) }, { id: 'cal', label: '🎛️ Calibration' },
             { id: 'logs', label: '📜 Logs' }, { id: 'files', label: '🧾 Config files' }] },
         { id: 'zugang', label: G.zugang, items: [{ id: 'users', label: '👥 Users' }, { id: 'audit', label: '🔑 Sessions & log' }] },
         { id: 'darstellung', label: G.darstellung, items: [{ id: 'appearance', label: '🎨 Appearance' }, { id: 'links', label: '🔗 Links' }] },
@@ -616,14 +617,22 @@ function adminGroups() {
 }
 function showAdmin(a) {
     a = ADMIN_OLD[a] || a;
-    if (!adminGroups().some(g => g.items.some(i => i.id === a))) a = 'settings';
+    const [base, sub] = a.split(':');
+    if (!adminGroups().some(g => g.items.some(i => i.id === base))) a = 'settings';
     S.admin.tab = a;
-    N8Kit.nav.tree($('adminNav'), adminGroups(), { active: a, key: 'n8hs-admin', onSelect: showAdmin });
-    const pane = a.startsWith('sys-') ? 'sys' : a;
+    const nav = () => N8Kit.nav.tree($('adminNav'), adminGroups(), { active: a, key: 'n8hs-admin', onSelect: showAdmin });
+    nav();
+    const pane = base.startsWith('sys-') ? 'sys' : base;
     ADMIN_PANES.forEach(x => $('admin-' + x).classList.toggle('hidden', x !== pane));
-    if (pane === 'sys') loadSysView(a.slice(4));
-    else ({ settings: loadSettings, cal: loadCal, users: loadUsers, appearance: loadAppearance, links: loadLinksAdmin,
-       system: loadSystem, logs: loadLogs, files: loadFiles, audit: loadAudit })[a]();
+    if (pane === 'sys') loadSysView(base.slice(4));
+    else Promise.resolve(({ settings: loadSettings, cal: loadCal, users: loadUsers, appearance: loadAppearance, links: loadLinksAdmin,
+       system: loadSystem, logs: loadLogs, files: loadFiles, audit: loadAudit })[base]()).then(() => {
+        if (base !== 'settings') return;
+        nav();                                   // the sections of the settings are the children in the menu
+        const box = document.querySelector('#admin-settings .tiles');
+        document.querySelectorAll('#admin-settings form[data-sec]').forEach(f => { f.hidden = !!sub && f.dataset.sec !== sub; });
+        if (box) box.classList.toggle('one', !!sub);
+    }).catch(() => {});
     if (S.tab === 'admin') history.replaceState(null, '', '#admin/' + a);
 }
 function setRestart(on) { $('restartBanner').classList.toggle('hidden', !on); }
