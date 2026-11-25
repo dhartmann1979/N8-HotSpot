@@ -298,7 +298,7 @@ function renderSlots() {
     const i = S.info || {}, L = S.live || { slots: {} };
     $('slots').innerHTML = [1, 2].map(n => {
         const c = L.slots && L.slots[String(n)];
-        if (!i.duplex && n === 1) return `<div class="lcd-slot unused"><div class="ts">TS1</div><div class="lcd-idle">not used · simplex hotspot (TS2 only)</div></div>`;
+        if (!i.duplex && n === 1) return `<div class="lcd-slot unused"><div class="ts">TS1</div><div class="lcd-idle"><b>Not used</b><span>Simplex hotspot – only TS2</span></div></div>`;
         if (!c) {
             const last = (L.last_heard || []).find(e => e.slot === n);
             return `<div class="lcd-slot idle"><div class="ts">TS${n}</div><div class="lcd-idle"><b>Idle</b>${last ? `<span>Last: <b>${esc(last.callsign || last.src_id)}</b> → ${last.group ? 'TG ' : ''}${esc(last.dst_id)} · ${ago(last.ts + last.duration)}</span>` : '<span>Nothing heard yet</span>'}</div></div>`;
@@ -376,7 +376,7 @@ const svgNS = 'http://www.w3.org/2000/svg';
 function svgEl(w, h, inner) { return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" class="sig-svg" role="img">${inner}</svg>`; }
 function boxSize(el, h) { return [Math.max(200, Math.round(el.clientWidth || 600)), Math.max(40, Math.round(el.clientHeight || h))]; }
 if (window.ResizeObserver) new ResizeObserver(() => { clearTimeout(S.sigRo); S.sigRo = setTimeout(() => { if (S.sig.data) renderSignal(); }, 120); })
-    .observe(document.getElementById('sigPanel'));
+    .observe(document.querySelector('.live-grid') || document.getElementById('sigPanel'));
 window.addEventListener('resize', () => { clearTimeout(S.sigRz); S.sigRz = setTimeout(() => { if (S.sig.data) renderSignal(); }, 200); });
 function zoneBands(W, H, max) {   // green < 1 %, amber 1–3 %, red above (BER)
     const y = v => H - Math.min(v, max) / max * H;

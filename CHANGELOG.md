@@ -4,6 +4,19 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.9.1] – 2026-11-25
+
+### 📐 Live-Ansicht symmetrisch
+- **TS1 und TS2 sind immer gleich hoch** – auch wenn TS1 beim Simplex-Hotspot nicht genutzt wird („Nicht genutzt · Simplex-Hotspot –
+  nur TS2“ jetzt zweizeilig wie ein ruhender Slot) und wenn auf TS2 gerade jemand mit Avatar spricht. Die beiden Slots teilen sich die
+  Höhe des Displays.
+- **Gleich hohe Blöcke über die ganze Browserbreite:** Die Live-Ansicht ist jetzt ein 2 × 2-Raster – oben *Hotspot* | *BER live*,
+  unten *RSSI + Sprachqualität* | *Letzte Durchgänge*. Jede Reihe ist links und rechts gleich hoch (vorher war die rechte Spalte höher
+  und RSSI hatte eine große leere Fläche). Die Grafiken füllen den Platz, den sie bekommen, und drücken die Karten nicht mehr auf.
+- Auf sehr breiten Bildschirmen (ab 1800 px) etwas mehr Luft, unter 1060 px untereinander in der Reihenfolge Hotspot, BER live, RSSI +
+  Sprachqualität, letzte Durchgänge.
+- Screenshots *live.png* und *live-mobile.png* neu.
+
 ## [1.9.0] – 2026-11-25
 
 ### 🔤 Schriftauswahl mit Vorschau – in allen N8-Systemen (N8 Theme 2.1)

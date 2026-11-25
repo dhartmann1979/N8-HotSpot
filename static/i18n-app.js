@@ -93,7 +93,7 @@ N8Kit.i18n.add({
         // 1.5.0: live view as a radio, vocoder & signal, services, permissions & sudo, update log (N8 Admin-Kit)
         'Receiving from a radio (RF)': 'Empfang von einem Funkgerät (RF)', 'Transmitting to the radios (from the network)': 'Sendet an die Funkgeräte (aus dem Netz)',
         'Mode of MMDVMHost': 'Betriebsart von MMDVMHost', 'Connection to the DMR server': 'Verbindung zum DMR-Server',
-        'no network': 'kein Netz', 'failed': 'fehlgeschlagen', 'connecting': 'verbindet', 'not used · simplex hotspot (TS2 only)': 'nicht genutzt · Simplex-Hotspot (nur TS2)',
+        'no network': 'kein Netz', 'failed': 'fehlgeschlagen', 'connecting': 'verbindet', 'not used · simplex hotspot (TS2 only)': 'nicht genutzt · Simplex-Hotspot (nur TS2)', 'Not used': 'Nicht genutzt', 'Simplex hotspot – only TS2': 'Simplex-Hotspot – nur TS2',
         'Last:': 'Zuletzt:', 'Nothing heard yet': 'Noch nichts gehört', 'no RSSI': 'kein RSSI', 'Data': 'Daten',
         'Bit error rate – below 1 % clean, above 3 % the vocoder struggles': 'Bitfehlerrate – unter 1 % sauber, über 3 % kämpft der Vocoder',
         'Vocoder & signal': 'Vocoder & Signal', 'BER live': 'BER live', 'Last calls · BER (RF) / loss (network)': 'Letzte Durchgänge · BER (Funk) / Verlust (Netz)',

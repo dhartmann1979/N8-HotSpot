@@ -64,9 +64,8 @@
 
     <!-- ================= LIVE ================= -->
     <section id="tab-live">
+        <!-- symmetric 2 × 2: radio | BER live, RSSI + voice quality | last calls – each row has the same height on both sides -->
         <div class="live-grid">
-          <div class="live-left">
-            <!-- the hotspot as a digital radio: LEDs, display with both time slots, live meters -->
             <div class="radio" id="radio">
                 <div class="radio-bar">
                     <div class="radio-brand"><span class="radio-badge">N8</span><span class="radio-model" id="rdModel">Hotspot · DMR</span></div>
@@ -97,7 +96,15 @@
                     <span class="rt"><small>RF BER</small><b id="sBer">–</b></span>
                 </div>
             </div>
-
+            <!-- signal & vocoder: BER of the running call -->
+            <div class="sigpanel sp-live" id="sigPanel">
+                <div class="radio-bar sig-bar"><div class="radio-brand"><span class="radio-badge">SIG</span><span class="radio-model">Vocoder &amp; signal</span></div>
+                    <small class="dim" id="sigNote"></small></div>
+                <div class="sig-card">
+                    <div class="sig-head"><span>BER live</span><b id="sigBerNow">–</b></div>
+                    <div class="sig-chart tall" id="chBerLive"></div>
+                </div>
+            </div>
             <div class="sig-row">
                 <div class="sig-card">
                     <div class="sig-head"><span>RSSI (RF)</span><b id="sigRssi">–</b></div>
@@ -109,15 +116,7 @@
                     <div class="sig-kv" id="sigKv"></div>
                 </div>
             </div>
-          </div>
-            <!-- signal & vocoder: BER of the running call, quality of the last calls, RSSI, voice frames -->
-            <div class="sigpanel" id="sigPanel">
-                <div class="radio-bar sig-bar"><div class="radio-brand"><span class="radio-badge">SIG</span><span class="radio-model">Vocoder &amp; signal</span></div>
-                    <small class="dim" id="sigNote"></small></div>
-                <div class="sig-card">
-                    <div class="sig-head"><span>BER live</span><b id="sigBerNow">–</b></div>
-                    <div class="sig-chart tall" id="chBerLive"></div>
-                </div>
+            <div class="sigpanel sp-recent">
                 <div class="sig-card">
                     <div class="sig-head"><span>Last calls · BER (RF) / loss (network)</span><span class="legend-mini"><i class="lg rf"></i>RF <i class="lg net"></i>Network</span></div>
                     <div class="sig-chart tall" id="chRecent"></div>
