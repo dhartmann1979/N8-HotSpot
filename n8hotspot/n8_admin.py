@@ -85,12 +85,12 @@ class N8Admin:
     async def unit_action(self, unit: str, action: str) -> Tuple[bool, str]:
         if not self.allowed(unit, action):
             return False, "Aktion nicht freigegeben"
+        self._hold(unit, action)
         if self.demo:
             st = self._demo_units.setdefault(unit, ["active", "enabled"])
             st[0] = {"start": "active", "restart": "active", "stop": "inactive"}.get(action, st[0])
             st[1] = {"enable": "enabled", "disable": "disabled"}.get(action, st[1])
             return True, "ok (Demo)"
-        self._hold(unit, action)
         sc = self.config().get("systemctl") or "/usr/bin/systemctl"
         args = [sc, action, unit] if action not in ("start", "restart") else [sc, "--no-block", action, unit]
         rc, out = await self._sudo(*args, timeout=60)

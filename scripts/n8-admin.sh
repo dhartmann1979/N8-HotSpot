@@ -200,7 +200,9 @@ check_perms() {
       id -nG "$SVC_USER" | grep -qw "$g" && ck ok user "$SVC_USER in Gruppe $g" || ck bad user "$SVC_USER ist nicht in Gruppe $g"
     done
     x=$(getent passwd "$SVC_USER" | cut -d: -f7)
-    [[ "$x" == */nologin || "$x" == /bin/false ]] && ck ok user "$SVC_USER hat keine Login-Shell" || ck warn user "$SVC_USER hat eine Login-Shell ($x)"
+    if [[ "$x" == */nologin || "$x" == /bin/false ]]; then ck ok user "$SVC_USER hat keine Login-Shell"
+    elif (( $(id -u "$SVC_USER") >= 1000 )); then ck ok user "$SVC_USER ist ein normaler Benutzer mit Shell ($x) – gewollt, der Dienst läuft unter deinem Konto"
+    else ck warn user "$SVC_USER hat eine Login-Shell ($x)"; fi
   else ck bad user "Dienstbenutzer $SVC_USER fehlt – bitte den Installer neu starten"; fi
   [[ -d "$APP" ]] || { ck bad prog "$APP fehlt"; return 0; }
   prune_args
@@ -371,11 +373,20 @@ repair() {
 
 # ---------------------------------------------------------------- Update
 git_() { git -c "safe.directory=$APP" -c core.hooksPath=/dev/null -c protocol.ext.allow=never -C "$APP" "$@"; }
-health() {   # Weboberfläche antwortet innerhalb von 90 s? (N8_HEALTH_URL: eine oder mehrere Adressen, Leerzeichen getrennt)
-  [[ -z "$N8_HEALTH_URL" ]] && return 0
-  local i u; for i in $(seq 1 45); do
-    for u in $N8_HEALTH_URL; do curl -fsSk -m 3 -o /dev/null "$u" 2>/dev/null && return 0; done   # mehrere Adressen möglich (http/https)
-    sleep 2; done; return 1
+health() {   # Webinterface lebt? Jede HTTP-Antwort zählt (auch 301/401/403 – Weiterleitung auf HTTPS, Anmeldung nötig);
+             # sonst: Dienst läuft und sein Prozess lauscht auf einem TCP-Port (Adresse/HTTPS/Port unbekannt). Bis zu 2 Minuten.
+  local i u code pid
+  for i in $(seq 1 60); do
+    for u in $N8_HEALTH_URL; do
+      code=$(curl -sk -m 3 -o /dev/null -w '%{http_code}' "$u" 2>/dev/null || true)
+      [[ "$code" =~ ^[1-4][0-9][0-9]$ ]] && return 0
+    done
+    pid=$(systemctl show -p MainPID --value "$N8_WEB_UNIT" 2>/dev/null || true)
+    if (( i > 5 )) && [[ -n "$pid" && "$pid" != 0 ]] && systemctl is-active -q "$N8_WEB_UNIT" 2>/dev/null \
+       && ss -Hltnp 2>/dev/null | grep -q "pid=$pid,"; then return 0; fi
+    sleep 2
+  done
+  return 1
 }
 result() {  # result ok from to message
   printf '{"ok": %s, "from": "%s", "to": "%s", "time": %s, "message": "%s"}\n' "$1" "$2" "$3" "$(date +%s)" "${4//\"/\'}" > "$STATE_DIR/update.result"
@@ -410,7 +421,8 @@ do_update() {
   if ! health; then
     if [[ "$old" != "$new" ]]; then
       warn "Version $new_ver antwortet nicht – zurück auf $old_ver (${old:0:7})"
-      git_ reset -q --keep "$old" || git_ reset -q --hard "$old"
+      git_ update-index -q --refresh >/dev/null 2>&1 || true; rm -f "$APP/.git/index.lock"
+      git_ reset -q --keep "$old" 2>/dev/null || git_ reset -q --hard "$old" || git_ checkout -q -f "$old" || warn "Zurücksetzen fehlgeschlagen – bitte auf der Konsole: git -C $APP reset --hard ${old:0:7}"
       n8_post_update "$new" "$old" || true; fix_perms; n8_restart
       health && info "$old_ver läuft wieder" || warn "auch $old_ver antwortet nicht"
     fi
@@ -435,7 +447,7 @@ ka_conf() {   # ka_conf schlüssel vorgabe – nur erlaubte Zeichen, keine Shell
   echo "${v:-$2}"
 }
 ka_tcp() { local h="${1%:*}" p="${1##*:}"; timeout 4 bash -c "exec 3<>/dev/tcp/$h/$p" 2>/dev/null; }
-ka_http() { curl -fsSk -m 8 -o /dev/null "$1" 2>/dev/null; }
+ka_http() { local c; c=$(curl -sk -m 8 -o /dev/null -w '%{http_code}' "$1" 2>/dev/null || true); [[ "$c" =~ ^[1-4][0-9][0-9]$ ]]; }   # jede Antwort außer 5xx
 declare -A KA_HEALTH=()
 ka_health() {   # ka_health URL#punkt – /api/n8/health der Anwendung (nur von 127.0.0.1): {"items": {"punkt": {"ok": true, "why": "…"}}}
   local url="${1%%#*}" item="${1#*#}" body
@@ -467,6 +479,7 @@ ka_json() {   # ka_json DATEI SCHLÜSSEL [WERT] – kleiner Zustandsspeicher „
 do_keepalive() {
   local -; set +e +o pipefail
   mkdir -p "$STATE_DIR/keepalive.hold"; id "$SVC_USER" &>/dev/null && chown "$SVC_USER:$SVC_USER" "$STATE_DIR/keepalive.hold"
+  local done_units=""
   local st="$STATE_DIR/keepalive.state" now ent u kind tgt label act healthy why fails last hour n rows="" sep="" allok=1 restarted=0
   now=$(date +%s)
   [[ "$(ka_conf enabled 1)" == 0 ]] && { ka_write "$now" "aus" ""; return 0; }
@@ -483,7 +496,7 @@ do_keepalive() {
         for u in "${N8_KA_NET_UNITS[@]}"; do
           [[ -f "$STATE_DIR/keepalive.hold/$u" ]] && continue
           systemctl is-enabled "$u" >/dev/null 2>&1 || continue
-          ka_log "↻ $u nach dem Internet-Ausfall neu gestartet"; systemctl restart "$u" >/dev/null 2>&1; restarted=$((restarted + 1))
+          ka_log "↻ $u nach dem Internet-Ausfall neu gestartet"; systemctl restart "$u" >/dev/null 2>&1; restarted=$((restarted + 1)); done_units+=" $u "
         done
       fi
     fi
@@ -494,6 +507,7 @@ do_keepalive() {
   # --- Dienste
   for ent in "${N8_KA_CHECKS[@]}"; do
     IFS='|' read -r u kind tgt label <<<"$ent"
+    local ck="$u#$kind"     # Zähler je Prüfung (ein Dienst kann mehrere haben), Neustarts je Dienst
     act=$(systemctl is-active "$u" 2>/dev/null); healthy=1; why=""
     if [[ -f "$STATE_DIR/keepalive.hold/$u" ]]; then
       rows+="$sep{\"unit\": \"$u\", \"label\": \"${label:-$u}\", \"state\": \"hold\", \"active\": \"$act\", \"why\": \"von Hand gestoppt – Keep-Alive wartet\"}"; sep=", "; continue
@@ -509,23 +523,24 @@ do_keepalive() {
       # eine Verbindung nach draußen kann ohne Internet nicht stehen – dann nicht neu starten, nur melden
       if (( ! healthy && ! net )) && [[ " ${N8_KA_NET_UNITS[*]} " == *" $u "* ]]; then why="$why (Internet weg – kein Neustart)"; healthy=2; fi
     fi
-    fails=$(ka_json "$st" "fails:$u"); fails=${fails:-0}
+    fails=$(ka_json "$st" "fails:$ck"); fails=${fails:-0}
     if (( healthy == 1 )); then
       (( fails > 0 )) && ka_log "✔ $u wieder gesund"
-      ka_json "$st" "fails:$u" 0 >/dev/null; fails=0
+      ka_json "$st" "fails:$ck" 0 >/dev/null; fails=0
       rows+="$sep{\"unit\": \"$u\", \"label\": \"${label:-$u}\", \"state\": \"ok\", \"active\": \"$act\", \"why\": \"\", \"fails\": 0}"
     else
-      allok=0; fails=$((fails + 1)); ka_json "$st" "fails:$u" "$fails" >/dev/null
+      allok=0; fails=$((fails + 1)); ka_json "$st" "fails:$ck" "$fails" >/dev/null
       (( fails == 1 )) && ka_log "⚠ $u: ${why//\"/\'}"
       local state=sick
       local crashed=0; [[ "$act" == failed ]] && crashed=1
-      if (( healthy == 0 && (fails >= N8_KA_FAILS || crashed) )) && (( now >= pause )); then
+      if [[ "$done_units" == *" $u "* ]]; then state=restarted
+      elif (( healthy == 0 && (fails >= N8_KA_FAILS || crashed) )) && (( now >= pause )); then
         hour=$(ka_json "$st" "hour:$u"); n=$(ka_json "$st" "count:$u"); n=${n:-0}
         [[ -z "$hour" || $(( now - hour )) -ge 3600 ]] && { hour=$now; n=0; ka_json "$st" "hour:$u" "$now" >/dev/null; }
         if (( n < N8_KA_MAX_HOUR )); then
           ka_log "↻ $u neu gestartet ($why, seit $fails min)"; systemctl restart "$u" >/dev/null 2>&1
-          ka_json "$st" "count:$u" $((n + 1)) >/dev/null; ka_json "$st" "fails:$u" 0 >/dev/null; ka_json "$st" "last:$u" "$now" >/dev/null
-          restarted=$((restarted + 1)); state=restarted
+          ka_json "$st" "count:$u" $((n + 1)) >/dev/null; ka_json "$st" "fails:$ck" 0 >/dev/null; ka_json "$st" "last:$u" "$now" >/dev/null
+          restarted=$((restarted + 1)); state=restarted; done_units+=" $u "
           last=$(ka_json "$st" "total:$u"); ka_json "$st" "total:$u" $(( ${last:-0} + 1 )) >/dev/null
         else
           state=giveup; (( fails == N8_KA_FAILS )) && ka_log "✖ $u: schon $N8_KA_MAX_HOUR Neustarts in dieser Stunde – Keep-Alive wartet (bitte nachsehen)"
