@@ -4,6 +4,20 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.7.1] – 2026-11-25
+
+### 🐛 Behoben: „Fehler -15“ beim Neustart des eigenen Dienstes (Admin → System → Dienste)
+- **Ursache:** Startet man die Weboberfläche über *Dienste* neu (oder stoppt sie), beendet systemd **alle** Prozesse des Dienstes – auch das
+  gerade laufende `sudo systemctl …`. Das meldete sich mit Rückgabewert −15 (SIGTERM) zurück, die Oberfläche zeigte „Fehler -15“, obwohl
+  der Neustart geklappt hatte; im Ereignisprotokoll stand „restart … – Fehler -15“.
+- **Jetzt:** Der eigene Dienst wird erkannt (`/proc/self/cgroup`), die Antwort geht zuerst raus, eine Sekunde später wird der Neustart
+  ausgelöst. Die Ansicht zeigt „Die Weboberfläche startet neu – einen Moment …“ und lädt sich von selbst neu, sobald sie wieder antwortet.
+  Gemeinsamer Baustein (`n8_admin.py`, `n8-kit.js`), gleich in allen N8-Systemen.
+
+### 🖥️ Ganze Browser-Breite: überall genau wie N8 Crosslink
+- **Gleicher Seitenrand** in allen N8-Systemen: 12 px links und rechts, Kopfzeile und Inhalt stehen auf den Pixel genau wie in N8 Crosslink
+  (vorher je nach System 12–16 px; `n8-kit.css`).
+
 ## [1.7.0] – 2026-11-25
 
 ### 💥 Neu: Absturz-Erkennung – jeder Absturz wird mit Ursache und Protokoll festgehalten, gemeldet und der Dienst neu gestartet

@@ -746,7 +746,7 @@ async def services_action(unit: str, action: str, request: Request):
             raise HTTPError(400, "Aktion nicht freigegeben")
         ctx.auth.audit("service", u["username"], f"{unit} {action}", ip_of(request))
         asyncio.get_running_loop().call_later(0.8, lambda: asyncio.ensure_future(ctx.n8.unit_action(unit, action)))
-        return {"ok": True, "message": "Weboberfläche startet neu …", "units": await ctx.n8.units()}
+        return {"ok": True, "message": "Weboberfläche startet neu …", "units": await ctx.n8.units(), "self": True}
     ok, out = await ctx.n8.unit_action(unit, action)
     ctx.auth.audit("service", u["username"], f"{unit} {action}" + ("" if ok else f" – {out[:120]}"), ip_of(request))
     if not ok:
