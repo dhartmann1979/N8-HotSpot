@@ -4,6 +4,19 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.5.3] – 2026-11-25
+
+### 🐛 Fix: „sudo verweigert“ und „Installiert vX · ?“ nach dem Umstellen auf das N8 Admin-Kit
+- **git `safe.directory`:** Seit der Programmordner root gehört, lehnte git ihn für den Dienst-Benutzer ab („dubious ownership“) –
+  das Webinterface sah keinen Commit (`?`) und bot kein „Update jetzt“ an. `fix-perms` trägt den Ordner jetzt systemweit ein
+  (`git config --system`), `check-perms` prüft es.
+- **Webinterface noch mit NoNewPrivileges gestartet:** Die Unit war korrigiert, der laufende Prozess aber noch alt – sudo wurde
+  abgelehnt. `check-perms` prüft jetzt den **laufenden** Prozess (`/proc/<pid>/status`), `fix-perms` startet das Webinterface dann
+  nach 5 Sekunden selbst neu (auch wenn „Korrigieren“ im Browser gedrückt wurde).
+- Die Meldung „sudo verweigert“ zeigt jetzt auch den Grund (letzte Zeile von sudo).
+
+> Einmal auf der Konsole: `sudo git -c safe.directory=/opt/n8hotspot -C /opt/n8hotspot pull --ff-only && sudo /opt/n8hotspot/scripts/n8-admin.sh fix-perms`
+
 ## [1.5.2] – 2026-11-25
 
 ### 🐛 Fix: `n8-admin.sh fix-perms` brach nach „korrigiere …“ ohne Meldung ab
