@@ -110,7 +110,7 @@ mkdir -p "$N8_DIR/data"
 python3 -m venv "$N8_DIR/venv"
 "$N8_DIR/venv/bin/pip" install -q --upgrade pip >/dev/null
 "$N8_DIR/venv/bin/pip" install -q -r "$N8_DIR/requirements.txt"
-chown -R "$SVC_USER:$SVC_USER" "$N8_DIR"
+chown -R "$SVC_USER:$SVC_USER" "$N8_DIR/data"      # Programm gehört root (n8-admin.sh fix-perms in Schritt 7)
 sudo -u "$SVC_USER" env N8HS_DATA="$N8_DIR/data" "$N8_DIR/venv/bin/python" -c \
     "import sys; sys.path.insert(0, '$N8_DIR'); from n8hotspot.__main__ import main; main(['', 'write-config'])" >/dev/null
 ok "Python-Umgebung, Datenbank und Konfiguration in $N8_DIR/data"
@@ -139,9 +139,16 @@ fi
 
 # ---------------------------------------------------------------------------
 step "7/7 Dienste"
-# units, sudo rule, groups, owner – the same script update.sh uses to repair them
-N8_DIR="$N8_DIR" N8_PORT="$N8_PORT" SVC_USER="$SVC_USER" N8_SKIP_UART=1 N8_NO_RESTART=1 bash "$N8_DIR/scripts/permissions.sh" \
-    || warn "Nicht alles ließ sich einrichten – siehe oben (sudo $N8_DIR/scripts/permissions.sh --check)"
+# Dienste aus den Vorlagen (Pfad und Web-Port), dann Berechtigungen, sudo und „Update jetzt“ – das N8 Admin-Kit,
+# dasselbe wie bei jedem Update (scripts/n8-admin.sh, wie im HobbyRadioPortal, adn-frn-server und HBlink4)
+PORT_OLD="$(sed -n 's/^Environment=N8HS_PORT=//p' /etc/systemd/system/n8hotspot.service 2>/dev/null | head -1)"
+for s in mmdvmhost dmrgateway n8hotspot; do
+    sed "s#/opt/n8hotspot#${N8_DIR}#g; s#N8HS_PORT=80#N8HS_PORT=${PORT_OLD:-$N8_PORT}#" "$N8_DIR/systemd/$s.service" > "/etc/systemd/system/$s.service"
+    chmod 644 "/etc/systemd/system/$s.service"
+done
+rm -f /etc/sudoers.d/n8hotspot         # bis 1.4: eigene Regel
+chmod 755 "$N8_DIR/scripts/n8-admin.sh"
+"$N8_DIR/scripts/n8-admin.sh" fix-perms || warn "Nicht alles ließ sich einrichten – siehe oben (sudo $N8_DIR/scripts/n8-admin.sh check-perms)"
 systemctl daemon-reload
 systemctl enable -q dmrgateway mmdvmhost n8hotspot
 systemctl restart dmrgateway mmdvmhost n8hotspot

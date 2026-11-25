@@ -24,7 +24,6 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from . import n8_security as _sec
-from . import n8_update_guard as _guard
 from . import __version__, configgen, demo, permcheck, siteicons, stats, updater
 from .auth import Auth, AuthError, DEFAULT_PASSWORD, DEFAULT_USER
 from .calib import KEYS, CalSession
@@ -34,6 +33,7 @@ from .idlist import IdList
 from .talkgroups import Talkgroups
 from .uiconfig import UIConfig
 from .live import Live
+from .n8_admin import N8Admin
 from .settings import MASTER_PRESETS, MODEM_PRESETS, Settings, SettingsError, hotspot_id, tg_names
 from .system import SERVICES, System
 
@@ -66,6 +66,20 @@ class Ctx:
         self.icons = siteicons.IconCache(DATA / "n8hotspot.db")
         self.update_lock = asyncio.Lock()
         self.update_last_try = 0.0
+        # Dienste, Berechtigungen und „Update jetzt“ – gemeinsames N8 Admin-Kit (scripts/n8-admin.sh, läuft als root per sudo)
+        self.n8 = N8Admin(DATA, demo=DEMO)
+        if DEMO and not (DATA / "n8-admin.json").exists():      # Demo: was n8-admin.sh sudo-setup schreiben würde
+            import json as _json
+            units = [("mmdvmhost.service", "MMDVMHost (Modem)", ["start", "stop", "restart", "enable", "disable"]),
+                     ("dmrgateway.service", "DMRGateway (DMR-Server)", ["start", "stop", "restart", "enable", "disable"]),
+                     ("mosquitto.service", "MQTT (Live-Daten)", ["start", "stop", "restart", "enable", "disable"]),
+                     ("n8hotspot.service", "Weboberfläche", ["restart", "enable"]),
+                     ("n8hotspot-update.path", "Update-Auslöser („Update jetzt“)", ["start", "stop", "restart", "enable", "disable"])]
+            (DATA / "n8-admin.json").write_text(_json.dumps({
+                "version": 1, "name": "N8-Hotspot", "id": "n8hotspot", "systemctl": "/usr/bin/systemctl",
+                "self": "/opt/n8hotspot/scripts/n8-admin.sh", "update_unit": "n8hotspot-update.service",
+                "request": str(DATA / "update.request"), "log": str(DATA / "update.log"), "result": str(DATA / "update.result"),
+                "units": [{"unit": u, "label": label, "actions": a} for u, label, a in units]}), "utf-8")
 
     def lookup(self, rid: int) -> Dict[str, Any]:
         """Callsign/name/place from the ID list, completed by FreeRadioID; 'frid' = registered there."""
@@ -332,17 +346,28 @@ async def admin_update(request: Request, force: bool = False):
     except Exception:
         owner = ""
     return {"enabled": c["enabled"], **res, "config": c, "can_install": bool(res["local"].get("commit")),
-            "result": _guard.last_result(DATA),
+            "result": ctx.n8.update_state().get("result"), "kit": ctx.n8.ready,
             "permissions": await permissions(),
             "systemd": bool(os.environ.get("INVOCATION_ID")), "origin": await asyncio.to_thread(updater.origin_url),
             "path": str(updater.REPO_ROOT), "owner": owner, "demo": DEMO}
 
 
 async def run_update(expected: str, who: str, ip: str) -> Dict[str, Any]:
-    """Fast-forward, packages, ini files, then restart the services. Shared by "Update now" and auto mode."""
+    """Shared by "Update now" and auto mode.
+
+    Ab 1.5.0 (N8 Admin-Kit eingerichtet): nur die Anforderung schreiben – n8hotspot-update.path startet als root
+    scripts/n8-admin.sh update --auto (vorspulen, Pakete, Dienste, ini-Dateien, Rechte, Neustart, Prüfung, sonst zurück).
+    Ohne Kit (Update von 1.4.x, bevor fix-perms lief): der alte Weg als Dienst-Benutzer."""
     async with ctx.update_lock:
         ctx.update_last_try = time.time()
         c = _update_cfg()
+        if ctx.n8.ready or DEMO:
+            ok, msg = ctx.n8.request_update()
+            if not ok:
+                raise HTTPError(409, msg)
+            ctx.auth.audit("update", who, f"angefordert ({(expected or '')[:7]})", ip)
+            log.info(f"⬆️ Update requested by {who} (n8-admin.sh)")
+            return {"changed": True, "files": [], "steps": [], "restart": "n8", "message": msg}
         try:
             res = await asyncio.to_thread(updater.install, c["branch"], expected)
         except updater.UpdateError as e:
@@ -368,7 +393,7 @@ async def run_update(expected: str, who: str, ip: str) -> Dict[str, Any]:
         if not perms["ok"]:
             steps.append({"step": "Permissions", "ok": False,
                           "detail": f"{perms['problems']} problem(s) – run once on the console: {perms['fix']}"})
-        if any(f.startswith(("systemd/", "scripts/permissions.sh")) for f in res["files"]):
+        if any(f.startswith(("systemd/", "scripts/")) for f in res["files"]):
             steps.append({"step": "Service files changed", "ok": False,
                           "detail": f"they need root – run once on the console: {perms['fix']}"})
         ctx.auth.audit("update", who, f"{res['old'][:7]} → {res['new'][:7]}", ip)
@@ -378,14 +403,6 @@ async def run_update(expected: str, who: str, ip: str) -> Dict[str, Any]:
             how = "none"
         elif os.environ.get("INVOCATION_ID") or os.geteuid() == 0:
             how = "service"
-            # N8 update guard: the new code checks its web interface; scripts/n8-update-guard.sh
-            # (ExecStartPre) goes back to the old commit after three starts without an answer
-            try:
-                lv = updater.local_version()
-                _guard.mark_pending(DATA, res["old"], res["new"], f"v{__version__} · {res['old'][:7]}",
-                                    f"v{lv.get('version') or '?'} · {res['new'][:7]}")
-            except (OSError, KeyError) as e:
-                log.warning(f"update guard not armed: {e}")
             loop = asyncio.get_running_loop()
             # sudo rule from install.sh allows "systemctl restart n8hotspot.service"; without it systemd
             # (Restart=always) starts the process again after it ended itself.
@@ -471,6 +488,13 @@ async def api_stats(request: Request, range: str = "today"):
         raise HTTPError(400, "range must be today, 24h, 7d or 30d")
     names = ctx.tg_names()
     return await asyncio.to_thread(stats.summary, ctx.db, range, names, ctx.lookup)
+
+
+@app.get("/api/signal")
+async def api_signal(request: Request):
+    """Signal & vocoder: BER/RSSI over RF, packet loss over the network, voice frames – today and the last calls."""
+    need_view(request)
+    return await asyncio.to_thread(stats.signal, ctx.db)
 
 
 @app.websocket("/ws")
@@ -682,6 +706,54 @@ async def power(request: Request):
     return {"ok": True}
 
 
+# ---------------------------------------------------------------- Dienste, Berechtigungen & sudo, Update-Protokoll (N8 Admin-Kit)
+@app.get("/api/admin/services")
+async def services_get(request: Request):
+    need_admin(request)
+    return {"ready": ctx.n8.ready or DEMO, "units": await ctx.n8.units()}
+
+
+@app.post("/api/admin/services/{unit}/{action}")
+async def services_action(unit: str, action: str, request: Request):
+    u = need_admin(request)
+    if unit == "n8hotspot.service" and action == "restart":
+        ok = ctx.n8.allowed(unit, action)
+        if not ok:
+            raise HTTPError(400, "Aktion nicht freigegeben")
+        ctx.auth.audit("service", u["username"], f"{unit} {action}", ip_of(request))
+        asyncio.get_running_loop().call_later(0.8, lambda: asyncio.ensure_future(ctx.n8.unit_action(unit, action)))
+        return {"ok": True, "message": "Weboberfläche startet neu …", "units": await ctx.n8.units()}
+    ok, out = await ctx.n8.unit_action(unit, action)
+    ctx.auth.audit("service", u["username"], f"{unit} {action}" + ("" if ok else f" – {out[:120]}"), ip_of(request))
+    if not ok:
+        raise HTTPError(400, out or "fehlgeschlagen")
+    await poll_services(force=True)
+    return {"ok": True, "message": out, "units": await ctx.n8.units()}
+
+
+@app.get("/api/admin/perms")
+async def perms_get(request: Request):
+    need_admin(request)
+    return await ctx.n8.check_perms()
+
+
+@app.post("/api/admin/perms/fix")
+async def perms_fix(request: Request):
+    u = need_admin(request)
+    ok, out = await ctx.n8.fix_perms()
+    ctx.auth.audit("perms_fix", u["username"], "ok" if ok else "Fehler bleiben", ip_of(request))
+    return {"ok": ok, "message": out, "check": await ctx.n8.check_perms()}
+
+
+@app.get("/api/admin/update-log")
+async def update_log_get(request: Request):
+    need_admin(request)
+    st = ctx.n8.update_state()
+    if DEMO and not st.get("log"):
+        st["log"] = "=== N8-Hotspot: Update gestartet (Demo) ===\n  › Hole Updates (main) …\n  › Version: 1.4.2 → 1.5.0\n=== fertig ==="
+    return st
+
+
 @app.get("/api/admin/logs")
 async def logs(request: Request):
     need_admin(request)
@@ -722,13 +794,10 @@ DEMO_SCAN = [
 ]
 
 
-DEMO_PERMS = {"ok": True, "problems": 0, "critical": False, "fix": "sudo /opt/n8hotspot/scripts/permissions.sh", "items": [
+DEMO_PERMS = {"ok": True, "problems": 0, "critical": False, "fix": "sudo /opt/n8hotspot/scripts/n8-admin.sh fix-perms", "items": [
     {"key": "dialout", "label": "Web interface is in the group dialout (modem scan, calibration)", "ok": True, "detail": "", "level": "ok"},
     {"key": "port:/dev/ttyAMA0", "label": "Serial port /dev/ttyAMA0 can be opened", "ok": True, "detail": "group dialout, mode 660", "level": "ok"},
-    {"key": "console", "label": "No Linux console on the modem UART", "ok": True, "detail": "", "level": "ok"},
-    {"key": "sudo", "label": "sudo rule for service restarts (/etc/sudoers.d/n8hotspot)", "ok": True, "detail": "", "level": "ok"},
-    {"key": "repo", "label": "Program folder /opt/n8hotspot is writable (Update now)", "ok": True, "detail": "", "level": "ok"},
-    {"key": "venv", "label": "Python environment is writable (new packages after an update)", "ok": True, "detail": "", "level": "ok"}]}
+    {"key": "console", "label": "No Linux console on the modem UART", "ok": True, "detail": "", "level": "ok"}]}
 
 
 async def permissions() -> Dict[str, Any]:
@@ -1016,9 +1085,6 @@ async def startup():
     asyncio.ensure_future(services_task())
     asyncio.ensure_future(daily_task())
     asyncio.ensure_future(update_task())
-    if _guard.pending(DATA):
-        asyncio.ensure_future(_guard.startup_check(DATA, _guard.local_url(os.environ.get("N8HS_BIND", "0.0.0.0"),
-                                                                           int(os.environ.get("N8HS_PORT", "80")), "/api/info")))
     asyncio.ensure_future(refresh_link_icons())
     asyncio.ensure_future(midnight_site_icon_refresh())
     log.info(f"🌙 N8-Hotspot {__version__} started{' (demo mode)' if DEMO else ''}; data in {DATA}")

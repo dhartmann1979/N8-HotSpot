@@ -66,6 +66,7 @@ async function boot() {
         renderAll();
         connectWS();
         loadToday();
+        loadSignal();
         checkUpdateQuiet();
         const h = location.hash.replace('#', '');
         if (h) { const [t, a] = h.split('/'); if (t === 'stats' || t === 'tgs') showTab(t); else if (t === 'admin' && isAdmin()) showTab('admin', a); }
@@ -209,10 +210,10 @@ let todayTimer = null;
 function onEvent(ev) {
     switch (ev.type) {
         case 'hello': case 'status': S.live = ev.status; renderChips(); renderSlots(); renderInfo(); if (ev.type === 'hello') renderLH(); break;
-        case 'slot': if (S.live) { S.live.slots[String(ev.slot)] = ev.call; renderSlots(); } break;
+        case 'slot': if (S.live) { S.live.slots[String(ev.slot)] = ev.call; renderSlots(); renderLeds(); sigSample(ev.slot, ev.call); } break;
         case 'heard':
             if (S.live) { S.live.last_heard.unshift(ev.entry); S.live.last_heard.length = Math.min(S.live.last_heard.length, 40); renderLH(ev.entry.id); }
-            clearTimeout(todayTimer); todayTimer = setTimeout(() => { loadToday(); if (S.tab === 'stats') loadStats(); }, 1500);
+            clearTimeout(todayTimer); todayTimer = setTimeout(() => { loadToday(); loadSignal(); if (S.tab === 'stats') loadStats(); }, 1500);
             break;
         case 'info': S.info = { ...S.info, ...ev.info }; renderHeader(); renderInfo(); break;
         case 'ui': S.info = { ...S.info, theme: ev.theme, links: ev.links, build: ev.build };
@@ -244,43 +245,65 @@ function renderChips() {
     else set('chipNet', 'warn', `${net} connecting`);
     const mode = svc.mmdvmhost && svc.mmdvmhost !== 'active' ? 'Stopped' : (L.mode || 'Idle');
     set('chipMode', mode === 'Idle' ? 'plain' : ['Lockout', 'Error', 'Stopped'].includes(mode) ? 'bad' : 'info', mode === 'Idle' ? '💤 Idle' : mode === 'Stopped' ? '⏸ Stopped' : `📡 ${mode}`);
+    renderLeds();
+}
+// LEDs of the radio: RX = a radio transmits to the hotspot, TX = the hotspot transmits (network → RF), mode, network, modem
+function renderLeds() {
+    const L = S.live || {}, svc = L.services || {}, act = Object.values(L.slots || {}).filter(Boolean);
+    const led = (id, cls, label) => { const e = $(id); if (!e) return; e.className = 'led ' + cls; if (label != null) { const b = e.querySelector('b'); if (b) b.textContent = label; } };
+    led('ledRx', act.some(c => c.source === 'rf') ? 'on g pulse' : '');
+    led('ledTx', act.some(c => c.source !== 'rf') ? 'on r' : '');
+    const mode = svc.mmdvmhost && svc.mmdvmhost !== 'active' ? 'Stopped' : (L.mode || 'Idle');
+    led('ledMode', mode === 'DMR' ? 'on b' : mode === 'Lockout' ? 'on a blink' : ['Error', 'Stopped'].includes(mode) ? 'on r' : 'dim', mode === 'Idle' ? 'IDLE' : mode.toUpperCase());
+    const ln = L.link || {}, net = S.info && S.info.network;
+    led('ledNet', !net ? '' : svc.dmrgateway && svc.dmrgateway !== 'active' ? 'on r' : ln.state === 'connected' ? 'on g' : ln.state === 'failed' ? 'on r' : 'on a blink');
+    led('ledModem', svc.mmdvmhost && svc.mmdvmhost !== 'active' ? 'on r' : L.modem && L.modem.open === true ? 'on g' : L.modem && L.modem.open === false ? 'on r' : 'on a blink');
 }
 function renderInfo() {
     const i = S.info; if (!i) return;
-    const L = S.live || {};
-    const ln = L.link || {};
-    const linkTxt = !i.network ? 'off' : ln.state === 'connected' ? `<span class="pill ok">connected</span>` :
-        ln.state === 'failed' ? `<span class="pill bad">failed${ln.reason ? ' · ' + esc(ln.reason) : ''}</span>` : `<span class="pill warn">connecting</span>`;
-    const rows = [
-        ['Callsign', `${esc(i.callsign)}`], ['Hotspot ID', esc(i.hotspot_id)],
-        ['Frequency', i.duplex ? `RX ${fmtFreq(i.rx_freq)}<br>TX ${fmtFreq(i.tx_freq)}` : fmtFreq(i.rx_freq)],
-        ['Mode', `${i.duplex ? 'Duplex' : 'Simplex'} · CC${esc(i.color_code)}`],
-        ['Modem', esc(((L.modem && L.modem.description) || i.modem || '').split(' ')[0] || '–')],
-        ['DMR server', i.network ? `${esc(i.network)}<br><span class="dim mono" style="font-size:12px">${esc(i.network_host)}</span>` : 'off'],
-        ['Connection', linkTxt],
-    ];
-    if (i.location) rows.splice(2, 0, ['Location', esc(i.location)]);
-    $('hsInfo').innerHTML = rows.map(([k, v]) => `<div class="k">${k}</div><div class="v" style="white-space:normal">${v}</div>`).join('');
+    const L = S.live || {}, ln = L.link || {};
+    $('lcdCall').textContent = i.callsign || '–';
+    $('lcdFreq').textContent = i.duplex ? `RX ${fmtFreq(i.rx_freq)} · TX ${fmtFreq(i.tx_freq)}` : fmtFreq(i.rx_freq);
+    $('lcdCc').textContent = `CC${i.color_code ?? '?'}`;
+    $('lcdNet').innerHTML = !i.network ? 'no network'
+        : `${esc(i.network)} <span class="lcd-st ${ln.state === 'connected' ? 'ok' : ln.state === 'failed' ? 'bad' : 'warn'}">${ln.state === 'connected' ? 'connected' : ln.state === 'failed' ? 'failed' + (ln.reason ? ' · ' + esc(ln.reason) : '') : 'connecting'}</span>`;
+    $('lcdNet').title = i.network_host || '';
+    const modem = ((L.modem && L.modem.description) || i.modem || '').split(' ')[0];
+    $('lcdBot').innerHTML = [`ID ${esc(i.hotspot_id)}`, i.duplex ? 'Duplex' : 'Simplex', modem ? esc(modem) : '', i.location ? esc(i.location) : '']
+        .filter(Boolean).map(x => `<span>${x}</span>`).join('');
+    $('rdModel').textContent = `Hotspot · ${i.duplex ? 'DMR Duplex' : 'DMR Simplex'}`;
+}
+setInterval(() => { const c = $('lcdClock'); if (c) c.textContent = new Date().toLocaleTimeString('de-DE'); }, 1000);
+// S-meter: 9 bars from -121 dBm (S1) in 6 dB steps, the last bars for S9+ (MMDVM reports dBm)
+function smeter(rssi) {
+    const n = rssi == null ? 0 : Math.max(0, Math.min(12, Math.round((rssi + 127) / 6)));
+    return `<span class="smeter" title="${rssi == null ? 'no RSSI' : rssi + ' dBm'}">${Array.from({ length: 12 }, (_, k) => `<i class="${k < n ? 'on' : ''} ${k >= 9 ? 'plus' : ''}"></i>`).join('')}</span>`;
+}
+function berMeter(ber) {
+    if (ber == null) return '<span class="bermeter none"><span class="trk"><i style="width:0"></i></span><em>BER –</em></span>';
+    const w = Math.min(100, ber / 5 * 100);   // full bar = 5 %
+    return `<span class="bermeter ${berClass(ber)}" title="Bit error rate – below 1 % clean, above 3 % the vocoder struggles"><span class="trk"><i style="width:${w}%"></i></span><em>BER ${Number(ber).toFixed(1)} %</em></span>`;
 }
 function renderSlots() {
     const i = S.info || {}, L = S.live || { slots: {} };
-    const slots = i.duplex ? [1, 2] : [2];
-    $('slots').innerHTML = slots.map(n => {
+    $('slots').innerHTML = [1, 2].map(n => {
         const c = L.slots && L.slots[String(n)];
+        if (!i.duplex && n === 1) return `<div class="lcd-slot unused"><div class="ts">TS1</div><div class="lcd-idle">not used · simplex hotspot (TS2 only)</div></div>`;
         if (!c) {
             const last = (L.last_heard || []).find(e => e.slot === n);
-            return `<div class="slot idle"><div class="lbl"><span>Time slot ${n}</span><span class="pill">Idle</span></div>
-                <div class="idle-text">${last ? `Last: <b style="color:var(--text)">${esc(last.callsign || last.src_id)}</b> → ${last.group ? 'TG ' : ''}${esc(last.dst_id)} · ${ago(last.ts + last.duration)}` : 'Nothing heard yet'}</div></div>`;
+            return `<div class="lcd-slot idle"><div class="ts">TS${n}</div><div class="lcd-idle"><b>Idle</b>${last ? `<span>Last: <b>${esc(last.callsign || last.src_id)}</b> → ${last.group ? 'TG ' : ''}${esc(last.dst_id)} · ${ago(last.ts + last.duration)}</span>` : '<span>Nothing heard yet</span>'}</div></div>`;
         }
-        const src = c.source === 'rf' ? 'rf' : 'network';
-        const ber = c.ber_live != null ? `<span class="pill">BER ${Number(c.ber_live).toFixed(1)} %</span>` : '';
-        const rssi = c.rssi_live != null ? `<span class="pill">${c.rssi_live} dBm</span>` : '';
-        return `<div class="slot active ${src}"><div class="lbl"><span>Time slot ${n}</span><span class="pill air">ON AIR</span></div>
-            <div class="who station-link" onclick="openStation(${c.src_id})">${avatar(c.src_id, c.callsign, c.frid)}
-              <div style="min-width:0"><div class="call">${esc(c.callsign || c.src_id)} ${fridBadge(c.frid)}</div>
-              <div class="name">${esc([c.name, c.city].filter(Boolean).join(' · ') || ('ID ' + c.src_id))}</div></div>
-              <div class="timer" data-start="${c.start}">${fmtClock(Date.now() / 1000 - c.start)}</div></div>
-            <div class="meta"><span class="pill ${src === 'rf' ? 'rf' : 'net'}">${src === 'rf' ? '📻 RF' : '🌐 Network'}</span>${target(c)}${c.is_data ? '<span class="pill">📟 Data</span>' : ''}${ber}${rssi}</div></div>`;
+        const rf = c.source === 'rf';
+        const tn = c.group ? tgName(c.dst_id) : '';
+        return `<div class="lcd-slot on ${rf ? 'rf' : 'net'}">
+            <div class="ts">TS${n}<span class="dir">${rf ? '▼ RX' : '▲ TX'}</span></div>
+            <div class="lcd-who station-link" onclick="openStation(${c.src_id})">${avatar(c.src_id, c.callsign, c.frid)}
+                <div class="lcd-id"><div class="lcd-callsign">${esc(c.callsign || c.src_id)} ${fridBadge(c.frid)}</div>
+                <div class="lcd-name">${esc([c.name, c.city].filter(Boolean).join(' · ') || ('ID ' + c.src_id))}</div></div></div>
+            <div class="lcd-tg"><b>${c.group ? 'TG ' : '→ '}${esc(c.dst_id)}</b>${tn ? `<span>${esc(tn)}</span>` : ''}${c.is_data ? '<span>📟 Data</span>' : ''}</div>
+            <div class="lcd-sig">${rf ? `${smeter(c.rssi_live)}${berMeter(c.ber_live)}` : `<span class="lcd-src">${rf ? '📻 RF' : '🌐 Network'}</span>`}</div>
+            <div class="timer" data-start="${c.start}">${fmtClock(Date.now() / 1000 - c.start)}</div>
+        </div>`;
     }).join('');
 }
 setInterval(() => document.querySelectorAll('.timer[data-start]').forEach(t => t.textContent = fmtClock(Date.now() / 1000 - Number(t.dataset.start))), 1000);
@@ -289,19 +312,22 @@ function renderLH(newId) {
     const L = S.live; if (!L) return;
     let rows = L.last_heard || [];
     if (S.lhFilter !== 'all') rows = rows.filter(e => e.source === S.lhFilter);
-    rows = rows.slice(0, 20);
-    if (!rows.length) { $('lhBody').innerHTML = '<tr><td colspan="8" class="empty">Nothing heard yet.</td></tr>'; return; }
+    const total = rows.length;
+    rows = rows.slice(0, S.lhAll ? 40 : 12);
+    $('lhMore').classList.toggle('hidden', S.lhAll || total <= 12);
+    if (!rows.length) { $('lhBody').innerHTML = '<tr><td colspan="7" class="empty">Nothing heard yet.</td></tr>'; return; }
     $('lhBody').innerHTML = rows.map(e => {
-        const q = e.source === 'rf' ? (e.ber != null ? `${Number(e.ber).toFixed(1)} %` : '–') : (e.loss != null ? `${Number(e.loss).toFixed(0)} % loss` : '–');
-        const berCls = e.source === 'rf' && e.ber != null ? (e.ber < 1 ? 'ok' : e.ber < 3 ? 'warn' : 'bad') : '';
-        return `<tr class="${e.id === newId ? 'new' : ''}"><td>${fmtTime(e.ts)}</td>
-            <td><span class="who station-link" onclick="openStation(${e.src_id})">${avatar(e.src_id, e.callsign, e.frid, 'sm')}<span><b>${esc(e.callsign || e.src_id)}</b> ${fridBadge(e.frid)}<small>${esc(e.name || ('ID ' + (e.src_id || '?')))}</small></span></span></td>
-            <td><span class="pill ${e.source === 'rf' ? 'rf' : 'net'}">${e.source === 'rf' ? '📻 RF' : '🌐 Net'}</span></td>
+        const rf = e.source === 'rf';
+        const q = rf ? (e.ber != null ? `${Number(e.ber).toFixed(1)} %` : '–') : (e.loss != null ? `${Number(e.loss).toFixed(0)} % loss` : '–');
+        const berCls = rf && e.ber != null ? berClass(e.ber).replace('good', 'ok').replace('mid', 'warn') : '';
+        return `<tr class="${e.id === newId ? 'new' : ''}"><td class="mono t">${fmtTime(e.ts)}</td>
+            <td><span class="who station-link" onclick="openStation(${e.src_id})">${avatar(e.src_id, e.callsign, e.frid, 'sm')}<span class="src ${rf ? 'rf' : 'net'}" title="${rf ? 'RF' : 'Network'}">${rf ? '📻' : '🌐'}</span><b>${esc(e.callsign || e.src_id)}</b>${fridBadge(e.frid)}<small class="hide-sm">${esc(e.name || '')}</small></span></td>
             <td class="hide-sm">TS${e.slot}</td><td>${target(e)}${e.is_data ? ' <span class="pill">📟</span>' : ''}</td>
-            <td class="num">${e.duration.toFixed(1)} s</td><td class="num hide-sm">${berCls ? `<span class="pill ${berCls}">${q}</span>` : q}</td>
-            <td class="num hide-sm">${e.rssi != null ? e.rssi + ' dBm' : '–'}</td></tr>`;
+            <td class="num">${e.duration.toFixed(1)} s</td><td class="num hide-sm">${berCls ? `<span class="pill ${berCls}">${q}</span>` : `<span class="dim">${q}</span>`}</td>
+            <td class="num hide-sm">${e.rssi != null ? e.rssi + ' dBm' : '<span class="dim">–</span>'}</td></tr>`;
     }).join('');
 }
+$('lhMore').addEventListener('click', () => { S.lhAll = true; renderLH(); });
 $('lhFilter').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     S.lhFilter = b.dataset.v; document.querySelectorAll('#lhFilter button').forEach(x => x.classList.toggle('active', x === b)); renderLH();
@@ -316,6 +342,97 @@ async function loadToday() {
         $('sNet').innerHTML = `${T.net_calls}<small>${fmtDur(T.net_duration, true)}</small>`;
         $('sBer').textContent = T.rf_ber != null ? T.rf_ber.toFixed(2) + ' %' : '–';
     } catch (e) {}
+}
+
+// ---------------------------------------------------------------- vocoder & signal (live view)
+// BER of the running RF call second by second, quality of the last calls, RSSI and today's voice frames.
+S.sig = { cur: {}, last: null, data: null };
+function sigSample(slot, call) {
+    const cur = S.sig.cur;
+    if (!call) {
+        if (cur[slot] && cur[slot].pts.length) S.sig.last = cur[slot];
+        delete cur[slot]; renderSigLive(); return;
+    }
+    let c = cur[slot];
+    if (!c || c.start !== call.start) c = cur[slot] = { start: call.start, slot, callsign: call.callsign || String(call.src_id), rf: call.source === 'rf', pts: [] };
+    if (call.ber_live != null || call.rssi_live != null) {
+        const t = Date.now() / 1000 - call.start, last = c.pts[c.pts.length - 1];
+        if (!last || t - last.t > 0.2) c.pts.push({ t, ber: call.ber_live != null ? Number(call.ber_live) : null, rssi: call.rssi_live });
+        if (c.pts.length > 600) c.pts.shift();
+    }
+    renderSigLive();
+}
+const svgNS = 'http://www.w3.org/2000/svg';
+function svgEl(w, h, inner) { return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" class="sig-svg" role="img">${inner}</svg>`; }
+function boxSize(el, h) { return [Math.max(200, Math.round(el.clientWidth || 600)), Math.max(40, Math.round(el.clientHeight || h))]; }
+window.addEventListener('resize', () => { clearTimeout(S.sigRz); S.sigRz = setTimeout(() => { if (S.sig.data) renderSignal(); }, 200); });
+function zoneBands(W, H, max) {   // green < 1 %, amber 1–3 %, red above (BER)
+    const y = v => H - Math.min(v, max) / max * H;
+    return `<rect x="0" y="${y(max)}" width="${W}" height="${y(3) - y(max)}" class="z bad"/><rect x="0" y="${y(3)}" width="${W}" height="${y(1) - y(3)}" class="z mid"/>
+        <rect x="0" y="${y(1)}" width="${W}" height="${H - y(1)}" class="z good"/>
+        ${[1, 3].map(v => `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" class="grid"/><text x="4" y="${y(v) - 3}" class="ax">${v} %</text>`).join('')}`;
+}
+function renderSigLive() {
+    const el = $('chBerLive'); if (!el) return;
+    const act = Object.values(S.sig.cur).find(c => c.rf) || Object.values(S.sig.cur)[0];
+    const c = act || S.sig.last;
+    const [W, H] = boxSize(el, 150), max = 5;
+    if (!c || !c.pts.length) {
+        el.innerHTML = svgEl(W, H, zoneBands(W, H, max)) + `<div class="sig-empty">${act && !act.rf ? 'Network call – BER is measured on RF only' : 'Waiting for an RF call …'}</div>`;
+        $('sigBerNow').textContent = act ? (act.rf ? '…' : '🌐') : '–'; return;
+    }
+    const pts = c.pts.filter(p => p.ber != null);
+    const tMax = Math.max(10, ...pts.map(p => p.t));
+    const x = t => t / tMax * W, y = v => H - Math.min(v, max) / max * H;
+    const line = pts.map((p, k) => `${k ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.ber).toFixed(1)}`).join(' ');
+    const area = pts.length ? `${line} L${x(pts[pts.length - 1].t).toFixed(1)},${H} L${x(pts[0].t).toFixed(1)},${H} Z` : '';
+    const last = pts[pts.length - 1];
+    el.innerHTML = svgEl(W, H, `${zoneBands(W, H, max)}<path d="${area}" class="area"/><path d="${line}" class="line"/>
+        ${last ? `<circle cx="${x(last.t)}" cy="${y(last.ber)}" r="4" class="dot ${berClass(last.ber)}"/>` : ''}`)
+        + `<div class="sig-cap">${esc(c.callsign)} · TS${c.slot} · ${act ? 'now' : 'last RF call'} · ${Math.round(tMax)} s</div>`;
+    $('sigBerNow').innerHTML = last ? `<span class="pill ${berClass(last.ber).replace('good', 'ok').replace('mid', 'warn')}">${last.ber.toFixed(1)} %</span>` : '–';
+}
+async function loadSignal() {
+    try { S.sig.data = await api('GET', '/api/signal'); } catch (e) { return; }
+    renderSignal();
+}
+function renderSignal() {
+    const d = S.sig.data; if (!d || !$('chRecent')) return;
+    const T = d.today, rec = d.recent || [];
+    // last calls: BER (RF, up) and packet loss (network) as bars
+    const [W, H] = boxSize($('chRecent'), 150), n = Math.max(rec.length, 1), bw = W / n, max = 5;
+    const y = v => H - Math.min(v, max) / max * H;
+    const bars = rec.map((r, k) => {
+        const rf = r.source === 'rf', v = rf ? r.ber : r.loss;
+        if (v == null) return '';
+        const cls = rf ? 'rf ' + berClass(v) : 'net';
+        const h = Math.max(2, H - y(v));
+        return `<rect x="${(k * bw + 1).toFixed(1)}" y="${(H - h).toFixed(1)}" width="${Math.max(1, bw - 2).toFixed(1)}" height="${h.toFixed(1)}" class="b ${cls}">
+            <title>${fmtTime(r.ts)} · ${esc(r.callsign || r.src_id)} · ${rf ? 'BER ' + Number(v).toFixed(1) + ' %' : 'loss ' + Number(v).toFixed(0) + ' %'}</title></rect>`;
+    }).join('');
+    $('chRecent').innerHTML = rec.length ? svgEl(W, H, `${[1, 3].map(v => `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" class="grid"/><text x="4" y="${y(v) - 3}" class="ax">${v} %</text>`).join('')}${bars}`)
+        : '<div class="sig-empty">No calls yet.</div>';
+    // RSSI of the last RF calls (-120 … -40 dBm)
+    const rs = rec.filter(r => r.source === 'rf' && r.rssi != null);
+    const [RW, RH] = boxSize($('chRssi'), 92), ry = v => RH - (Math.max(-120, Math.min(-40, v)) + 120) / 80 * RH;
+    const rl = rs.map((r, k) => `${k ? 'L' : 'M'}${(rs.length > 1 ? 6 + k / (rs.length - 1) * (RW - 12) : RW / 2).toFixed(1)},${ry(r.rssi).toFixed(1)}`).join(' ');
+    $('chRssi').innerHTML = rs.length ? svgEl(RW, RH, `${[-100, -80, -60].map(v => `<line x1="0" x2="${RW}" y1="${ry(v)}" y2="${ry(v)}" class="grid"/><text x="4" y="${ry(v) - 3}" class="ax">${v}</text>`).join('')}
+        <path d="${rl}" class="line rssi"/>${rs.map((r, k) => `<circle cx="${(rs.length > 1 ? 6 + k / (rs.length - 1) * (RW - 12) : RW / 2).toFixed(1)}" cy="${ry(r.rssi).toFixed(1)}" r="3" class="dot rssi"><title>${fmtTime(r.ts)} · ${r.rssi} dBm</title></circle>`).join('')}`)
+        : '<div class="sig-empty">No RF call today.</div>';
+    $('sigRssi').textContent = T.rssi_avg != null ? `Ø ${T.rssi_avg} dBm` : '–';
+    // voice quality today: share of clean / audible / bad RF calls, frames
+    const q = [T.ber_good, T.ber_mid, T.ber_bad], qs = q.reduce((a, b) => a + b, 0);
+    $('qBar').innerHTML = qs ? [['good', 'clean < 1 %'], ['mid', 'audible 1–3 %'], ['bad', 'bad > 3 %']].map(([c, l], k) => q[k]
+        ? `<i class="${c}" style="flex:${q[k]}" title="${l}: ${q[k]}"><span>${q[k]}</span></i>` : '').join('') : '<i class="none" style="flex:1"><span>no RF call today</span></i>';
+    const de = v => Number(v || 0).toLocaleString('de-DE');
+    $('sigKv').innerHTML = `<div><small>Ø BER (RF)</small><b>${T.ber_avg != null ? T.ber_avg.toFixed(2) + ' %' : '–'}</b></div>
+        <div><small>max. BER</small><b>${T.ber_max != null ? T.ber_max.toFixed(1) + ' %' : '–'}</b></div>
+        <div><small>Ø loss (network)</small><b>${T.loss_avg != null ? T.loss_avg.toFixed(1) + ' %' : '–'}</b></div>
+        <div><small>Voice frames (AMBE+2)</small><b>${de(T.frames_rf + T.frames_net)}</b></div>
+        <div><small>via RF / network</small><b>${de(T.frames_rf)} / ${de(T.frames_net)}</b></div>
+        <div><small>lost on the network</small><b>≈ ${de(T.frames_lost)}</b></div>`;
+    $('sigNote').textContent = `today · ${T.rf_calls} RF / ${T.net_calls} network`;
+    renderSigLive();
 }
 
 // ---------------------------------------------------------------- statistics (same charts as the N8schicht dashboard)
@@ -747,7 +864,6 @@ async function delUser(id, name) {
 // system
 async function loadSystem() {
     const d = await api('GET', '/api/admin/system'), i = d.info;
-    const svcNames = { mmdvmhost: 'MMDVMHost', dmrgateway: 'DMRGateway', mosquitto: 'MQTT broker (mosquitto)', n8hotspot: 'N8-Hotspot web interface' };
     const memUsed = i.mem_total ? (i.mem_total - i.mem_available) : null;
     $('admin-system').innerHTML = `<div class="grid g2">
         <div class="tile"><h3>🖥️ Hardware</h3><div class="kv" style="margin-top:10px">
@@ -759,12 +875,9 @@ async function loadSystem() {
             <div class="k">SD card</div><div class="v">${fmtBytes(i.disk_total - i.disk_free)} of ${fmtBytes(i.disk_total)}</div>
             <div class="k">Uptime</div><div class="v">${fmtDur(i.uptime, true)}</div></div>
             <div class="actions"><button class="btn" onclick="power('reboot')">🔄 Reboot</button><button class="btn danger" onclick="power('poweroff')">⏻ Shut down</button></div></div>
-        <div class="tile"><h3>⚙️ Services</h3><div class="tbl-wrap"><table class="tbl" style="margin-top:6px"><tbody>
-            ${Object.entries(svcNames).map(([k, n]) => { const st = d.services[k] || 'unknown';
-                return `<tr><td><span class="dot ${st === 'active' ? 'on' : st === 'unknown' ? 'unk' : 'off'}"></span>${n}<br><span class="dim" style="font-size:12px">${st}</span></td>
-                <td class="num">${k === 'n8hotspot' ? `<button class="btn small" onclick="svc('${k}','restart')">Restart</button>` : `<button class="btn small" onclick="svc('${k}','start')">Start</button> <button class="btn small" onclick="svc('${k}','stop')">Stop</button> <button class="btn small" onclick="svc('${k}','restart')">Restart</button>`}</td></tr>`; }).join('')}
-            </tbody></table></div>
-            <div class="kv" style="margin-top:12px"><div class="k">MQTT live data</div><div class="v">${d.mqtt ? '<span class="pill ok">connected</span>' : '<span class="pill bad">not connected</span>'}</div>
+        <div class="tile" id="svcTile"><h3>🧩 Services</h3><div class="empty">…</div></div>
+        <div class="tile" id="permTile"><h3>🔐 Permissions &amp; sudo</h3><div class="empty">…</div></div>
+        <div class="tile"><h3>📦 Versions</h3><div class="kv" style="margin-top:10px"><div class="k">MQTT live data</div><div class="v">${d.mqtt ? '<span class="pill ok">connected</span>' : '<span class="pill bad">not connected</span>'}</div>
                 <div class="k">MMDVMHost</div><div class="v mono" style="font-size:12px">${esc(d.versions.mmdvmhost)}</div>
                 <div class="k">DMRGateway</div><div class="v mono" style="font-size:12px">${esc(d.versions.dmrgateway)}</div>
                 <div class="k">MMDVMCal</div><div class="v">${esc(d.versions.mmdvmcal)}</div>
@@ -785,10 +898,7 @@ async function loadSystem() {
         <div class="tile"><h3>🗄️ Data</h3><div class="kv"><div class="k">Calls stored</div><div class="v">${d.calls.toLocaleString('de-DE')}</div>
             <div class="k">Since</div><div class="v">${d.calls_since ? fmtDate(d.calls_since) : '–'}</div><div class="k">Folder</div><div class="v mono" style="font-size:12px">${esc(d.data_dir)}</div></div></div>
     </div>`;
-}
-async function svc(s, a) {
-    if (a === 'stop' && !await confirmBox({ title: `Stop ${s}?`, body: 'The hotspot does not work without it until you start it again.' }, 'Stop', 'danger')) return;
-    try { await api('POST', '/api/admin/service', { service: s, action: a }); toast(`${s}: ${a}`); setTimeout(loadSystem, 800); } catch (e) { toast(e.message, true); }
+    loadServices(); loadPerms();
 }
 async function power(a) {
     if (!await confirmBox({ title: a === 'reboot' ? 'Reboot the hotspot?' : 'Shut down the hotspot?', body: a === 'reboot' ? 'It is back after about a minute.' : 'Unplug and replug the power to start it again.' }, a === 'reboot' ? 'Reboot' : 'Shut down', 'danger')) return;

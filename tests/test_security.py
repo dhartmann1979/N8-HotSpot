@@ -1,6 +1,4 @@
-"""Hardening (N8 security), N8 update guard and N8 Kit files."""
-import asyncio
-import subprocess
+"""Hardening (N8 security), N8 Admin-Kit and N8 Kit files."""
 import sys
 from pathlib import Path
 
@@ -9,7 +7,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from n8hotspot import n8_security, n8_update_guard as guard  # noqa: E402
+from n8hotspot import n8_security  # noqa: E402
 
 
 @pytest.fixture
@@ -46,46 +44,26 @@ def test_uvicorn_without_server_header():
     assert "UVICORN_KWARGS" in (ROOT / "n8hotspot" / "__main__.py").read_text()
 
 
-def _repo(tmp_path):
-    r = tmp_path / "repo"
-    subprocess.run(["git", "init", "-q", str(r)], check=True)
-    g = ["git", "-C", str(r), "-c", "user.name=t", "-c", "user.email=t@t"]
-    subprocess.run(g + ["commit", "-q", "--allow-empty", "-m", "a"], check=True)
-    old = subprocess.check_output(["git", "-C", str(r), "rev-parse", "HEAD"], text=True).strip()
-    (r / "f").write_text("x")
-    subprocess.run(["git", "-C", str(r), "add", "f"], check=True)
-    subprocess.run(g + ["commit", "-q", "-m", "b"], check=True)
-    new = subprocess.check_output(["git", "-C", str(r), "rev-parse", "HEAD"], text=True).strip()
-    return r, old, new
-
-
-def test_guard_rolls_back_after_three_starts(tmp_path):
-    r, old, new = _repo(tmp_path)
-    st = tmp_path / "state"
-    guard.mark_pending(st, old, new, "v1.3.0 · a", "v1.4.0 · b")
-    for _ in range(4):
-        subprocess.run(["sh", str(ROOT / "scripts" / "n8-update-guard.sh"), str(r), str(st)], check=True, capture_output=True)
-    assert subprocess.check_output(["git", "-C", str(r), "rev-parse", "HEAD"], text=True).strip() == old
-    res = guard.last_result(st)
-    assert res["ok"] is False and res["to"] == "v1.4.0 · b" and not guard.pending(st)
-
-
-def test_guard_confirms_when_web_answers(tmp_path):
-    import http.server
-    import threading
-    srv = http.server.HTTPServer(("127.0.0.1", 0), http.server.SimpleHTTPRequestHandler)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
-    try:
-        guard.mark_pending(tmp_path, "a" * 40, "b" * 40)
-        res = asyncio.run(guard.startup_check(tmp_path, guard.local_url("0.0.0.0", srv.server_port), timeout=10, delay=0))
-        assert res["ok"] and not guard.pending(tmp_path)
-    finally:
-        srv.shutdown()
-
-
-def test_unit_uses_the_guard():
+def test_update_runs_through_the_admin_kit():
+    """Ab 1.5.0: kein update guard mehr in der Unit – „Update jetzt“ läuft über scripts/n8-admin.sh (Path-Unit, root)."""
     unit = (ROOT / "systemd" / "n8hotspot.service").read_text()
-    assert "ExecStartPre=-/bin/sh /opt/n8hotspot/scripts/n8-update-guard.sh /opt/n8hotspot /opt/n8hotspot/data" in unit
+    assert "n8-update-guard" not in unit and "NoNewPrivileges=yes" not in unit
+    conf = (ROOT / "scripts" / "n8-admin.conf").read_text()
+    for k in ("N8_ID=n8hotspot", "mmdvmhost.service", "dmrgateway.service", "n8_check_extra", "n8_fix_extra", "/api/auth/me"):
+        assert k in conf, k
+    import subprocess as sp
+    assert sp.run(["bash", "-n", str(ROOT / "scripts" / "n8-admin.sh")]).returncode == 0
+    assert sp.run(["bash", "-n", str(ROOT / "scripts" / "n8-admin.conf")]).returncode == 0
+
+
+def test_admin_kit_identical_in_other_projects():
+    for repo in ("hobbyradioportal", "hblink4-freeradioid", "adn-frn-server"):
+        o = ROOT.parent / repo / "scripts" / "n8-admin.sh"
+        if o.exists():
+            assert o.read_bytes() == (ROOT / "scripts" / "n8-admin.sh").read_bytes(), repo
+    o = ROOT.parent / "hobbyradioportal" / "portal" / "n8_admin.py"
+    if o.exists():
+        assert o.read_bytes() == (ROOT / "n8hotspot" / "n8_admin.py").read_bytes()
 
 
 def test_kit_files_loaded():

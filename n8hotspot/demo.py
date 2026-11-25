@@ -50,7 +50,8 @@ def seed_history(db: DB, days: int = 30) -> None:
             st = (OWN[0], OWN[1], "Andreas")
         dur = round(random.uniform(2.5, 38.0), 1)
         rows.append((t, t + dur, "rf" if rf else "network", 2, st[0], st[1], _tg(), 1, 0, dur,
-                     round(random.uniform(0.0, 0.9), 2) if rf else round(random.uniform(0, 0.3), 2),
+                     (round(random.uniform(0.0, 0.9), 2) if random.random() < 0.8 else round(random.uniform(1.0, 4.5), 2)) if rf
+                     else round(random.uniform(0, 0.3), 2),
                      None if rf else round(random.uniform(0, 1.5), 1), random.randint(-78, -55) if rf else None, "end"))
     db.many("INSERT INTO calls (ts, end_ts, source, slot, src_id, callsign, dst_id, grp, is_data, duration, ber, loss, rssi, result) "
             "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
@@ -120,9 +121,11 @@ async def run(live: Live) -> None:
     pub("dmr-gateway/json", {"status": {"message": "Logged into DMR Network: N8schicht"}})
     pub("mmdvm/json", {"MMDVM": {"mode": "Idle"}})
     random.seed()
+    n = 0
     while True:
-        await asyncio.sleep(random.uniform(3, 9))
-        rf = random.random() < 0.2
+        await asyncio.sleep(random.uniform(3, 9) if n else 2)
+        rf = n == 0 or random.random() < 0.25          # the first call after the start comes over RF (BER, RSSI)
+        n += 1
         st = (OWN[0], OWN[1]) if rf else random.choice(STATIONS)[:2]
         tg = _tg()
         src = "rf" if rf else "network"
@@ -130,15 +133,19 @@ async def run(live: Live) -> None:
         pub("mmdvm/json", {"DMR": {"source": src, "action": "start", "slot": 2, "src_id": st[0], "dst_id": tg,
                                     "group": "yes", "src_info": st[1]}})
         pub("mmdvm/log", f"M: {ts()} DMR Slot 2, received {'RF' if rf else 'network'} voice header from {st[1]} to TG {tg}")
-        dur = random.uniform(3, 16)
+        dur = random.uniform(8, 18) if rf else random.uniform(3, 16)
         t0 = time.time()
+        weak = n == 1 or random.random() < 0.3                 # now and then a weak signal: higher BER, lower RSSI
+        bers = []
         while time.time() - t0 < dur:
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.5)
             if rf:
-                pub("mmdvm/json", {"BER": {"mode": "DMR", "slot": 2, "value": round(random.uniform(0, 0.8), 2)}})
-                pub("mmdvm/json", {"RSSI": {"mode": "DMR", "slot": 2, "value": random.randint(-72, -58)}})
+                b = round(max(0.0, random.gauss(2.2 if weak else 0.35, 0.9 if weak else 0.25)), 2)
+                bers.append(b)
+                pub("mmdvm/json", {"BER": {"mode": "DMR", "slot": 2, "value": b}})
+                pub("mmdvm/json", {"RSSI": {"mode": "DMR", "slot": 2, "value": random.randint(-95, -82) if weak else random.randint(-72, -58)}})
         if rf:
-            ber = round(random.uniform(0, 0.6), 1)
+            ber = round(sum(bers) / len(bers), 1) if bers else 0.0
             pub("mmdvm/json", {"DMR": {"action": "end", "slot": 2, "duration": round(dur, 1), "ber": ber,
                                         "rssi": {"min": -71, "max": -59, "ave": -64}}})
             pub("mmdvm/log", f"M: {ts()} DMR Slot 2, received RF end of voice transmission from {st[1]} to TG {tg}, {dur:.1f} seconds, BER: {ber}%, RSSI: -71/-59/-64 dBm")

@@ -1,39 +1,24 @@
 """
-Does the web interface have every permission it needs? Shown in Admin → Updates and in the modem scan.
+Can the running web interface reach the modem? Shown in the modem scan and in Admin → System.
 
-Everything here only reads. Repairs need root and are done by scripts/permissions.sh
-(also run by scripts/update.sh and install.sh).
+Everything here only reads, from the point of view of the running process (groups count only after a restart).
+Program folder, data, units and sudo are checked by the N8 Admin-Kit (scripts/n8-admin.sh check-perms);
+repairs need root: scripts/n8-admin.sh fix-perms (also run by install.sh and every update).
 """
 from __future__ import annotations
 
 import grp
 import os
-import subprocess
-import sys
 from typing import Any, Dict, List
 
 from . import serialscan, updater
 
-NEEDED_SUDO = ("start mmdvmhost.service", "stop mmdvmhost.service", "restart mmdvmhost.service",
-               "restart dmrgateway.service", "restart n8hotspot.service")
-
-
 def fix_command() -> str:
-    return f"sudo {updater.REPO_ROOT}/scripts/permissions.sh"
+    return f"sudo {updater.REPO_ROOT}/scripts/n8-admin.sh fix-perms"
 
 
 def _item(key: str, label: str, ok: bool, detail: str = "", level: str = "bad") -> Dict[str, Any]:
     return {"key": key, "label": label, "ok": ok, "detail": detail, "level": "ok" if ok else level}
-
-
-def _sudo_list() -> str:
-    if os.geteuid() == 0:
-        return "root"
-    try:
-        r = subprocess.run(["sudo", "-n", "-l"], capture_output=True, text=True, timeout=10)
-        return r.stdout if r.returncode == 0 else ""
-    except (OSError, subprocess.SubprocessError):
-        return ""
 
 
 def ports_to_check(configured: str = "") -> List[str]:
@@ -82,22 +67,6 @@ def check(configured_port: str = "") -> Dict[str, Any]:
     if os.path.exists("/dev/serial0") and os.path.realpath("/dev/serial0") == "/dev/ttyS0" and os.path.exists("/dev/ttyAMA0"):
         items.append(_item("bt", "GPIO UART is the full PL011 (Bluetooth off)", False,
                            "/dev/serial0 points to the mini UART. Add dtoverlay=disable-bt to config.txt (install.sh does it) and reboot.", "warn"))
-    # 4) sudo rule for the service restarts
-    lst = _sudo_list()
-    missing = [c for c in NEEDED_SUDO if lst != "root" and c not in lst]
-    items.append(_item("sudo", "sudo rule for service restarts (/etc/sudoers.d/n8hotspot)", not missing,
-                       "" if not missing else ("Missing: " + ", ".join(missing) if lst else "sudo -n -l is not allowed – the rule is missing.")))
-    # 5) the program folder can be updated
-    root = updater.REPO_ROOT
-    git_ok = (root / ".git").exists() and os.access(root / ".git", os.W_OK) and os.access(root, os.W_OK)
-    items.append(_item("repo", f"Program folder {root} is writable (Update now)", git_ok,
-                       "" if git_ok else ("Not a git checkout – update with scripts/update.sh." if not (root / ".git").exists()
-                                          else "Files belong to another user – Update now would fail."), "warn"))
-    prefix = sys.prefix
-    if prefix != sys.base_prefix:      # running inside the venv
-        ok = os.access(prefix, os.W_OK)
-        items.append(_item("venv", "Python environment is writable (new packages after an update)", ok,
-                           "" if ok else f"{prefix} belongs to another user.", "warn"))
     bad = [i for i in items if not i["ok"]]
     return {"ok": not bad, "items": items, "problems": len(bad), "fix": fix_command(),
             "critical": any(i["level"] == "bad" for i in bad)}

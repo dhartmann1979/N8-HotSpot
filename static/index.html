@@ -7,7 +7,7 @@
     <title>N8 Hotspot</title>
     <link rel="icon" href="/static/n8schicht-icon.svg">
     <link rel="apple-touch-icon" href="/static/n8schicht-icon-192.png">
-    <link rel="stylesheet" href="/static/app.css?v=2">
+    <link rel="stylesheet" href="/static/app.css?v=3">
     <link rel="stylesheet" href="/static/n8-extra.css?v=1">
     <link rel="stylesheet" href="/static/n8-theme.css?v=1">
     <link rel="stylesheet" href="/static/n8-light.css?v=1">
@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="/static/n8-look.css?v=1">
     <link rel="stylesheet" href="/static/n8-kit.css?v=1">
     <script src="/static/n8-kit.js?v=1"></script>
-    <script src="/static/i18n-app.js?v=1"></script>
+    <script src="/static/i18n-app.js?v=2"></script>
 </head>
 <body>
 <div class="container">
@@ -64,32 +64,70 @@
 
     <!-- ================= LIVE ================= -->
     <section id="tab-live">
-        <h2 class="section-header">Today</h2>
-        <div class="stats-bar">
-            <div class="stat"><div class="k">📞 Calls</div><div class="v" id="sCalls">–</div></div>
-            <div class="stat"><div class="k">⏱️ Airtime</div><div class="v" id="sAir">–</div></div>
-            <div class="stat"><div class="k">📻 RF (local)</div><div class="v" id="sRf">–</div></div>
-            <div class="stat"><div class="k">🌐 Network</div><div class="v" id="sNet">–</div></div>
-            <div class="stat"><div class="k">🎯 RF BER</div><div class="v" id="sBer">–</div></div>
-        </div>
-
-        <div class="grid live-top" id="liveTop">
-            <div>
-                <h2 class="section-header" style="margin-top: 4px">Time slots</h2>
-                <div class="slots" id="slots"></div>
+        <div class="live-grid">
+            <!-- the hotspot as a digital radio: LEDs, display with both time slots, live meters -->
+            <div class="radio" id="radio">
+                <div class="radio-bar">
+                    <div class="radio-brand"><span class="radio-badge">N8</span><span class="radio-model" id="rdModel">Hotspot · DMR</span></div>
+                    <div class="leds" role="status">
+                        <span class="led" id="ledRx" title="Receiving from a radio (RF)"><i></i>RX</span>
+                        <span class="led" id="ledTx" title="Transmitting to the radios (from the network)"><i></i>TX</span>
+                        <span class="led" id="ledMode" title="Mode of MMDVMHost"><i></i><b>DMR</b></span>
+                        <span class="led" id="ledNet" title="Connection to the DMR server"><i></i>NET</span>
+                        <span class="led" id="ledModem" title="Modem"><i></i>MODEM</span>
+                    </div>
+                </div>
+                <div class="lcd">
+                    <div class="lcd-top">
+                        <span class="lcd-call" id="lcdCall">–</span>
+                        <span id="lcdFreq">–</span>
+                        <span id="lcdCc">–</span>
+                        <span class="lcd-net" id="lcdNet">–</span>
+                        <span class="lcd-clock" id="lcdClock">--:--:--</span>
+                    </div>
+                    <div class="lcd-slots" id="slots"></div>
+                    <div class="lcd-bot" id="lcdBot">&nbsp;</div>
+                </div>
+                <div class="radio-today" id="today">
+                    <span class="rt"><small>Calls</small><b id="sCalls">–</b></span>
+                    <span class="rt"><small>Airtime</small><b id="sAir">–</b></span>
+                    <span class="rt"><small>RF (local)</small><b id="sRf">–</b></span>
+                    <span class="rt"><small>Network</small><b id="sNet">–</b></span>
+                    <span class="rt"><small>RF BER</small><b id="sBer">–</b></span>
+                </div>
             </div>
-            <div>
-                <h2 class="section-header" style="margin-top: 4px">Hotspot</h2>
-                <div class="card"><div class="kv" id="hsInfo"></div></div>
+
+            <!-- signal & vocoder: BER of the running call, quality of the last calls, RSSI, voice frames -->
+            <div class="sigpanel" id="sigPanel">
+                <h2 class="section-header" style="margin-top: 0">Vocoder &amp; signal <small class="dim" id="sigNote"></small></h2>
+                <div class="sig-card">
+                    <div class="sig-head"><span>BER live</span><b id="sigBerNow">–</b></div>
+                    <div class="sig-chart tall" id="chBerLive"></div>
+                </div>
+                <div class="sig-card">
+                    <div class="sig-head"><span>Last calls · BER (RF) / loss (network)</span><span class="legend-mini"><i class="lg rf"></i>RF <i class="lg net"></i>Network</span></div>
+                    <div class="sig-chart tall" id="chRecent"></div>
+                </div>
+            </div>
+            <div class="sig-row">
+                <div class="sig-card">
+                    <div class="sig-head"><span>RSSI (RF)</span><b id="sigRssi">–</b></div>
+                    <div class="sig-chart sm" id="chRssi"></div>
+                </div>
+                <div class="sig-card">
+                    <div class="sig-head"><span>Voice quality today</span></div>
+                    <div class="qbar" id="qBar"></div>
+                    <div class="sig-kv" id="sigKv"></div>
+                </div>
             </div>
         </div>
 
         <h2 class="section-header">Last heard <span class="seg" id="lhFilter" style="margin-left: auto">
             <button data-v="all" class="active">All</button><button data-v="rf">📻 RF</button><button data-v="network">🌐 Network</button></span></h2>
-        <div class="card"><div class="tbl-wrap"><table class="tbl">
-            <thead><tr><th>Time</th><th>Callsign</th><th>Source</th><th class="hide-sm">Slot</th><th>Target</th><th class="num">Duration</th><th class="num hide-sm">BER / Loss</th><th class="num hide-sm">RSSI</th></tr></thead>
-            <tbody id="lhBody"><tr><td colspan="8" class="empty">Nothing heard yet.</td></tr></tbody>
-        </table></div></div>
+        <div class="card lh-card"><div class="tbl-wrap"><table class="tbl lh">
+            <thead><tr><th>Time</th><th>Callsign</th><th class="hide-sm">Slot</th><th>Target</th><th class="num">Duration</th><th class="num hide-sm">BER / Loss</th><th class="num hide-sm">RSSI</th></tr></thead>
+            <tbody id="lhBody"><tr><td colspan="7" class="empty">Nothing heard yet.</td></tr></tbody>
+        </table></div><div class="lh-more"><button class="btn small hidden" id="lhMore">Show more</button></div></div>
     </section>
 
     <!-- ================= STATISTICS ================= -->
@@ -172,8 +210,8 @@
 </div>
 <div class="tip" id="tip"></div>
 <div id="modalRoot"></div>
-<script src="/static/app.js?v=2"></script>
-<script src="/static/n8-admin.js?v=1"></script>
+<script src="/static/app.js?v=3"></script>
+<script src="/static/n8-admin.js?v=2"></script>
 <script>
     // N8 Kit: DE | EN next to Links and the login (the same switch in all N8schicht pages)
     (function () { const u = document.getElementById('userArea'); if (u) N8Kit.langSwitch(u.parentNode, { before: u }); })();

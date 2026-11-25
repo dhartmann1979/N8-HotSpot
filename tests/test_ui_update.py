@@ -103,8 +103,8 @@ def test_permission_check_shape(tmp_path):
     from n8hotspot import permcheck
     r = permcheck.check(str(tmp_path / "ttyNOPE"))
     keys = [i["key"] for i in r["items"]]
-    assert "dialout" in keys and "sudo" in keys and "repo" in keys and "port-missing" in keys
-    assert r["fix"].endswith("scripts/permissions.sh") and r["problems"] == sum(not i["ok"] for i in r["items"])
+    assert "dialout" in keys and "port-missing" in keys and "sudo" not in keys      # sudo/program: N8 Admin-Kit
+    assert r["fix"].endswith("scripts/n8-admin.sh fix-perms") and r["problems"] == sum(not i["ok"] for i in r["items"])
 
 
 def test_scan_reports_permissions(client):
@@ -113,3 +113,41 @@ def test_scan_reports_permissions(client):
     assert r.status_code == 200 and "permissions" in r.json() and r.json()["stopped"] is False
     p = client.get("/api/admin/permissions").json()
     assert {"ok", "items", "fix"} <= set(p)
+
+
+def test_admin_kit_endpoints(client):
+    """Dienste, Berechtigungen & sudo, Update-Protokoll (N8 Admin-Kit, Demo)."""
+    import json
+    n8 = client.appmod.ctx.n8
+    n8.demo = True
+    acts = ["start", "stop", "restart", "enable", "disable"]
+    (n8.state_dir / "n8-admin.json").write_text(json.dumps({"self": "/opt/n8hotspot/scripts/n8-admin.sh", "request": str(n8.state_dir / "update.request"),
+        "units": [{"unit": u, "label": u, "actions": acts} for u in ("mmdvmhost.service", "dmrgateway.service", "mosquitto.service")]
+        + [{"unit": "n8hotspot.service", "label": "web", "actions": ["restart", "enable"]}]}))
+    login(client)
+    d = client.get("/api/admin/services").json()
+    units = {u["unit"]: u for u in d["units"]}
+    assert {"mmdvmhost.service", "dmrgateway.service", "mosquitto.service", "n8hotspot.service"} <= set(units)
+    assert "stop" not in units["n8hotspot.service"]["actions"]
+    assert client.post("/api/admin/services/n8hotspot.service/stop", json={}, headers=H).status_code == 400
+    assert client.post("/api/admin/services/sshd.service/restart", json={}, headers=H).status_code == 400
+    r = client.post("/api/admin/services/mmdvmhost.service/disable", json={}, headers=H).json()
+    assert {u["unit"]: u for u in r["units"]}["mmdvmhost.service"]["enabled"] == "disabled"
+    assert client.get("/api/admin/perms").json()["ok"]
+    assert client.post("/api/admin/perms/fix", json={}, headers=H).json()["ok"]
+    assert "log" in client.get("/api/admin/update-log").json()
+
+
+def test_signal_statistics(client):
+    login(client)
+    d = client.get("/api/signal").json()
+    t = d["today"]
+    assert {"ber_avg", "ber_good", "ber_mid", "ber_bad", "rssi_avg", "loss_avg", "frames_rf", "frames_net", "frames_lost"} <= set(t)
+    assert len(d["hours"]) == 24 and d["frames_per_second"] == 50 and len(d["recent"]) <= 40
+    assert t["frames_rf"] >= 0 and t["ber_good"] + t["ber_mid"] + t["ber_bad"] <= t["rf_calls"]
+
+
+def test_live_view_is_a_radio():
+    html = (ROOT / "static" / "index.html").read_text()
+    for k in ('id="ledRx"', 'id="ledTx"', 'id="ledMode"', 'class="lcd"', 'id="chBerLive"', 'id="chRecent"', 'id="qBar"'):
+        assert k in html, k
