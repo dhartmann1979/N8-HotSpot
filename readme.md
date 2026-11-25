@@ -103,6 +103,10 @@ Ohne vorher eingetragene Hotspot-Einstellungen geht es im Browser weiter: **Logi
 <td><img src="docs/images/setup-2.png" alt="Zusammenfassung"><br><b>🧭 Geführte Einrichtung</b>: Zusammenfassung, Installation, fertig.</td>
 </tr>
 <tr>
+<td><img src="docs/images/admin-abstuerze.png" alt="Abstürze"><br><b>💥 Abstürze</b>: jeder Absturz mit Teil, Ursache und Protokoll, automatischer Neustart, Zähler je Teil.</td>
+<td><img src="docs/images/absturz-hinweis.png" alt="Hinweis nach der Anmeldung"><br><b>Hinweis nach der Anmeldung</b>: neue Abstürze erscheinen sofort, bis sie als gelesen markiert sind.</td>
+</tr>
+<tr>
 <td><img src="docs/images/admin-updates.png" alt="Update"><br><b>⬆️ Update</b>: Baum-Menü wie in allen N8-Systemen, Update ohne Passwort, Update-Protokoll.</td>
 <td><img src="docs/images/admin-appearance.png" alt="Aussehen"><br><b>🎨 Appearance</b>: Farbprofile, eigene Farben, Vorschau mit Lesbarkeit.</td>
 </tr>

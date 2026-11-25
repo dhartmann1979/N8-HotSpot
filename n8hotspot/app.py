@@ -769,6 +769,32 @@ async def perms_fix(request: Request):
     return {"ok": ok, "message": out, "check": await ctx.n8.check_perms()}
 
 
+# Abstürze (N8 Kit 1.3): crash-hook von scripts/n8-admin.sh (auch MMDVMHost, DMRGateway, MQTT), Keep-Alive und n8_crash.CrashWatch
+# schreiben <Datenordner>/crashes.jsonl – gleiche Adressen in allen N8-Systemen
+@app.get("/api/admin/crashes")
+async def crashes_get(request: Request):
+    need_admin(request)
+    return await asyncio.to_thread(ctx.n8.crashes)
+
+
+@app.get("/api/admin/crashes/{cid}")
+async def crash_get(cid: str, request: Request):
+    need_admin(request)
+    txt = await asyncio.to_thread(ctx.n8.crash_log, cid)
+    if txt is None:
+        raise HTTPError(404, "Befund nicht gefunden")
+    return {"id": cid, "log": txt}
+
+
+@app.post("/api/admin/crashes/ack")
+async def crashes_ack(request: Request):
+    need_admin(request)
+    b = await body(request)
+    b = b if isinstance(b, dict) else {}
+    ids = b.get("ids") if isinstance(b.get("ids"), list) else []
+    return await asyncio.to_thread(ctx.n8.crash_ack, [str(i) for i in ids][:500], bool(b.get("all")))
+
+
 @app.get("/api/admin/keepalive")
 async def keepalive_get(request: Request):
     need_admin(request)
@@ -1104,6 +1130,27 @@ async def daily_task():
                 await asyncio.to_thread(ctx.refresh_ids)
             except Exception:
                 pass
+
+
+CRASH_SERVICES = [   # welcher Teil der Weboberfläche steckt in einem Stack (Absturz-Befunde, auch für den crash-hook)
+    (r"/n8hotspot/live\.py$", "Live-Daten (MQTT)"), (r"/n8hotspot/calib\.py$", "Kalibrierung"), (r"/n8hotspot/configgen\.py$", "Konfiguration (ini)"),
+    (r"/n8hotspot/(freeradioid|idlist|talkgroups)\.py$", "ID-Listen"), (r"/n8hotspot/stats\.py$", "Statistik"), (r"/n8hotspot/db\.py$", "Datenbank"),
+    (r"/n8hotspot/updater\.py$", "Update"), (r"/n8hotspot/serialscan\.py$", "Modem-Suche"), (r"/n8hotspot/(system|permcheck)\.py$", "System"),
+    (r"/n8hotspot/auth\.py$", "Anmeldung"), (r"/n8hotspot/(settings|uiconfig)\.py$", "Einstellungen"), (r"/n8hotspot/siteicons\.py$", "Site-Icons"),
+    (r"/n8hotspot/app\.py$", "Weboberfläche"), (r"/(uvicorn|starlette|fastapi|websockets|paho)/", "Webinterface"),
+]
+
+
+@app.on_event("startup")
+async def startup_crashwatch():
+    """Absturz-Melder (N8 Kit): Hänger der Event-Loop, abgestürzte Tasks, harter Absturz → Admin → System → 💥 Abstürze."""
+    if DEMO:
+        return
+    try:
+        from .n8_crash import CrashWatch
+        CrashWatch(str(DATA), app="N8-Hotspot", unit="n8hotspot.service", services=CRASH_SERVICES).install()
+    except Exception as e:  # noqa: BLE001
+        log.warning("Absturz-Melder nicht aktiv: %s", e)
 
 
 @app.on_event("startup")

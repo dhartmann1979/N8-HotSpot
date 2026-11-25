@@ -164,3 +164,14 @@ def test_keepalive_and_health(client):
     assert d["conf"]["heartbeat_url"] == "https://hc-ping.com/abc-123" and d["conf"]["net_restart"] is False
     assert client.post("/api/admin/keepalive", json={"heartbeat_url": "https://x/$(id)"}, headers=H).status_code == 400
     assert client.post("/api/admin/keepalive", json={"pause_minutes": 60}, headers=H).json()["conf"]["paused_until"] > 0
+
+
+def test_crash_endpoints(client):
+    """Abstürze (N8 Kit 1.3): Liste, Protokoll, gelesen – nur für Admins."""
+    assert client.get("/api/admin/crashes").status_code in (401, 403)
+    login(client)
+    d = client.get("/api/admin/crashes").json()
+    assert "items" in d and "unacked" in d and "watch" in d
+    assert client.get("/api/admin/crashes/..%2Fx").status_code == 404
+    assert client.post("/api/admin/crashes/ack", json={"all": True}, headers=H).json()["unacked"] == 0
+

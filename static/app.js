@@ -82,8 +82,18 @@ function renderHeader() {
     $('tabAdminBtn').classList.toggle('hidden', !isAdmin());
     $('defaultBanner').classList.toggle('hidden', !(isAdmin() && S.me.default_pw));
 }
+// Abstürze (N8 Kit): Hinweisfenster nach der Anmeldung (und beim Laden als Admin), bis die Befunde als gelesen markiert sind
+async function checkCrashes(force) {
+    if (!isAdmin()) return;
+    const d = await N8Kit.sys.crashPopup({ req: api, force, open: () => showTab('admin', 'sys-crashes'),
+        onAck: () => { S.crashNew = 0; if (S.tab === 'admin') showAdmin(S.admin.tab); } });
+    const n = d ? d.unacked || 0 : 0;
+    if (n !== (S.crashNew || 0)) { S.crashNew = n; if (S.tab === 'admin') showAdmin(S.admin.tab); }
+}
 function renderUser() {
     const el = $('userArea');
+    if (isAdmin() && !S.crashChecked) { S.crashChecked = true; setTimeout(() => checkCrashes(), 900); }
+    if (!S.me) S.crashChecked = false;
     if (!S.me) { el.innerHTML = '<button class="btn primary" onclick="openLogin()">🔐 Login</button>'; return; }
     // logged in: name (click = my account) and log out – no drop-down; ⚙️ Admin is a menu item
     const name = esc(S.me.display_name || S.me.username);
@@ -612,7 +622,7 @@ function adminGroups() {
             { id: 'logs', label: '📜 Logs' }, { id: 'files', label: '🧾 Config files' }] },
         { id: 'zugang', label: G.zugang, items: [{ id: 'users', label: '👥 Users' }, { id: 'audit', label: '🔑 Sessions & log' }] },
         { id: 'darstellung', label: G.darstellung, items: [{ id: 'appearance', label: '🎨 Appearance' }, { id: 'links', label: '🔗 Links' }] },
-        { id: 'system', label: G.system, items: [{ id: 'system', label: '🖥️ Hardware & data' }, ...N8Kit.nav.SYS_ITEMS.map(([id, label]) => ({ id, label }))] },
+        { id: 'system', label: G.system, items: [{ id: 'system', label: '🖥️ Hardware & data' }, ...N8Kit.nav.SYS_ITEMS.map(([id, label]) => ({ id, label, ...(id === 'sys-crashes' && S.crashNew ? { badge: String(S.crashNew), badgeClass: 'bad' } : {}) }))] },
     ];
 }
 function showAdmin(a) {

@@ -16,7 +16,7 @@ mit denselben Gruppen in derselben Reihenfolge:
 | 📡 **Betrieb** | ⚙️ Einstellungen (Zweige: Station, Modem, DMR-Netz, DMR-Betrieb, Dashboard, FreeRadioID.net, Experte) · 🎛️ Kalibrierung · 📜 Protokolle · 🧾 Konfigurationsdateien |
 | 👥 **Benutzer & Zugang** | 👥 Benutzer · 🔑 Sitzungen & Protokoll |
 | 🎨 **Darstellung** | 🎨 Aussehen · 🔗 Links |
-| 🖥️ **System** | 🖥️ Hardware & Daten · ⬆️ Update · 🧩 Dienste · 🔐 Berechtigungen & sudo · 💓 Keep-Alive |
+| 🖥️ **System** | 🖥️ Hardware & Daten · ⬆️ Update · 🧩 Dienste · 🔐 Berechtigungen & sudo · 💓 Keep-Alive · 💥 Abstürze |
 
 Alle Gruppen sind **anfangs zugeklappt** – offen ist nur die Gruppe der gerade gewählten Seite; ein Klick auf eine Gruppe klappt sie auf (gemerkt bis zum Schließen des Browser-Tabs). Seit 1.6.2 hängen die Abschnitte der Einstellungen als Zweige darunter – ein Zweig zeigt nur diesen Abschnitt in voller Breite. Auf dem Handy wird das Menü zu einer Leiste
 „☰ *aktueller Bereich*“, die sich aufklappen lässt. Kacheln einer Reihe sind gleich hoch, die Knöpfe stehen unten bündig.
@@ -176,6 +176,8 @@ Updates zu einer festen Stunde und ob MMDVMHost/DMRGateway mit neu starten. Alle
 - **🔐 Berechtigungen & sudo**: zeigt nur, was nicht stimmt; **🛠️ Korrigieren** repariert und prüft erneut
 - **💓 Keep-Alive**: prüft jede Minute als root, ob alles wirklich läuft, startet kranke Dienste neu, erkennt Internet-Ausfälle und
   meldet sich bei einer Heartbeat-Adresse – Einzelheiten unter [Updates & Versionen → Keep-Alive](updates.md#-keep-alive)
+- **💥 Abstürze**: jeder Absturz, Hänger und Notfall-Neustart von MMDVMHost, DMRGateway, MQTT und Weboberfläche mit Teil, Ursache und Protokoll;
+  neue Befunde erscheinen nach der Anmeldung als Hinweisfenster – siehe [Updates & Versionen → Abstürze](updates.md#-abstürze-erkennen-und-aufklären)
 
 ## 🖥️ System
 

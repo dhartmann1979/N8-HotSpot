@@ -178,7 +178,7 @@ function updateSettingsForm(d) {
 }
 function loadSysView(name) {
     N8Kit.sys.view($('admin-sys'), name, {
-        req: api, console: 'sudo /opt/n8hotspot/scripts/n8-admin.sh',
+        req: api, console: 'sudo /opt/n8hotspot/scripts/n8-admin.sh', onAck: () => { S.crashNew = 0; if (S.tab === 'admin') showAdmin(S.admin.tab); },
         update: { load: async (force) => kitUpdate(await loadUpdates(force)), onInstall: () => openUpdateNow() },
         extra: box => { if (S.admin.update && S.admin.update.config) box.innerHTML = updateSettingsForm(S.admin.update); },
     });
