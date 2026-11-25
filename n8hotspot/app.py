@@ -836,6 +836,14 @@ async def crashes_ack(request: Request):
     ids = b.get("ids") if isinstance(b.get("ids"), list) else []
     return await asyncio.to_thread(ctx.n8.crash_ack, [str(i) for i in ids][:500], bool(b.get("all")))
 
+@app.post("/api/admin/crashes/delete")
+async def crashes_delete(request: Request):
+    need_admin(request)
+    b = await body(request)
+    b = b if isinstance(b, dict) else {}
+    ids = b.get("ids") if isinstance(b.get("ids"), list) else []
+    return await asyncio.to_thread(ctx.n8.crash_delete, [str(i) for i in ids][:500], bool(b.get("all")))
+
 
 @app.get("/api/admin/keepalive")
 async def keepalive_get(request: Request):

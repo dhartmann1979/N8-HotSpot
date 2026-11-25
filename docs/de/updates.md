@@ -176,6 +176,10 @@ MMDVMHost, DMRGateway, MQTT (mosquitto) und die Weboberfläche (`n8hotspot.servi
 erscheinen **nach der Anmeldung als Hinweisfenster** und als roter Zähler im Menü, bis sie als gelesen markiert sind.
 Konsole: `sudo /opt/n8hotspot/scripts/n8-admin.sh crashes`. Dateien: `crashes.jsonl` (letzte 300), `crash/<id>.log`, `crash/ack.json`, `crashwatch.json`.
 
+**Bereinigen:** In jedem aufgeklappten Befund löscht **🗑 Diesen Befund löschen** ihn samt Protokoll, unten **🗑 Alle löschen**
+(mit Rückfrage) alle – ist oben nach einem Dienst gefiltert, heißt der Knopf **🗑 Angezeigte löschen** und löscht nur diese.
+Auf der Konsole: `sudo …/scripts/n8-admin.sh crashes-clear`. Die laufende Faulthandler-Datei (`crash/fault-*.log`) bleibt.
+
 ## Automatische Updates
 
 Mit **Install automatically** installiert der Hotspot neue Versionen selbst – genauso wie mit *Update jetzt installieren*, nur ohne Klick:
