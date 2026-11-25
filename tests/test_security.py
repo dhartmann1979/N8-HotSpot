@@ -71,3 +71,13 @@ def test_kit_files_loaded():
     for f in ("/static/n8-kit.css", "/static/n8-kit.js", "/static/i18n-app.js", 'id="updateBanner"'):
         assert f in html
     assert "'Calibration': 'Kalibrierung'" in (ROOT / "static" / "i18n-app.js").read_text()
+
+
+def test_admin_kit_survives_set_e(tmp_path):
+    """Regression 1.5.2: prune_args darf unter set -e das Skript nicht beenden (fix-perms brach nach „korrigiere …“ ab)."""
+    import subprocess as sp
+    src = (ROOT / "scripts" / "n8-admin.sh").read_text()
+    fn = src[src.index("prune_args() {"):src.index("check_perms() {")]
+    script = f'set -euo pipefail\nAPP=/opt/x; N8_DATA_DIRS=(/var/lib/x); N8_WRITABLE_IN_APP=()\n{fn}\nprune_args\necho weiter\n'
+    r = sp.run(["bash", "-c", script], capture_output=True, text=True)
+    assert r.returncode == 0 and "weiter" in r.stdout

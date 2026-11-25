@@ -4,6 +4,18 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.5.2] – 2026-11-25
+
+### 🐛 Fix: `n8-admin.sh fix-perms` brach nach „korrigiere …“ ohne Meldung ab
+- Im gemeinsamen N8 Admin-Kit endete die Hilfsfunktion für die Ausschlüsse im Programmordner (`prune_args`) mit dem Status des
+  letzten Vergleichs. Unter `set -e` beendete das das ganze Skript – **ohne Fehlermeldung**, direkt nach „korrigiere …“.
+  Betroffen waren `fix-perms`, „Korrigieren“ im Webinterface und **jedes Update** (Abbruch nach der Zeile „Version: …“, also vor
+  Rechten, sudo, Neustart und Prüfung). Die Funktion gibt jetzt immer 0 zurück; im Test korrigiert `fix-perms` alle Fehler und prüft erneut.
+- `n8-admin.conf`: Werte aus der Unit (`grep … | cut`) brechen nicht mehr ab, wenn die Zeile fehlt (z. B. kein eigener Port eingetragen).
+
+> **Auf bestehenden Servern einmalig** (das laufende alte Skript kann sich nicht selbst reparieren):
+> `sudo git -c safe.directory=/opt/n8hotspot -C /opt/n8hotspot pull --ff-only && sudo /opt/n8hotspot/scripts/n8-admin.sh fix-perms`
+
 ## [1.5.1] – 2026-11-25
 
 ### 📐 Live-Ansicht symmetrisch
