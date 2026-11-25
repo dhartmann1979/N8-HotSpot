@@ -4,6 +4,17 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.9.0] – 2026-11-25
+
+### 🔤 Schriftauswahl mit Vorschau – in allen N8-Systemen (N8 Theme 2.1)
+- Unter *Darstellung → 🎨 Aussehen* neue **Schriftauswahl mit Vorschau** (Rufzeichen, TG, Frequenz, Umlaute, Ziffern in jeder Schrift):
+  **IBM Plex Sans** (neuer Standard, technisch und sehr gut lesbar), Inter, Barlow, Exo 2, Rajdhani oder die Systemschrift. Ein Klick wirkt
+  sofort, gespeichert wird mit dem Aussehen.
+- Zahlen, Anzeigen und Code stehen jetzt überall in **JetBrains Mono** (`--n8-mono`, auch `--mono`).
+- Alle Schriften **selbst gehostet** (`fonts/` neben `n8-theme.js`, Fontsource 5.3.0, Schnitte 400/600/700, Latin + Latin-Extended, SIL OFL 1.1,
+  Lizenz je Ordner) – keine Anfrage an Google Fonts oder andere fremde Server; die Sicherheitsregeln (`font-src 'self'`) bleiben unverändert.
+- Gemeinsame Dateien `n8-theme.js`/`n8-theme.css` (N8 Theme 2.1) und die Prüfung des Themes um `font` erweitert; Doku um „Schrift“ ergänzt.
+
 ## [1.8.4] – 2026-11-25
 
 ### 🗑 Abstürze bereinigen – in allen N8-Systemen

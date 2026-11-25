@@ -19,6 +19,25 @@ gleiches Farbsystem (N8 Theme 2), gleiche Kopfzeile mit Statusleiste und seit 1.
 (`static/n8-look.css`, identisch im Portal). Sie sorgt für den durchgehenden Hintergrund, die farbig leuchtenden Kacheln
 die Abschnittsüberschriften und die Fußzeile als Glaskarte:
 
+### 🔤 Schrift (N8 Theme 2.1)
+
+Unter *Darstellung → 🎨 Aussehen* gibt es jetzt eine **Schriftauswahl mit Vorschau** – jede Karte zeigt Rufzeichen, TG, Frequenz,
+Umlaute und Ziffern in ihrer Schrift; ein Klick wirkt sofort auf der ganzen Seite, gespeichert wird mit dem Aussehen.
+
+| Schrift | Charakter |
+|---|---|
+| **IBM Plex Sans** (Standard) | technisch, sehr gut lesbar |
+| Inter | neutral, am Bildschirm sehr gut lesbar |
+| Barlow | wie DIN-Beschilderung, kompakt |
+| Exo 2 | technisch mit futuristischem Einschlag |
+| Rajdhani | schmal, wie ein Funkgeräte-Display |
+| System | Schrift des Geräts (kein Download) |
+
+Zahlen, Anzeigen und Code stehen immer in **JetBrains Mono** (CSS-Variable `--n8-mono`). Alle Schriften liegen im Projekt
+(`fonts/` neben `n8-theme.js`, SIL Open Font License 1.1) – es gibt keine Anfrage an Google Fonts oder andere fremde Server.
+Gleich in allen N8-Systemen.
+
+
 <p align="center"><img src="../images/footer.png" alt="Fußzeile im N8 Look" width="90%"></p>
 
 Im Portal kann der Hotspot als Verweis erscheinen (Plugin `hotspot`, Vorgabe aus). Das Portal prüft dann nur,
