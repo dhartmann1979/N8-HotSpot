@@ -4,6 +4,25 @@
 
 ---
 
+## Das Menü
+
+<p align="center"><img src="../images/admin-keepalive.png" alt="Adminbereich mit Baum-Menü" width="95%"></p>
+
+Seit **1.6.0** steht links ein **Baum-Menü** – dasselbe wie im HobbyRadioPortal, ADN-FRN-Server, HBlink4-FreeRadioID und N8 Crosslink,
+mit denselben Gruppen in derselben Reihenfolge:
+
+| Gruppe | Einträge beim Hotspot |
+|---|---|
+| 📡 **Betrieb** | ⚙️ Einstellungen · 🎛️ Kalibrierung · 📜 Protokolle · 🧾 Konfigurationsdateien |
+| 👥 **Benutzer & Zugang** | 👥 Benutzer · 🔑 Sitzungen & Protokoll |
+| 🎨 **Darstellung** | 🎨 Aussehen · 🔗 Links |
+| 🖥️ **System** | 🖥️ Hardware & Daten · ⬆️ Update · 🧩 Dienste · 🔐 Berechtigungen & sudo · 💓 Keep-Alive |
+
+Gruppen klappen per Klick auf und zu (der Browser merkt sich das). Auf dem Handy wird das Menü zu einer Leiste
+„☰ *aktueller Bereich*“, die sich aufklappen lässt. Kacheln einer Reihe sind gleich hoch, die Knöpfe stehen unten bündig.
+
+<p align="center"><img src="../images/admin-mobile-menu.png" alt="Menü auf dem Handy" width="32%"></p>
+
 ## Anmelden und Standard-Login
 
 <p align="center">
@@ -137,23 +156,35 @@ Mit ↑ änderst du die Reihenfolge, ✕ entfernt einen Link, **＋ Link** fügt
 nicht von der fremden Seite. Ohne Internet bleibt das Emoji stehen. Abgefragt werden nur öffentliche Adressen (keine Adressen im
 Heimnetz), höchstens 256 KB, und SVG-Dateien mit Skripten werden abgelehnt. Alle Site-Icons werden täglich um Mitternacht neu geladen; **Refresh site icons now** erzwingt den Abruf sofort.
 
-## ⬆️ Updates
+## ⬆️ Update
 
-<p align="center"><img src="../images/admin-updates.png" alt="Updates" width="95%"></p>
+<p align="center"><img src="../images/admin-updates.png" alt="Update" width="95%"></p>
 
-Kachel **⬆️ Updates** im N8-Kit-Stil: installierte Version, Stand auf GitHub, zuletzt geprüft, letztes Update (erfolgreich/zurückgenommen), Änderungen der neuen Version, **↻ Jetzt prüfen** und **⬆️ Update jetzt installieren** (mit Passwortabfrage, Fortschritt und automatischem Rollback). Einzelheiten: [Updates](updates.md).
-Daneben die Kachel **🔐 Permissions**: ob die Weboberfläche die Modem-Schnittstellen öffnen, die Dienste neu starten und sich selbst
-aktualisieren darf – mit dem Befehl zum Reparieren, falls etwas fehlt.
-Rechts: stündliche Prüfung, automatische Updates zu einer festen Stunde und ob MMDVMHost/DMRGateway mit neu starten.
-Alles dazu – auch wie die Dienste ohne Änderung an `sudoers` neu starten – steht unter **[⬆️ Updates & Versionen](updates.md)**.
+**System → ⬆️ Update** – dieselbe Ansicht wie in allen N8-Systemen: installierte Version, Stand auf GitHub, zuletzt geprüft,
+**↻ Jetzt prüfen** und **⬆️ Update jetzt installieren** (seit 1.6.0 **ohne Passwortabfrage**, mit Fortschritt und automatischem
+Rollback), rechts das **📜 Update-Protokoll**. Darunter die **Update-Einstellungen** des Hotspots: stündliche Prüfung, automatische
+Updates zu einer festen Stunde und ob MMDVMHost/DMRGateway mit neu starten. Alles dazu: **[⬆️ Updates & Versionen](updates.md)**.
+
+## 🧩 Dienste · 🔐 Berechtigungen & sudo · 💓 Keep-Alive
+
+<p align="center">
+  <img src="../images/admin-services.png" alt="Dienste" width="48%">
+  <img src="../images/admin-perms.png" alt="Berechtigungen & sudo" width="48%">
+</p>
+
+- **🧩 Dienste**: MMDVMHost, DMRGateway, MQTT, Weboberfläche und Update-Auslöser mit Zustand, Autostart und Starten · Stoppen · Neu starten
+- **🔐 Berechtigungen & sudo**: zeigt nur, was nicht stimmt; **🛠️ Korrigieren** repariert und prüft erneut
+- **💓 Keep-Alive**: prüft jede Minute als root, ob alles wirklich läuft, startet kranke Dienste neu, erkennt Internet-Ausfälle und
+  meldet sich bei einer Heartbeat-Adresse – Einzelheiten unter [Updates & Versionen → Keep-Alive](updates.md#-keep-alive)
 
 ## 🖥️ System
 
 <p align="center"><img src="../images/admin-system.png" alt="System" width="90%"></p>
 
+Seit 1.6.0 heißt der Eintrag **🖥️ Hardware & Daten**; Update, Dienste, Berechtigungen und Keep-Alive haben eigene Einträge im Menü.
+
 - **Hardware**: Board, Betriebssystem, Hostname, IP, **CPU-Temperatur** (grün < 60 °C), Last, Speicher, SD-Karte, Laufzeit; dazu **Reboot** und **Shut down**
-- **Services**: MMDVMHost, DMRGateway, MQTT-Broker und die Weboberfläche mit Status; Start, Stop, Restart
-- **Versionen** von MMDVMHost, DMRGateway, MMDVMCal und N8-Hotspot, Status der MQTT-Live-Daten (Updates für N8-Hotspot: Tab *⬆️ Updates*)
+- **Versionen** von MMDVMHost, DMRGateway, MMDVMCal und N8-Hotspot, Status der MQTT-Live-Daten (Updates: *System → ⬆️ Update*)
 - **DMR ID list**: Zahl der IDs, letztes Update, **⟳ Update now** (lädt auch die FreeRadioID-Liste)
 - **FreeRadioID.net**: registrierte IDs, gespeicherte Avatare, letztes Update
 - **Talkgroup list**: Zahl der Namen aus der N8schicht-Liste und der eigenen Namen, letztes Update (wird mit **⟳ Update now** neu geladen)

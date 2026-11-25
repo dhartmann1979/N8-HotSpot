@@ -21,11 +21,11 @@ Gibt es etwas Neues, sehen **nur Admins** unter der Statusleiste den Hinweis *Up
 Hinweis, Kachel und Fortschritt kommen aus dem **N8 Kit** und sehen in N8-HotSpot, HBlink4-FreeRadioID, adn-frn-server und
 N8 Crosslink gleich aus (siehe [Sicherheit & N8 Kit](sicherheit.md)).
 
-## Admin → Updates
+## Admin → System → ⬆️ Update
 
-<p align="center"><img src="../images/admin-updates.png" alt="Admin → Updates" width="95%"></p>
+<p align="center"><img src="../images/admin-updates.png" alt="Admin → System → Update" width="95%"></p>
 
-Links steht die Kachel **⬆️ Updates**:
+Seit 1.6.0 ist das dieselbe Ansicht wie in allen N8-Systemen (N8 Kit 1.1.0). Links steht die Kachel **⬆️ Update**, rechts das **📜 Update-Protokoll**:
 
 | Zeile | Bedeutung |
 |---|---|
@@ -39,7 +39,7 @@ Links steht die Kachel **⬆️ Updates**:
 Darunter stehen die **Änderungen der neuen Version** (*Was ist neu*), direkt aus [CHANGELOG.md](../../CHANGELOG.md).
 **↻ Jetzt prüfen** fragt sofort nach, **⬆️ Update jetzt installieren** installiert.
 
-Rechts sind die **Update settings**:
+Darunter stehen die **Update-Einstellungen**:
 
 | Einstellung | Vorgabe | Bedeutung |
 |---|---|---|
@@ -57,10 +57,10 @@ Rechts sind die **Update settings**:
   <img src="../images/update-dialog-done.png" alt="Update läuft" width="42%">
 </p>
 
-**⬆️ Update jetzt installieren** (oder **Jetzt aktualisieren** im Hinweis) zeigt die Neuerungen und was passiert, und fragt zur
-Sicherheit noch einmal **dein Passwort** ab. Nach 5 falschen Versuchen ist 15 Minuten Pause – genau wie beim Login; ein falsches
-Passwort lässt das Fenster offen. Dann siehst du drei Schritte: **Update wird geladen und eingespielt → Dienst startet neu →
-Weboberfläche wird geprüft**. Im Einzelnen:
+**⬆️ Update jetzt installieren** (oder **Jetzt aktualisieren** im Hinweis) zeigt die Neuerungen und was passiert. Seit **1.6.0**
+fragt es **nicht mehr nach dem Passwort** – eine Admin-Sitzung (mit dem Sicherheits-Header gegen fremde Seiten) genügt, wie in allen
+N8-Systemen. Dann siehst du drei Schritte: **Update wird geladen und eingespielt → Dienst startet neu → Weboberfläche wird geprüft**.
+Im Einzelnen:
 
 Seit **1.5.0** läuft das Update über das gemeinsame **N8 Admin-Kit** (`scripts/n8-admin.sh`, dasselbe wie im HobbyRadioPortal,
 adn-frn-server und HBlink4-FreeRadioID, nach dem Vorbild von N8 Crosslink). Die Weboberfläche schreibt nur eine Anforderung
@@ -96,9 +96,12 @@ Ein Update wird **abgelehnt**, wenn
 
 ## 🔐 Dienste, Berechtigungen & sudo
 
-<p align="center"><img src="../images/admin-system.png" alt="System: Dienste und Berechtigungen & sudo" width="90%"></p>
+<p align="center">
+  <img src="../images/admin-services.png" alt="System → Dienste" width="48%">
+  <img src="../images/admin-perms.png" alt="System → Berechtigungen & sudo" width="48%">
+</p>
 
-Unter **Admin → System** stehen seit 1.5.0 zwei Kacheln des N8 Admin-Kits:
+Seit 1.6.0 haben beide einen eigenen Eintrag im Menü unter **System** (vorher Kacheln unter *System*):
 
 **🧩 Dienste** – MMDVMHost, DMRGateway, MQTT (mosquitto), die Weboberfläche und der Update-Auslöser, jeweils mit Zustand,
 **Autostart**-Schalter und **↻ Neu starten · ▶ Starten · ■ Stoppen** (die Weboberfläche lässt sich nur neu starten).
@@ -124,6 +127,33 @@ sudo /opt/n8hotspot/scripts/n8-admin.sh fix-perms      # prüfen → korrigieren
 
 Installer und jedes Update rufen `fix-perms` selbst auf. Nimmt die Korrektur die Linux-Konsole vom UART, ist einmal
 `sudo reboot` nötig.
+
+## 💓 Keep-Alive
+
+<p align="center"><img src="../images/admin-keepalive.png" alt="System → Keep-Alive" width="95%"></p>
+
+Seit **1.6.0** wacht ein Keep-Alive über den Hotspot. `n8hotspot-keepalive.timer` startet **jede Minute als root**
+`scripts/n8-admin.sh keepalive`:
+
+| Was | Wie |
+|---|---|
+| **Weboberfläche** | antwortet sie auf `http://127.0.0.1:<Port>/api/info`? |
+| **MQTT** | sind die Live-Daten verbunden? (`/api/n8/health`, nur lokal erreichbar) |
+| **MMDVMHost** | ist das Modem offen? |
+| **DMRGateway** | ist die Verbindung zum DMR-Server da? |
+| **Neustart** | nach **3 Minuten** krank (sofort bei `failed`), **höchstens 4× je Stunde** – danach „aufgegeben“ im Protokoll |
+| **Internet-Ausfall** | 1.1.1.1, 9.9.9.9 und github.com (Port 443) nicht erreichbar → keine sinnlosen Neustarts; ist das Netz nach mindestens 60 s wieder da, wird DMRGateway einmal neu gestartet |
+| **Heartbeat** | optional jede Minute ein Ping an Uptime Kuma („Push“) oder Healthchecks.io, bei Fehlern an die Fehler-Adresse |
+| **Wartung** | **⏸ 1 h pausieren**; ein unter *Dienste* gestoppter Dienst bleibt gestoppt, bis du ihn dort startest |
+
+Dateien in `data/`: `keepalive.conf` (Einstellungen aus dem Browser), `keepalive.json` (Zustand), `keepalive.log` (Protokoll,
+höchstens 400 Zeilen). Eingerichtet wird der Timer von Installer, Update und `fix-perms`; `check-perms` prüft ihn mit.
+
+```bash
+systemctl status n8hotspot-keepalive.timer               # läuft der Wächter?
+sudo /opt/n8hotspot/scripts/n8-admin.sh keepalive        # eine Runde von Hand
+tail -f /opt/n8hotspot/data/keepalive.log
+```
 
 ## Automatische Updates
 

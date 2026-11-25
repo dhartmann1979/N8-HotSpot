@@ -4,6 +4,57 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.6.0] – 2026-11-25
+
+### 🧭 Neu: Admin-Menü als Baum – in allen fünf N8-Systemen gleich
+- Die Reiterleiste im Adminbereich ist einem **Baum-Menü links** gewichen, wie im HobbyRadioPortal. Alle N8-Systeme
+  (HobbyRadioPortal, ADN-FRN-Server, HBlink4-FreeRadioID, N8 Hotspot, N8 Crosslink) nutzen jetzt **dieselben Gruppen in derselben
+  Reihenfolge**: 📡 Betrieb · 👥 Benutzer & Zugang · 🎨 Darstellung · 🌐 Netz & Domains · 🖥️ System.
+- Gruppen lassen sich auf- und zuklappen (der Zustand wird im Browser gemerkt); auf dem Handy wird das Menü zu einer
+  aufklappbaren Leiste „☰ <aktueller Bereich>“.
+- Hotspot: Einstellungen, Kalibrierung, Protokolle und Konfigurationsdateien unter **Betrieb**; „🖥️ Hardware & Daten“
+  unter **System**.
+
+### 🖥️ Neu: Derselbe Bereich „System“ überall
+- **⬆️ Update · 🧩 Dienste · 🔐 Berechtigungen & sudo · 💓 Keep-Alive** sind gemeinsame Ansichten des N8 Kit 1.1.0 und sehen in
+  allen N8-Systemen gleich aus – mit denselben Texten, Knöpfen und Adressen (`/api/admin/services`, `/api/admin/perms`,
+  `/api/admin/perms/fix`, `/api/admin/keepalive`, `/api/admin/update-log`).
+- **Update:** Stand, GitHub, „Jetzt prüfen“, „Update jetzt installieren“ und daneben das **Update-Protokoll** mit dem Ergebnis des
+  letzten Updates (erfolgreich / zurückgenommen).
+  Darunter die **Update-Einstellungen** des Hotspots (Prüfintervall, automatisch installieren, Stunde, Funkdienste neu starten).
+- **Dienste:** Zustand, Autostart-Schalter und Starten · Stoppen · Neu starten – nur, was die sudo-Regeln freigeben.
+- **Berechtigungen & sudo:** zeigt zuerst nur, was nicht stimmt; die bestandenen Prüfungen klappen auf. **🛠️ Korrigieren**
+  repariert und prüft erneut.
+- **Keep-Alive:** Zustand je Dienst, Internet, Heartbeat, Einstellungen und Protokoll.
+
+### 🔓 Update ohne Passwort
+- **„Update jetzt installieren“ fragt nicht mehr nach dem Passwort.** Eine Admin-Sitzung mit CSRF-Header genügt; installiert
+  wird wie bisher als root mit Prüfung und automatischem Zurücksetzen.
+
+### 📐 Symmetrische Blöcke
+- Kacheln einer Reihe sind im Adminbereich jetzt **gleich hoch**, die Knöpfe stehen unten bündig; eine einzelne letzte Kachel
+  nimmt die volle Breite ein.
+
+### 🧰 Kleinigkeiten
+- N8 Kit: Schriften im Menü und auf den Knöpfen werden jetzt richtig gesetzt (die `font`-Kurzform mit `inherit` war ungültig und
+  wurde vom Browser verworfen).
+
+### 💓 Neu: Keep-Alive – hohe Verfügbarkeit ohne Zutun
+- **Dienste-Wächter:** Ein systemd-Timer (`n8hotspot-keepalive.timer`) prüft **jede Minute als root**, ob jeder Dienst wirklich arbeitet –
+  nicht nur „läuft“, sondern die Weboberfläche antwortet, MQTT läuft, das Modem offen ist und DMRGateway mit dem DMR-Server verbunden ist. Bleibt ein Dienst 3 Minuten krank (oder steht er auf `failed`), wird er neu gestartet,
+  **höchstens 4× je Stunde** – danach meldet der Keep-Alive „aufgegeben“ statt endlos neu zu starten.
+- **Netz-Wiederverbindung:** Fällt das Internet aus (1.1.1.1, 9.9.9.9 und github.com auf Port 443 nicht erreichbar), startet der
+  Keep-Alive **nicht** sinnlos neu. Ist das Netz nach mindestens 60 s wieder da, startet er die Netzdienste einmal neu, damit
+  alle Verbindungen sofort wieder stehen (abschaltbar).
+- **Externer Ping (Heartbeat):** Optional eine Adresse für Uptime Kuma („Push“) oder Healthchecks.io – jede Minute ein Ping,
+  wenn alles gesund ist, sonst die Fehler-Adresse. So merkst du auch, wenn der ganze Server weg ist.
+- **Von Hand gestoppt bleibt gestoppt:** Wer einen Dienst im Webinterface stoppt, wird vom Keep-Alive nicht übergangen; erst
+  „Starten“ gibt ihn wieder frei. Für Wartungen gibt es **⏸ 1 h pausieren**.
+- Neue lokale Adresse `/api/n8/health` (nur von 127.0.0.1, nie über einen Proxy) liefert dem Keep-Alive den echten Zustand.
+- Eingerichtet von `install`, `update` und `fix-perms`; `check-perms` prüft den Timer mit.
+
+> Auf bestehenden Servern genügt „Update jetzt“ im Webinterface; der Keep-Alive richtet sich dabei selbst ein.
+
 ## [1.5.3] – 2026-11-25
 
 ### 🐛 Fix: „sudo verweigert“ und „Installiert vX · ?“ nach dem Umstellen auf das N8 Admin-Kit

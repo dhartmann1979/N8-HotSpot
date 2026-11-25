@@ -99,11 +99,11 @@ Ohne vorher eingetragene Hotspot-Einstellungen geht es im Browser weiter: **Logi
 <td><img src="docs/images/serial-scan.png" alt="Modem finden"><br><b>🔍 Modem finden</b>: Scan der seriellen Schnittstellen.</td>
 </tr>
 <tr>
-<td><img src="docs/images/admin-system.png" alt="System"><br><b>🖥️ System</b>: Temperatur, Speicher, Dienste starten/stoppen, ID-Liste, FreeRadioID, Neustart.</td>
+<td><img src="docs/images/admin-keepalive.png" alt="Keep-Alive"><br><b>💓 Keep-Alive</b>: prüft jede Minute Modem, DMR-Server, MQTT und Weboberfläche, startet neu, Heartbeat.</td>
 <td><img src="docs/images/setup-2.png" alt="Zusammenfassung"><br><b>🧭 Geführte Einrichtung</b>: Zusammenfassung, Installation, fertig.</td>
 </tr>
 <tr>
-<td><img src="docs/images/admin-updates.png" alt="Updates"><br><b>⬆️ Updates</b>: Version, Änderungen, Update now, automatische Updates.</td>
+<td><img src="docs/images/admin-updates.png" alt="Update"><br><b>⬆️ Update</b>: Baum-Menü wie in allen N8-Systemen, Update ohne Passwort, Update-Protokoll.</td>
 <td><img src="docs/images/admin-appearance.png" alt="Aussehen"><br><b>🎨 Appearance</b>: Farbprofile, eigene Farben, Vorschau mit Lesbarkeit.</td>
 </tr>
 <tr>
@@ -119,8 +119,8 @@ Ohne vorher eingetragene Hotspot-Einstellungen geht es im Browser weiter: **Logi
 | 📦 [Installation & Image](docs/de/installation.md) | Hardware, Image bauen und flashen, geführte Einrichtung, Installation ohne Fragen, erster Start, Aktualisieren |
 | 🎙️ [Live & Statistik](docs/de/bedienung.md) | Kopfzeile, das Funkgerät (LEDs, Display, Zeitschlitze), Vocoder & Signal, Last Heard, Talkgroup-Verzeichnis, Statistik-Diagramme |
 | 🔐 [Sicherheit & N8 Kit](docs/de/sicherheit.md) | Sicherheits-Header, API-Doku aus, Reverse-Proxy (Caddy/nginx), Sprache DE/EN, Updates mit Prüfung und Rollback |
-| ⚙️ [Adminbereich](docs/de/adminbereich.md) | Standard-Login, alle Einstellungen, Modem finden, Benutzer, Aussehen, Links, System, Logs, Konfigurationsdateien |
-| ⬆️ [Updates & Versionen](docs/de/updates.md) | Update-Prüfung, Update jetzt (N8 Admin-Kit), Update-Protokoll, automatische Updates, Dienste, Berechtigungen & sudo, Versionsnummern, [Änderungen](CHANGELOG.md) |
+| ⚙️ [Adminbereich](docs/de/adminbereich.md) | Baum-Menü, Standard-Login, alle Einstellungen, Modem finden, Benutzer, Aussehen, Links, System, Logs, Konfigurationsdateien |
+| ⬆️ [Updates & Versionen](docs/de/updates.md) | Update-Prüfung, Update jetzt (N8 Admin-Kit), Update-Protokoll, automatische Updates, Dienste, Berechtigungen & sudo, Keep-Alive, Versionsnummern, [Änderungen](CHANGELOG.md) |
 | 🎛️ [Kalibrierung](docs/de/kalibrierung.md) | Frequenz-Offset mit MMDVMCal finden, weitere Tests |
 | 🛡️ [FreeRadioID](docs/de/freeradioid.md) | Avatare, FRID, Profile, ID-Datenbank, Stationsansicht |
 | 🧩 [Technik](docs/de/technik.md) | Aufbau (MMDVMHost ↔ DMRGateway ↔ MQTT), Dateien, Ports, API, Sicherheit |
@@ -128,7 +128,7 @@ Ohne vorher eingetragene Hotspot-Einstellungen geht es im Browser weiter: **Logi
 
 ## Aktualisieren
 
-Im Browser: **Admin → ⬆️ Updates → Update jetzt** – der Hotspot prüft stündlich selbst und meldet neue Versionen. Das Update läuft
+Im Browser: **Admin → System → ⬆️ Update → Update jetzt** (ohne Passwort) – der Hotspot prüft stündlich selbst und meldet neue Versionen. Das Update läuft
 als root über das N8 Admin-Kit mit Prüfung und automatischem Rückweg; das Protokoll steht gleich daneben
 (➡️ [Updates & Versionen](docs/de/updates.md), alle Änderungen in [CHANGELOG.md](CHANGELOG.md)). Auf der Konsole:
 
