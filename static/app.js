@@ -620,8 +620,9 @@ function adminGroups() {
         { id: 'betrieb', label: G.betrieb, items: [{ id: 'settings', label: '⚙️ Settings',
             children: ((S.admin.settings || {}).sections || []).map(sec => ({ id: 'settings:' + sec.id, label: sec.title })) }, { id: 'cal', label: '🎛️ Calibration' },
             { id: 'logs', label: '📜 Logs' }, { id: 'files', label: '🧾 Config files' }] },
-        { id: 'zugang', label: G.zugang, items: [{ id: 'users', label: '👥 Users' }, { id: 'audit', label: '🔑 Sessions & log' }] },
+        { id: 'zugang', label: G.zugang, items: [{ id: 'users', label: '👥 Benutzer' }, { id: 'sessions', label: '🔑 Sitzungen' }, { id: 'audit', label: '📜 Protokoll' }] },
         { id: 'darstellung', label: G.darstellung, items: [{ id: 'appearance', label: '🎨 Appearance' }, { id: 'links', label: '🔗 Links' }] },
+        { id: 'netz', label: G.netz, items: [{ id: 'ports', label: '🔌 Ports' }] },
         { id: 'system', label: G.system, items: [{ id: 'system', label: '🖥️ Hardware & data' }, ...N8Kit.nav.SYS_ITEMS.map(([id, label]) => ({ id, label, ...(id === 'sys-crashes' && S.crashNew ? { badge: String(S.crashNew), badgeClass: 'bad' } : {}) }))] },
     ];
 }
@@ -632,9 +633,19 @@ function showAdmin(a) {
     S.admin.tab = a;
     const nav = () => N8Kit.nav.tree($('adminNav'), adminGroups(), { active: a, key: 'n8hs-admin', onSelect: showAdmin });
     nav();
-    const pane = base.startsWith('sys-') ? 'sys' : base;
+    const KIT = { users: 'access', sessions: 'access', audit: 'access', ports: 'net' };   // N8 Kit 1.4
+    const pane = base.startsWith('sys-') || KIT[base] ? 'sys' : base;
     ADMIN_PANES.forEach(x => $('admin-' + x).classList.toggle('hidden', x !== pane));
-    if (pane === 'sys') loadSysView(base.slice(4));
+    if (KIT[base] === 'access') {          // 👥 Benutzer & Zugang – wie HBlink4-FreeRadioID, gleich in allen N8-Systemen
+        const el = $('admin-sys'); el.className = '';
+        N8Kit.access.view(el, base, { req: api, me: S.me || {}, fields: ['display_name'], toast: (m, bad) => toast(m, bad),
+            roles: [{ id: 'admin', label: 'Admin', assign: 'all' }, { id: 'viewer', label: 'Betrachter', assign: 'all' }],
+            locked: (u, me) => u.username === me.username ? 'du' : '',
+            intro: 'Wer sich anmelden darf. Admins ändern Einstellungen, kalibrieren und verwalten Benutzer; Betrachter sehen Live-Daten und Statistik.' });
+    } else if (KIT[base] === 'net') {      // 🌐 Netz, Ports & Domains – wie N8 Crosslink
+        const el = $('admin-sys'); el.className = '';
+        N8Kit.net.view(el, base, { req: api, toast: (m, bad) => toast(m, bad) });
+    } else if (pane === 'sys') loadSysView(base.slice(4));
     else Promise.resolve(({ settings: loadSettings, cal: loadCal, users: loadUsers, appearance: loadAppearance, links: loadLinksAdmin,
        system: loadSystem, logs: loadLogs, files: loadFiles, audit: loadAudit })[base]()).then(() => {
         if (base !== 'settings') return;

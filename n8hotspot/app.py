@@ -409,6 +409,8 @@ async def run_update(expected: str, who: str, ip: str) -> Dict[str, Any]:
             def _restart():
                 if not updater.systemctl("restart", "n8hotspot"):
                     import signal as _signal
+                    from .n8_crash import mark_planned
+                    mark_planned(str(DATA), "n8hotspot.service", "Neustart nach dem Update")
                     os.kill(os.getpid(), _signal.SIGTERM)
             loop.call_later(1.5, lambda: loop.run_in_executor(None, _restart))
         return {**res, "steps": steps, "restart": how}
@@ -575,6 +577,46 @@ async def save_settings(request: Request):
         ctx.auth.audit("settings_changed", u["username"], ", ".join(f.key for f in changed), ip_of(request))
         await broadcast({"type": "info", "info": station_info()})
     return {"changed": [f.key for f in changed], "restart_needed": ctx.restart_needed}
+
+
+# ---------------------------------------------------------------- 🌐 Netz, Ports & Domains (N8 Kit 1.4, Vorbild N8 Crosslink)
+# Der Hotspot läuft im Heimnetz: kein eigenes HTTPS, daher hier nur 🔌 Ports – alle an einer Stelle.
+@app.get("/api/admin/ports")
+async def admin_ports(request: Request):
+    need_admin(request)
+    v = ctx.settings.all()
+    return {"intro": "Alle Ports des N8 Hotspot an einer Stelle. Der Hotspot braucht keine Portfreigabe im Router: er verbindet sich nur "
+                     "nach draußen (DMR-Server); die Weboberfläche ist für das Heimnetz.",
+            "groups": [
+                {"title": "🌐 Weboberfläche", "help": "Im Heimnetz unter http://IP:Port.", "rows": [
+                    {"key": "web.port", "label": "Web-Port", "dir": "in", "proto": "TCP", "readonly": True,
+                     "value": int(os.environ.get("N8HS_PORT", "80") or 80), "help": "steht im systemd-Dienst (N8HS_PORT)"}]},
+                {"title": "🛰️ DMR-Netz", "help": "Server und Passwort unter Betrieb → Einstellungen → DMR-Netz.", "rows": [
+                    {"key": "network.port", "label": "DMR-Server-Port", "dir": "out", "proto": "UDP", "value": v.get("network.port"),
+                     "help": f"zu {v.get('network.host') or '–'} (HomeBrew, Standard 62031)"}]},
+                {"title": "📡 Intern (nur dieser Rechner)", "help": "Verbindungen zwischen den Diensten auf dem Hotspot – nichts freigeben.", "rows": [
+                    {"key": "mqtt.port", "label": "MQTT (mosquitto)", "dir": "in", "proto": "TCP", "readonly": True, "value": 1883,
+                     "help": "Live-Daten von MMDVMHost und DMRGateway an die Weboberfläche (127.0.0.1)"}]},
+            ]}
+
+
+@app.post("/api/admin/ports")
+async def admin_ports_save(request: Request):
+    u = need_admin(request)
+    b = await body(request)
+    vals = b.get("values") or {}
+    changes = {k: vals[k] for k in ("network.port",) if k in vals and vals[k] != ctx.settings.get(k)}
+    try:
+        changed = ctx.settings.update(changes, u["username"])
+    except Exception as e:  # SettingsError
+        raise HTTPError(400, str(e))
+    if changed:
+        files = write_config()
+        if any(f.restart for f in changed) and any(files.values()):
+            ctx.restart_needed = True
+        ctx.auth.audit("settings_changed", u["username"], ", ".join(f.key for f in changed), ip_of(request))
+    return {"ok": True, "changed": [f.key for f in changed],
+            "message": ("Gespeichert – DMRGateway neu starten, damit der Port gilt (Admin → System → Dienste)." if changed else "Nichts geändert.")}
 
 
 @app.post("/api/admin/apply")

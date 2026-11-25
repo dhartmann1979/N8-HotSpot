@@ -14,8 +14,9 @@ mit denselben Gruppen in derselben Reihenfolge:
 | Gruppe | Einträge beim Hotspot |
 |---|---|
 | 📡 **Betrieb** | ⚙️ Einstellungen (Zweige: Station, Modem, DMR-Netz, DMR-Betrieb, Dashboard, FreeRadioID.net, Experte) · 🎛️ Kalibrierung · 📜 Protokolle · 🧾 Konfigurationsdateien |
-| 👥 **Benutzer & Zugang** | 👥 Benutzer · 🔑 Sitzungen & Protokoll |
+| 👥 **Benutzer & Zugang** | 👥 Benutzer · 🔑 Sitzungen · 📜 Protokoll |
 | 🎨 **Darstellung** | 🎨 Aussehen · 🔗 Links |
+| 🌐 **Netz, Ports & Domains** | 🔌 Ports |
 | 🖥️ **System** | 🖥️ Hardware & Daten · ⬆️ Update · 🧩 Dienste · 🔐 Berechtigungen & sudo · 💓 Keep-Alive · 💥 Abstürze |
 
 Alle Gruppen sind **anfangs zugeklappt** – offen ist nur die Gruppe der gerade gewählten Seite; ein Klick auf eine Gruppe klappt sie auf (gemerkt bis zum Schließen des Browser-Tabs). Seit 1.6.2 hängen die Abschnitte der Einstellungen als Zweige darunter – ein Zweig zeigt nur diesen Abschnitt in voller Breite. Auf dem Handy wird das Menü zu einer Leiste
@@ -95,7 +96,9 @@ cd /opt/n8hotspot && sudo python3 -m n8hotspot scan-serial
 
 Eigene Seite: [Kalibrierung](kalibrierung.md).
 
-## 👥 Users
+## 👥 Benutzer
+
+Seit **1.8.0** in der gemeinsamen Ansicht aller N8-Systeme (Vorlage HBlink4-FreeRadioID): „＋ Benutzer anlegen“ in einer Zeile, Tabelle mit Rolle und letzter Anmeldung, je Benutzer **Bearbeiten** (Anzeigename, Passwort, Rolle, gesperrt, Löschen).
 
 <p align="center"><img src="../images/admin-users.png" alt="Benutzer" width="90%"></p>
 
@@ -206,11 +209,20 @@ Das Live-Log von MMDVMHost und DMRGateway (über MQTT), filterbar. Warnungen sin
 
 Die erzeugten `MMDVM-Host.ini` und `DMRGateway.ini` zum Nachlesen; Passwörter sind ausgeblendet. Ändern bitte nur über *Settings*, sonst sind die Änderungen beim nächsten Speichern weg.
 
-## 🔑 Sessions & log
+## 🔑 Sitzungen · 📜 Protokoll
 
-<p align="center"><img src="../images/admin-audit.png" alt="Sitzungen und Protokoll" width="90%"></p>
+<p align="center"><img src="../images/admin-sessions.png" alt="Sitzungen" width="49%"> <img src="../images/admin-audit.png" alt="Protokoll" width="49%"></p>
 
-Aktive Anmeldungen mit IP, jede lässt sich beenden. Daneben steht das Protokoll aller Anmeldungen, Fehlversuche, Einstellungen, Neustarts, Kalibrierungen und Benutzeränderungen.
+**🔑 Sitzungen**: aktive Anmeldungen mit Rolle, IP, Browser und Ablauf – **Abmelden** beendet eine sofort. **📜 Protokoll**: alle
+Anmeldungen, Fehlversuche, Einstellungen, Neustarts, Kalibrierungen und Benutzeränderungen.
+
+## 🌐 Netz, Ports & Domains
+
+<p align="center"><img src="../images/admin-ports.png" alt="Ports" width="70%"></p>
+
+Seit **1.8.0** wie in allen N8-Systemen. Der Hotspot läuft im Heimnetz und braucht **keine Portfreigabe** und kein eigenes HTTPS –
+darum gibt es hier nur **🔌 Ports**: Web-Port (aus dem systemd-Dienst), DMR-Server-Port (ausgehend, UDP – änderbar, gleiches Feld wie
+unter *Einstellungen → DMR-Netz*) und MQTT (intern, 127.0.0.1).
 
 ---
 

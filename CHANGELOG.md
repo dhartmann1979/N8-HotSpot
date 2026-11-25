@@ -4,6 +4,20 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.8.0] – 2026-11-25
+
+### 👥 Benutzer & Zugang wie in HBlink4-FreeRadioID
+- **👥 Benutzer**, **🔑 Sitzungen** und **📜 Protokoll** sind jetzt drei eigene Einträge mit der gemeinsamen Ansicht des N8 Kit 1.4
+  (Vorlage HBlink4): „＋ Benutzer anlegen“ in einer Zeile, Tabelle mit Kürzel, Rolle (Admin/Betrachter) und letzter Anmeldung,
+  **Bearbeiten** mit Anzeigename, Passwort, Rolle, gesperrt und Löschen; Sitzungen mit Rolle, IP, Browser, Ablauf und **Abmelden**.
+
+### 🌐 Neue Rubrik „Netz, Ports & Domains“ – wie in N8 Crosslink
+- **🔌 Ports**: Web-Port, DMR-Server-Port (UDP, ausgehend, änderbar) und MQTT (intern) an einer Stelle, mit Hinweis, dass der Hotspot
+  keine Portfreigabe im Router braucht. Ein eigenes HTTPS hat der Hotspot nicht (Heimnetz). Neue Adressen `GET/POST /api/admin/ports`.
+
+### 🛡️ Absturz-Wächter: Neustart nach einem Update ist kein „Absturz“
+- Beendet sich die Weboberfläche nach einem Update selbst, meldet sie das vorher als geplant (`n8_crash.mark_planned`).
+
 ## [1.7.1] – 2026-11-25
 
 ### 🐛 Behoben: „Fehler -15“ beim Neustart des eigenen Dienstes (Admin → System → Dienste)
