@@ -4,6 +4,14 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.8.3] – 2026-11-25
+
+### 🐛 Update-Fenster: „Nicht aktualisiert“ statt fälschlich „zurückgenommen“
+- Brach ein Update ab, bevor es irgendetwas geändert hatte (z. B. „von Hand geänderte Dateien“), meldete das Update-Fenster trotzdem
+  „Das Update wurde zurückgenommen“ und hakte „Dienst startet neu“ ab – irreführend. Jetzt liest es das Ergebnis des Updates
+  (`/api/admin/update-log`) und zeigt **„Nicht aktualisiert – es läuft unverändert die bisherige Version“** mit dem Grund. Nur ein
+  echter Rückbau heißt weiter „zurückgenommen“ (mit Grund). N8 Kit 1.4.1, gleich in allen N8-Systemen.
+
 ## [1.8.2] – 2026-11-25
 
 ### 🛠️ Update: fehlende Programmdateien werden wiederhergestellt statt das Update abzubrechen
