@@ -17,7 +17,7 @@ Dieser Teil ist der **Sichtbereich**: ohne Login sichtbar, solange *Public view*
 Der N8 Hotspot bleibt eigenständig, sieht aber aus wie das [HobbyRadioPortal](https://github.com/dhartmann1979/HobbyRadioPortal):
 gleiches Farbsystem (N8 Theme 2), gleiche Kopfzeile mit Statusleiste und seit 1.4.2 die gemeinsame Datei **N8 Look**
 (`static/n8-look.css`, identisch im Portal). Sie sorgt für den durchgehenden Hintergrund, die farbig leuchtenden Kacheln
-unter **Heute**, die Abschnittsüberschriften und die Fußzeile als Glaskarte:
+die Abschnittsüberschriften und die Fußzeile als Glaskarte:
 
 <p align="center"><img src="../images/footer.png" alt="Fußzeile im N8 Look" width="90%"></p>
 
@@ -58,32 +58,56 @@ Die Statusleiste bleibt eine Zeile. Die Fußzeile zeigt © Die N8schicht, die in
 
 <p align="center"><img src="../images/links-menu.png" alt="Link-Menü" width="55%"></p>
 
-## Zeitschlitze
+## 📻 Das Funkgerät: Zeitschlitze, LEDs, Display
 
-<p align="center"><img src="../images/on-air.png" alt="ON AIR" width="70%"></p>
+<p align="center"><img src="../images/radio.png" alt="Der Hotspot als Funkgerät: LEDs, Display mit TS1 und TS2" width="80%"></p>
 
-Ein Simplex-Hotspot nutzt nur **Zeitschlitz 2**, ein Duplex-Hotspot beide. Läuft ein Gespräch, zeigt die Karte **ON AIR** mit:
+Seit 1.5.0 sieht die Live-Ansicht aus wie ein **digitales Funkgerät**: ein Block mit LED-Leiste, einem Display mit beiden
+Zeitschlitzen und der Bilanz des Tages darunter.
 
-- **Wer spricht:** Avatar von FreeRadioID.net, Rufzeichen mit **FRID** (falls dort registriert), Name und Ort aus der ID-Liste; die Sprechzeit läuft live mit.
-- **Quelle:** 📻 **RF** (rote Karte) heißt, jemand sendet lokal in den Hotspot. 🌐 **Network** (grüne Karte) heißt, das Gespräch kommt vom Server.
-- **Talkgroup:** mit Namen aus dem Adminbereich.
-- **Signal bei RF:** **BER** (Bitfehlerrate) und **RSSI** (Empfangsstärke) live.
+**LEDs** (oben rechts im Gehäuse)
 
-In Ruhe steht dort, wer zuletzt auf diesem Zeitschlitz war.
+| LED | leuchtet | Bedeutung |
+|---|---|---|
+| **RX** | grün, pulsierend | ein Funkgerät sendet gerade **in den Hotspot** (RF) |
+| **TX** | rot | der Hotspot **sendet** gerade – ein Gespräch aus dem Netz geht an deine Funkgeräte |
+| **Modus** | blau `DMR` · grau `IDLE` · gelb blinkend `LOCKOUT` · rot `ERROR`/`STOPPED` | Betriebsart von MMDVMHost |
+| **NET** | grün verbunden · gelb blinkend verbindet · rot Fehler | Anmeldung von DMRGateway am DMR-Server |
+| **MODEM** | grün geöffnet · rot nicht gefunden | Modem von MMDVMHost |
 
-## Hotspot
+**Display**
 
-Rufzeichen, Hotspot-ID, Standort, Frequenz, Simplex/Duplex mit Color Code, Modem-Firmware, DMR-Server mit Adresse und der Verbindungsstatus.
+- Kopfzeile: Rufzeichen, Frequenz (bei Duplex RX und TX), Color Code, DMR-Server mit Verbindungsstatus, Uhrzeit.
+- Je **Zeitschlitz eine Zeile** (TS1, TS2). Ein Simplex-Hotspot nutzt nur **TS2** – TS1 steht dann abgedunkelt als *nicht genutzt*.
+  Läuft ein Gespräch, zeigt die Zeile **▼ RX** (grün, aus dem Funk) oder **▲ TX** (rot, aus dem Netz), Avatar, Rufzeichen mit **FRID**,
+  Name und Ort, Talkgroup mit Namen und die laufende Sprechzeit. Bei RF zusätzlich ein **S-Meter** (RSSI, ab S9 gelb) und ein
+  **BER-Balken** (grün < 1 %, gelb bis 3 %, rot darüber). In Ruhe steht dort, wer zuletzt auf dem Zeitschlitz war.
+- Fußzeile: Hotspot-ID, Simplex/Duplex, Modem-Firmware, Standort.
+- Darunter **Heute**: Gespräche, Sprechzeit, Funk (lokal), Netz und die mittlere BER über Funk.
+
+## 🎚️ Vocoder & Signal
+
+<p align="center"><img src="../images/signal.png" alt="Vocoder & Signal: BER live, letzte Durchgänge, RSSI, Sprachqualität" width="90%"></p>
+
+| Karte | Inhalt |
+|---|---|
+| **BER live** | die Bitfehlerrate des laufenden Funk-Durchgangs Sekunde für Sekunde, mit den Bereichen grün (< 1 %, sauber), gelb (1–3 %, hörbar) und rot (> 3 %, der AMBE+2-Vocoder kämpft). Nach dem Durchgang bleibt die Kurve stehen, bis der nächste kommt. Netz-Durchgänge haben keine BER – die misst nur das Modem. |
+| **Letzte Durchgänge** | ein Balken je Durchgang (die letzten 40): bei Funk die BER (Farbe wie oben), bei Netz der Paketverlust (blau). Mit der Maus über einen Balken: Zeit, Rufzeichen, Wert. |
+| **RSSI (Funk)** | Empfangsstärke der Funk-Durchgänge von heute in dBm, dazu der Mittelwert |
+| **Sprachqualität heute** | Anteil sauberer, hörbar gestörter und schlechter Funk-Durchgänge; Ø und max. BER, Ø Paketverlust im Netz und die **Sprachrahmen** (AMBE+2, 50 je Sekunde) über Funk und Netz sowie die geschätzt im Netz verlorenen |
+
+Die Werte kommen aus `GET /api/signal` (Sichtbereich).
 
 ## Last Heard
 
-Die letzten 20 Gespräche: Zeit, Avatar und Rufzeichen mit Name (**FRID** = bei FreeRadioID.net registriert), Quelle, Zeitschlitz, Ziel (Talkgroup oder 👤 Einzelruf), Dauer.
+Schlank, eine Zeile je Gespräch – zuerst die letzten 12, mit **Mehr anzeigen** bis zu 40: Zeit, Avatar, 📻/🌐 Quelle und Rufzeichen
+mit Name (**FRID** = bei FreeRadioID.net registriert), Zeitschlitz, Ziel (Talkgroup oder 👤 Einzelruf), Dauer.
 - **Qualität:** bei RF die BER als farbige Marke (grün < 1 %, gelb < 3 %, rot darüber) und die RSSI; bei Netz-Gesprächen der Paketverlust.
-- **Filter:** Mit *All / 📻 RF / 🌐 Network* zeigst du nur lokale oder nur Netz-Gespräche.
+- **Filter:** Mit *Alle / 📻 Funk / 🌐 Netz* zeigst du nur lokale oder nur Netz-Gespräche.
 
 ## Stationsansicht
 
-Ein Klick auf ein Rufzeichen, egal ob in Last Heard, auf der ON-AIR-Karte oder in der Statistik, zeigt großen Avatar, FreeRadioID-Profil, Gespräche und Talkgroups dieser Station auf deinem Hotspot. Mehr dazu unter [FreeRadioID](freeradioid.md#stationsansicht).
+Ein Klick auf ein Rufzeichen, egal ob in Last Heard, im Display (Zeitschlitz) oder in der Statistik, zeigt großen Avatar, FreeRadioID-Profil, Gespräche und Talkgroups dieser Station auf deinem Hotspot. Mehr dazu unter [FreeRadioID](freeradioid.md#stationsansicht).
 
 <p align="center"><img src="../images/station.png" alt="Stationsansicht" width="60%"></p>
 
@@ -106,7 +130,7 @@ Der Tab **🗂️ Talkgroups** (am Smartphone „TGs“) ist das Verzeichnis all
   <img src="../images/talkgroups-search.png" alt="Suche" width="48%">
 </p>
 
-Die Namen stehen auch überall sonst: auf der ON-AIR-Karte, in Last Heard, in der Statistik und in der Stationsansicht. Die Liste wird täglich mit der ID-Liste aktualisiert. Bis dahin nutzt der Hotspot eine mitgelieferte Kopie, die Namen gibt es also auch ohne Internet.
+Die Namen stehen auch überall sonst: im Display (Zeitschlitz), in Last Heard, in der Statistik und in der Stationsansicht. Die Liste wird täglich mit der ID-Liste aktualisiert. Bis dahin nutzt der Hotspot eine mitgelieferte Kopie, die Namen gibt es also auch ohne Internet.
 
 ## 📈 Statistik
 

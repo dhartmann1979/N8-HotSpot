@@ -146,7 +146,7 @@ ob es eine neue Version gibt, und zeigt Admins dann einen Hinweis. Details: **[�
 Auf der Konsole:
 
 ```bash
-sudo /opt/n8hotspot/scripts/update.sh              # Weboberfläche (git pull, Python-Pakete, Berechtigungen, Neustart)
+sudo /opt/n8hotspot/scripts/update.sh              # wie „Update jetzt“: vorspulen, Pakete, Dienste, Rechte, Neustart, Prüfung
 sudo /opt/n8hotspot/scripts/update.sh --rebuild    # dazu aktuelle MMDVMHost/DMRGateway/MMDVMCal bauen
 ```
 

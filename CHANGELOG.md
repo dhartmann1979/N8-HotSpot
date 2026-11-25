@@ -4,6 +4,63 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.5.0] – 2026-11-25
+
+**Der Hotspot sieht aus wie ein Funkgerät – und aktualisiert sich wie die anderen N8schicht-Projekte.**
+
+> **Einmalig nach dem Update von 1.4.x:** `sudo /opt/n8hotspot/scripts/n8-admin.sh fix-perms` – richtet die neuen sudo-Regeln und
+> „Update jetzt“ ein (das erste Update läuft noch über den alten Weg). Danach geht alles im Browser.
+
+### 📻 Live-Ansicht als digitales Funkgerät
+- Die Zeitschlitze bilden **einen Block wie ein Funkgerät**: Gehäuse mit **LED-Leiste** und einem **Display** mit beiden Zeitschlitzen.
+- **LEDs:** **RX** (grün, pulsiert – ein Funkgerät sendet in den Hotspot), **TX** (rot – der Hotspot sendet, Gespräch aus dem Netz),
+  **Modus** (DMR blau, IDLE grau, LOCKOUT gelb blinkend, ERROR/STOPPED rot), **NET** (Anmeldung am DMR-Server) und **MODEM**.
+- **Display:** Kopfzeile mit Rufzeichen, Frequenz (bei Duplex RX/TX), Color Code, DMR-Server mit Verbindungsstatus und Uhrzeit;
+  je Zeitschlitz eine Zeile mit **▼ RX / ▲ TX**, Avatar, Rufzeichen und FRID, Name und Ort, Talkgroup mit Namen, laufender
+  Sprechzeit sowie bei Funk einem **S-Meter** (RSSI, ab S9 gelb) und einem **BER-Balken** (grün < 1 %, gelb bis 3 %, rot darüber).
+  Beim Simplex-Hotspot steht TS1 abgedunkelt als *nicht genutzt*. Fußzeile mit Hotspot-ID, Simplex/Duplex, Modem, Standort.
+- **Heute** (Gespräche, Sprechzeit, Funk, Netz, Funk-BER) sitzt schlank im Gehäuse; die eigene Karte *Hotspot* entfällt – alles steht im Display.
+- Achtung, Farben gedreht: Funk-Durchgänge sind jetzt **grün (RX)**, Netz-Durchgänge **rot (TX)** – aus Sicht des Hotspots wie bei einem Funkgerät.
+
+### 🎚️ Vocoder & Signal (neu)
+- **BER live:** die Bitfehlerrate des laufenden Funk-Durchgangs zweimal pro Sekunde als Kurve mit den Bereichen sauber / hörbar / schlecht;
+  nach dem Durchgang bleibt sie bis zum nächsten stehen.
+- **Letzte Durchgänge:** Balken für die letzten 40 – BER (Funk, farbig) und Paketverlust (Netz, blau), mit Zeit und Rufzeichen beim Überfahren.
+- **RSSI (Funk):** Verlauf der Empfangsstärke mit Mittelwert.
+- **Sprachqualität heute:** Anteil sauberer/hörbarer/schlechter Funk-Durchgänge, Ø und max. BER, Ø Paketverlust, **AMBE+2-Sprachrahmen**
+  über Funk und Netz (50 je Sekunde) und die geschätzt im Netz verlorenen.
+- Neue Schnittstelle `GET /api/signal` (Sichtbereich): heute, je Stunde, letzte 40 Durchgänge.
+- **Last Heard schlanker:** eine Zeile je Gespräch, Quelle als 📻/🌐 am Rufzeichen, erst 12 Zeilen, **Mehr anzeigen** bis 40.
+- Demo: realistischere BER/RSSI (auch schwache Signale), der erste Durchgang nach dem Start kommt über Funk.
+
+### 🧩 Dienste, Berechtigungen & „Update jetzt“ – das N8 Admin-Kit
+Derselbe Baustein wie im HobbyRadioPortal, adn-frn-server und HBlink4-FreeRadioID (nach dem Vorbild von N8 Crosslink):
+`scripts/n8-admin.sh` (root-Helfer, identisch in allen Repos) + `scripts/n8-admin.conf` (Hotspot-Daten) + `n8hotspot/n8_admin.py`.
+- **Admin → System → 🧩 Dienste:** MMDVMHost, DMRGateway, MQTT, Weboberfläche und Update-Auslöser mit Zustand, **Autostart**-Schalter,
+  **Neu starten · Starten · Stoppen** (die Weboberfläche nur neu starten).
+- **Admin → System → 🔐 Berechtigungen & sudo:** prüfen und **Korrigieren** auf Knopfdruck (prüfen → korrigieren → erneut prüfen) –
+  Dienst-Benutzer und Gruppen, Programm root und schreibgeschützt, Daten und Passwörter (Datenbank, ini-Dateien 600), Units,
+  „Update jetzt“, sudo (installiert, eingebunden, gültig, aktuell, wirksam) und die **Modem-Schnittstelle** (Zugriff, Linux-/Login-Konsole,
+  Bluetooth-UART; über die neuen Kit-Hooks `n8_check_extra`/`n8_fix_extra`).
+- **Update jetzt** schreibt nur `data/update.request`; `n8hotspot-update.path` startet das Update **als root**: nur vorspulen (Abbruch bei
+  von Hand geänderten Dateien), Pakete, Dienste aus den Vorlagen, ini-Dateien, Rechte und sudo, Neustart, **Prüfung 90 s**, sonst
+  **automatisch zurück**. **📜 Update-Protokoll** unter *Admin → Updates*. Automatische Updates nachts laufen genauso.
+- **Programmordner gehört jetzt root** (für den Dienst schreibgeschützt), nur `data/` gehört `n8hotspot`.
+- sudo: `/etc/sudoers.d/n8hotspot-n8admin` mit exakten Befehlen; die alte `/etc/sudoers.d/n8hotspot` entfernt das erste Update.
+- Entfernt: N8 update guard (`n8_update_guard.py`, `n8-update-guard.sh`, `ExecStartPre` in der Unit). `scripts/permissions.sh` und
+  `scripts/update.sh` rufen jetzt `n8-admin.sh` auf; `install.sh` richtet alles mit `fix-perms` ein.
+- Neue API: `GET /api/admin/services`, `POST /api/admin/services/{unit}/{action}`, `GET /api/admin/perms`, `POST /api/admin/perms/fix`,
+  `GET /api/admin/update-log`. `GET /api/admin/permissions` prüft nur noch den Modem-Zugriff der laufenden Weboberfläche.
+
+### 📚 Doku
+- [Live & Statistik](docs/de/bedienung.md): *Das Funkgerät* (LEDs, Display), *Vocoder & Signal*, Last Heard; [Updates](docs/de/updates.md):
+  Update jetzt über das Kit, *Dienste, Berechtigungen & sudo*, sudo-Befehle; [Technik](docs/de/technik.md) (API, sudo), [Sicherheit](docs/de/sicherheit.md),
+  [Fehlersuche](docs/de/fehlersuche.md), [Adminbereich](docs/de/adminbereich.md), [Installation](docs/de/installation.md), README.
+- Screenshots neu: `live.png`, `live-mobile.png`, `radio.png`, `signal.png`, `admin-system.png`, `admin-updates.png`; `on-air.png` und `permissions.png` entfernt.
+
+### 🧪 Tests
+- 38 Tests grün, neu: Kit-Endpunkte (Dienste, Rechte, Update-Protokoll), Signal-Statistik, Funkgerät-Ansicht, Kit identisch in allen Repos.
+
 ## [1.4.2] – 2026-11-24
 
 ### 🎨 Eine Designsprache mit dem HobbyRadioPortal

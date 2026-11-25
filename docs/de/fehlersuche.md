@@ -9,7 +9,7 @@
 | Symptom | Ursache | Lösung |
 |---|---|---|
 | **✕ Modem** rot | falscher Port, Board nicht gesteckt, serielle Konsole oder Bluetooth belegen `/dev/ttyAMA0` | *Settings → Modem → 🔍 Find*: zeigt, wo ein Modem antwortet, und trägt den Port mit **Use** ein. Nach der Installation einmal neu starten. |
-| Modem-Scan findet nichts / *no permission* | Weboberfläche nicht in der Gruppe `dialout`, Login-Konsole auf dem Port, oder MMDVMHost hält den (falschen) Port | Im Scan **Stop MMDVMHost & scan**; *Admin → Updates → 🔐 Permissions* ansehen; einmal `sudo /opt/n8hotspot/scripts/permissions.sh` |
+| Modem-Scan findet nichts / *no permission* | Weboberfläche nicht in der Gruppe `dialout`, Login-Konsole auf dem Port, oder MMDVMHost hält den (falschen) Port | Im Scan **Stop MMDVMHost & scan**; *Admin → System → 🔐 Berechtigungen & sudo* → **Korrigieren**, oder einmal `sudo /opt/n8hotspot/scripts/n8-admin.sh fix-perms` |
 | **✕ N8schicht: password wrong** | falsches Passwort beim Server | *Settings → DMR network → Password*: bei der N8schicht das FreeRadioID-Passwort oder das Gast-Passwort |
 | **✕ N8schicht: login** | Der Server kennt die ID nicht oder lässt sie nicht zu | DMR-ID und Hotspot-Suffix prüfen (*Station*) |
 | **✕ N8schicht: config** | Die ID ist schon verbunden, z. B. ein zweiter Hotspot mit gleicher ID | anderes Hotspot-Suffix nehmen |
@@ -66,3 +66,6 @@ Datenbank und Einstellungen bleiben erhalten.
 ---
 
 [← Zurück zur Übersicht](../../readme.md)
+| Knöpfe unter *System → Dienste* tun nichts / *sudo: a password is required* | sudo-Regel des N8 Admin-Kits fehlt (z. B. direkt nach dem Update von 1.4.x) | einmal `sudo /opt/n8hotspot/scripts/n8-admin.sh fix-perms` |
+| *Update jetzt* bricht ab: *von Hand geänderte Dateien* | im Programmordner wurde etwas geändert | `cd /opt/n8hotspot && sudo git status`, Änderungen sichern, `sudo git stash`, erneut |
+| Update zurückgenommen | die neue Version antwortete nicht innerhalb von 90 s | *Admin → Updates → 📜 Update-Protokoll*, `journalctl -u n8hotspot -n 80` |

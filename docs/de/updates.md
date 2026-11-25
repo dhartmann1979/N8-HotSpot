@@ -62,61 +62,68 @@ Sicherheit noch einmal **dein Passwort** ab. Nach 5 falschen Versuchen ist 15 Mi
 Passwort lässt das Fenster offen. Dann siehst du drei Schritte: **Update wird geladen und eingespielt → Dienst startet neu →
 Weboberfläche wird geprüft**. Im Einzelnen:
 
-1. **Herunterladen:** `git fetch` vom eingetragenen Remote, danach ein *Fast-Forward* auf **genau den Commit, der dir angezeigt wurde**.
-   Ist inzwischen etwas anderes auf GitHub, bricht das Update ab und bittet dich, neu zu prüfen.
-2. **Python-Pakete:** nur wenn sich `requirements.txt` geändert hat, werden sie in die eigene Umgebung (`venv`) installiert.
-3. **Funkdienste:** `MMDVM-Host.ini` und `DMRGateway.ini` werden neu geschrieben, **MMDVMHost** und **DMRGateway** neu gestartet.
-4. **Weboberfläche:** `n8hotspot` startet neu. Die Seite wartet und lädt sich von selbst neu, sobald die neue Version antwortet.
+Seit **1.5.0** läuft das Update über das gemeinsame **N8 Admin-Kit** (`scripts/n8-admin.sh`, dasselbe wie im HobbyRadioPortal,
+adn-frn-server und HBlink4-FreeRadioID, nach dem Vorbild von N8 Crosslink). Die Weboberfläche schreibt nur eine Anforderung
+(`data/update.request`); `n8hotspot-update.path` sieht sie und startet `n8hotspot-update.service` – **als root**, unabhängig
+von der Weboberfläche:
 
-**Automatisch zurück (Rollback):** Vor dem Neustart merkt sich der Hotspot den alten Stand (`data/update.pending`). Die neue Version
-ruft nach dem Start ihre eigene Weboberfläche auf. Antwortet sie nicht, beendet sie sich; nach **drei erfolglosen Starts** setzt
-`scripts/n8-update-guard.sh` (läuft als `ExecStartPre` vor jedem Start von `n8hotspot`) den Programmordner auf den alten Commit zurück.
-Das Ergebnis steht unter **Letztes Update** und in `data/update.result`. Das gilt auch für automatische Updates. Die Zeile kommt mit
-`permissions.sh` in die installierte Unit – `update.sh` ruft es bei jedem Update auf.
+1. **Vorspulen:** `git fetch` vom eingetragenen Remote, dann nur ein *Fast-Forward*. Wurden Dateien im Programmordner von Hand
+   geändert, bricht das Update ab, ohne etwas zu ändern.
+2. **Python-Pakete**, wenn sich `requirements.txt` geändert hat; **Dienste** aus den Vorlagen (`systemd/*.service`, Port bleibt);
+   **ini-Dateien** neu geschrieben.
+3. **Berechtigungen und sudo** prüfen und korrigieren (`fix-perms`), Update-Units aktuell halten.
+4. **Neustart** von DMRGateway, MMDVMHost und der Weboberfläche. Die Seite wartet und lädt sich von selbst neu.
+5. **Prüfung:** Antwortet die Weboberfläche nicht innerhalb von 90 Sekunden, geht es **automatisch zurück** auf den alten Stand
+   (`git reset --keep`) und alles wird neu gestartet.
 
-Geht etwas schief (z. B. eine fehlende Berechtigung), erscheint es als Hinweis unten rechts.
- Einstellungen, Benutzer, Statistik und Kalibrierung bleiben erhalten –
-sie liegen in `/opt/n8hotspot/data/n8hotspot.db`, nicht im Programmordner.
+Das Ergebnis steht unter **Letztes Update** und mit dem ganzen Ablauf in der Kachel **📜 Update-Protokoll**
+(`data/update.log`, `data/update.result`). Das gilt auch für automatische Updates.
+
+<p align="center"><img src="../images/admin-updates.png" alt="Updates mit Update-Protokoll" width="90%"></p>
+
+Einstellungen, Benutzer, Statistik und Kalibrierung bleiben erhalten – sie liegen in `/opt/n8hotspot/data/n8hotspot.db`,
+nicht im Programmordner.
+
+> **Von 1.4.x auf 1.5.0:** Das erste Update läuft noch über den alten Weg (als Dienst-Benutzer). Danach einmal auf der Konsole
+> `sudo /opt/n8hotspot/scripts/n8-admin.sh fix-perms` – das richtet sudo und „Update jetzt“ ein; ab dann geht alles im Browser.
 
 Ein Update wird **abgelehnt**, wenn
 
-- der Hotspot keine Git-Installation ist (z. B. ein kopierter Ordner) – dann `update.sh` auf der Konsole benutzen,
-- Dateien im Programmordner von Hand geändert wurden (sonst wären die Änderungen weg) – `git stash` oder auf der Konsole aktualisieren,
+- der Hotspot keine Git-Installation ist (z. B. ein kopierter Ordner),
+- Dateien im Programmordner von Hand geändert wurden (sonst wären die Änderungen weg) – `git stash`, dann erneut,
 - der Hotspot eigene Commits hat, die es auf GitHub nicht gibt,
 - gerade schon ein Update läuft (Pause von 30 Sekunden zwischen zwei Versuchen).
 
-## 🔐 Berechtigungen
+## 🔐 Dienste, Berechtigungen & sudo
 
-<p align="center"><img src="../images/permissions.png" alt="Kachel Permissions" width="60%"></p>
+<p align="center"><img src="../images/admin-system.png" alt="System: Dienste und Berechtigungen & sudo" width="90%"></p>
 
-Die Weboberfläche läuft als Benutzer `n8hotspot`, nicht als root. Damit Modem-Scan, Kalibrierung, Neustarts und Updates
-funktionieren, braucht sie ein paar Rechte. Die Kachel **🔐 Permissions** unter *Admin → Updates* prüft sie bei jedem Öffnen
-(und **↻ Check again**), auch nach jedem Update:
+Unter **Admin → System** stehen seit 1.5.0 zwei Kacheln des N8 Admin-Kits:
 
-| Prüfung | Wofür | Typische Ursache, wenn rot |
-|---|---|---|
-| Gruppe **dialout** | Modem-Scan und Kalibrierung öffnen `/dev/ttyAMA0`, `/dev/ttyACM0` … | ältere Installation; Gruppe hinzugefügt, aber Dienst nicht neu gestartet |
-| **Serial port … can be opened** | jede Modem-Schnittstelle einzeln | Login-Konsole (getty) belegt den Port (Gruppe `tty`) |
-| **No Linux console on the modem UART** | Kernel schreibt sonst Text auf das Modem | `console=serial0,115200` in `cmdline.txt` |
-| **GPIO UART is the full PL011** | Hat am Pi braucht den richtigen UART | Bluetooth aktiv, `dtoverlay=disable-bt` fehlt |
-| **sudo rule** | Dienste nach Update/Einstellungen neu starten, MMDVMHost für den Scan anhalten | `/etc/sudoers.d/n8hotspot` fehlt oder ist alt |
-| **Program folder writable** | *Update jetzt installieren* | Dateien gehören root (z. B. nach `git pull` als root) |
-| **Python environment writable** | neue Pakete nach einem Update | `venv` gehört root |
+**🧩 Dienste** – MMDVMHost, DMRGateway, MQTT (mosquitto), die Weboberfläche und der Update-Auslöser, jeweils mit Zustand,
+**Autostart**-Schalter und **↻ Neu starten · ▶ Starten · ■ Stoppen** (die Weboberfläche lässt sich nur neu starten).
 
-Reparieren lässt sich das nur als root – einmal auf der Konsole:
+**🔐 Berechtigungen & sudo** – *Erneut prüfen* zeigt alle Abweichungen, **Korrigieren** behebt sie (prüfen → korrigieren → erneut
+prüfen) und zeigt das Protokoll. Geprüft wird:
+
+| Bereich | Prüfung |
+|---|---|
+| Dienst-Benutzer | `n8hotspot` vorhanden, ohne Login-Shell, in den Gruppen `dialout` (Modem), `systemd-journal`, `adm`, `gpio`, `i2c`, `spi` (soweit vorhanden) |
+| Programm | `/opt/n8hotspot` gehört root und ist für den Dienst **schreibgeschützt**, Skripte 755, `venv` lauffähig |
+| Daten | `data/` gehört `n8hotspot` (750); Datenbank und ini-Dateien (Passwort des DMR-Servers) nur für den Dienst (600) |
+| systemd | Dienste gehören root (644), laufen nicht als root, „Update jetzt“ (`n8hotspot-update.path`) aktiv, Weboberfläche darf sudo nutzen |
+| sudo | installiert, `/etc/sudoers.d` eingebunden, `/etc/sudoers.d/n8hotspot-n8admin` gültig (`visudo`), aktuell und wirksam (`sudo -l`) |
+| Modem-Schnittstelle | `n8hotspot` darf `/dev/ttyAMA0` bzw. USB-Modems öffnen, keine Linux- oder Login-Konsole darauf, Bluetooth belegt den UART nicht |
+
+Auf der Konsole:
 
 ```bash
-sudo /opt/n8hotspot/scripts/permissions.sh            # prüfen und reparieren, danach Dienste neu starten
-sudo /opt/n8hotspot/scripts/permissions.sh --check    # nur anzeigen
+sudo /opt/n8hotspot/scripts/n8-admin.sh check-perms    # nur prüfen
+sudo /opt/n8hotspot/scripts/n8-admin.sh fix-perms      # prüfen → korrigieren → prüfen  (= scripts/permissions.sh)
 ```
 
-Das Skript setzt die Gruppen (`dialout`, `systemd-journal` …), schreibt die systemd-Dienste und die sudo-Regel neu (der Port der
-Weboberfläche bleibt), gibt den Programmordner dem Benutzer `n8hotspot`, schaltet eine Login-Konsole auf der Modem-Schnittstelle ab
-und nimmt am Raspberry Pi die Linux-Konsole vom UART (dann einmal `sudo reboot`). **`scripts/update.sh` ruft es bei jedem Update auf**,
-`install.sh` ebenfalls. Bewusst nicht im Browser: Ein Skript im Programmordner, das die Weboberfläche selbst ändern darf, als root
-auszuführen, wäre eine Hintertür.
-
-Ändert ein Update im Browser die Dienst-Dateien oder fehlt eine Berechtigung, erscheint das als Hinweis mit genau diesem Befehl.
+Installer und jedes Update rufen `fix-perms` selbst auf. Nimmt die Korrektur die Linux-Konsole vom UART, ist einmal
+`sudo reboot` nötig.
 
 ## Automatische Updates
 
@@ -128,35 +135,21 @@ Mit **Install automatically** installiert der Hotspot neue Versionen selbst – 
 
 Fällt die Stunde in ein QSO, wird es in der nächsten Runde (spätestens nach einer Stunde) noch einmal versucht.
 
-## Neustart der Dienste – ohne Änderung an sudoers
+## sudo: genau diese Befehle
 
-Die Weboberfläche läuft als Benutzer `n8hotspot`, nicht als root. Für Neustarts legt `install.sh` schon bei der Installation
-die Datei `/etc/sudoers.d/n8hotspot` an. Sie erlaubt **nur** diese Befehle ohne Passwort:
-
-```text
-n8hotspot ALL=(root) NOPASSWD: /usr/bin/systemctl start|stop|restart mmdvmhost.service,
-    /usr/bin/systemctl start|stop|restart dmrgateway.service,
-    /usr/bin/systemctl start|stop|restart mosquitto.service,
-    /usr/bin/systemctl restart n8hotspot.service, /usr/bin/systemctl reboot, /usr/bin/systemctl poweroff
-```
-
-(In der Datei steht jeder Befehl einzeln.) Damit kann die Weboberfläche nach einem Update die Dienste neu starten, aber
-**keine anderen Programme** als root ausführen. Fehlt die Regel (z. B. bei einer sehr alten Installation), beendet sich die
-Weboberfläche nach dem Update selbst, und systemd startet sie wegen `Restart=always` sofort wieder. Die Regel lässt sich jederzeit
-neu anlegen mit:
-
-```bash
-sudo /opt/n8hotspot/scripts/permissions.sh
-```
-
-Prüfen kannst du sie mit `sudo -l -U n8hotspot`.
+Die Weboberfläche läuft als Benutzer `n8hotspot`, nicht als root. `n8-admin.sh` schreibt `/etc/sudoers.d/n8hotspot-n8admin`
+(440, mit `visudo` geprüft, bei jedem Update neu). Sie erlaubt **nur**: `systemctl start|stop|restart|enable|disable` für
+`mmdvmhost`, `dmrgateway`, `mosquitto` und `n8hotspot-update.path`, `restart|enable` für `n8hotspot`,
+`systemctl start n8hotspot-update.service`, `n8-admin.sh check-perms --json` und `fix-perms` sowie `systemctl reboot|poweroff`.
+Keine Shell, keine anderen Programme. Die alte Datei `/etc/sudoers.d/n8hotspot` (bis 1.4) entfernt das erste Update.
+Prüfen: `sudo -l -U n8hotspot`.
 
 ## Aktualisieren auf der Konsole
 
 Ohne Browser – oder bei einer Installation ohne Git – geht es wie bisher:
 
 ```bash
-sudo /opt/n8hotspot/scripts/update.sh              # Weboberfläche (git pull, Python-Pakete, Berechtigungen, Neustart)
+sudo /opt/n8hotspot/scripts/update.sh              # wie „Update jetzt“: vorspulen, Pakete, Dienste, Rechte, Neustart, Prüfung
 sudo /opt/n8hotspot/scripts/update.sh --rebuild    # dazu aktuelle MMDVMHost/DMRGateway/MMDVMCal bauen
 ```
 

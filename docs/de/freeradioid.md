@@ -10,7 +10,7 @@
 |---|---|---|
 | 📘 **ID-Datenbank** | `api/subscriber_ids.csv` | Rufzeichen, Vorname, Ort, Land für alle DMR-IDs (radioid.net plus FreeRadioID-eigene IDs). Daraus entstehen die Tabelle `dmrids` und die `DMRIds.dat` für MMDVMHost. |
 | 🛡️ **Registrierte IDs** | `api/local_subscriber_ids.json` | Wer bei FreeRadioID.net registriert ist, bekommt das grüne **FRID**-Kennzeichen; FreeRadioID-eigene IDs ergänzen die Liste. |
-| 🖼️ **Avatare** | `api/idimg-<ID>.png` | Profilbild in Last Heard, auf der ON-AIR-Karte, in der Statistik und in der Stationsansicht |
+| 🖼️ **Avatare** | `api/idimg-<ID>.png` | Profilbild in Last Heard, im Display (Zeitschlitz), in der Statistik und in der Stationsansicht |
 | 👤 **Profile** | `api/dmr/user/?id=<ID>` | Name, Ort, Land, Bemerkung und Registrierung in der Stationsansicht |
 
 Und natürlich das **Passwort**: Bei **DMR Die N8schicht** meldest du den Hotspot mit deinem persönlichen FreeRadioID-Passwort an und hast volle Rechte. Mit dem allgemeinen Gast-Passwort `passw0rd` darfst du nur auf die Gast-Talkgroups senden.
@@ -30,7 +30,7 @@ Und natürlich das **Passwort**: Bei **DMR Die N8schicht** meldest du den Hotspo
 
 ## Stationsansicht
 
-Ein Klick auf ein Rufzeichen öffnet die Stationsansicht. Das geht in Last Heard, auf der ON-AIR-Karte und unter *Most active stations*.
+Ein Klick auf ein Rufzeichen öffnet die Stationsansicht. Das geht in Last Heard, im Display (Zeitschlitz) und unter *Most active stations*.
 
 <p align="center">
   <img src="../images/station.png" alt="Stationsansicht" width="62%">

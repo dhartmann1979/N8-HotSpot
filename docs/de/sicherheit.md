@@ -96,7 +96,7 @@ Gemeinsame Bausteine für **HBlink4-FreeRadioID, adn-frn-server, N8-HotSpot und 
 | `static/n8-kit.js` | Sprache DE/EN, Übersetzung, Sprachumschalter, Update-Hinweis, Updates-Kachel, Update-Fortschritt |
 | `static/n8-kit.css` | Aussehen dieser Bausteine, auf Basis der N8-Theme-2-Farben |
 | `n8hotspot/n8_security.py` | Sicherheits-Header, API-Doku aus, kein `server`-Header |
-| `n8hotspot/n8_update_guard.py` + `scripts/n8-update-guard.sh` | Prüfung nach dem Update und automatisches Zurücksetzen |
+| `scripts/n8-admin.sh` + `n8hotspot/n8_admin.py` (N8 Admin-Kit) | „Update jetzt“ als root mit Prüfung und automatischem Zurücksetzen, Berechtigungen und sudo prüfen/korrigieren, Dienste |
 | `static/i18n-app.js` | die deutschen Texte dieses Dashboards (eigene Datei je Projekt) |
 
 ### Sprache DE | EN
@@ -117,9 +117,10 @@ Gemeinsame Bausteine für **HBlink4-FreeRadioID, adn-frn-server, N8-HotSpot und 
 | Prüfen | jede volle Stunde, auch ohne Anmeldung; installiert wird nur auf Knopfdruck |
 | Hinweis | unter der Statusleiste, nur für Admins: *Update verfügbar: alt → neu* · Was ist neu? · Jetzt aktualisieren · Details · Später (ein Tag) |
 | Installieren | Fenster mit Neuerungen und Passwortabfrage, dann drei Schritte mit Fortschritt; die Seite lädt danach neu |
-| Prüfung danach | die neue Version ruft ihre eigene Weboberfläche auf |
-| Rollback | antwortet sie nicht, startet der Dienst neu; nach drei Starts ohne Antwort setzt `n8-update-guard.sh` auf den alten Stand zurück (`permissions.sh` – von `update.sh` aufgerufen – trägt die Zeile in bestehende Units ein) |
-| Ergebnis | *Letztes Update* in Admin → System: erfolgreich oder zurückgenommen, mit Zeit |
+| Ausführung | als root über `n8hotspot-update.path` → `n8-admin.sh update` (N8 Admin-Kit), unabhängig von der Weboberfläche |
+| Prüfung danach | `n8-admin.sh` ruft die Weboberfläche bis zu 90 Sekunden lang auf |
+| Rollback | antwortet sie nicht, geht es sofort auf den alten Stand zurück (`git reset --keep`), die Dienste starten neu |
+| Ergebnis | *Letztes Update* und **📜 Update-Protokoll** in Admin → Updates: erfolgreich oder zurückgenommen, mit Zeit und Ablauf |
 | Automatisch | *Install automatically* nutzt dieselbe Prüfung und denselben Rollback |
 
 ---

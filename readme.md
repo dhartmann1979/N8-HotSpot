@@ -29,14 +29,16 @@
 
 | | |
 |---|---|
-| 🎙️ **Live-Ansicht** | Wer gerade spricht (**ON AIR**), lokal per Funk (RF) oder aus dem Netz, mit BER und RSSI. Dazu Last Heard und der Status von Modem und DMR-Server. |
+| 📻 **Live wie ein Funkgerät** | Ein Block wie ein digitales Funkgerät: **LEDs** für RX, TX, Modus, Netz und Modem, ein **Display mit beiden Zeitschlitzen** (Rufzeichen, Talkgroup, Sprechzeit, S-Meter, BER-Balken) und die Bilanz des Tages. Dazu schlankes Last Heard. |
+| 🎚️ **Vocoder & Signal** | **BER live** des laufenden Funk-Durchgangs, BER/Paketverlust der letzten 40 Durchgänge, RSSI-Verlauf, Sprachqualität des Tages (sauber/hörbar/schlecht) und die AMBE+2-Sprachrahmen über Funk und Netz |
 | 🛡️ **FreeRadioID.net** | **Avatare**, **FRID**-Kennzeichen, Profile und die **DMR-ID-Datenbank** direkt aus der FreeRadioID-API; Stationsansicht per Klick auf ein Rufzeichen |
 | 🗂️ **Talkgroups** | rund 1.400 Talkgroup-Namen aus der [N8schicht-Liste](https://github.com/dhartmann1979/n8schicht/blob/main/talkgroup_ids.json) überall in der Oberfläche, eigener Tab mit Suche und „hier gehört“ |
 | 🔍 **Modem finden** | Scan aller seriellen Schnittstellen mit MMDVM-Abfrage, Erklärung der Ports, Übernahme per Klick |
 | 📈 **Statistiken** | Talkgroups, Sprechzeit, RF und Netz, aktivste Stationen; heute, 24 h, 7 oder 30 Tage, als Diagramm und Tabelle |
 | 🎛️ **Kalibrierung** | Frequenzabgleich mit MMDVMCal im Browser: BER live, Frequenz per Knopf verschieben, Offset mit einem Klick speichern |
-| ⚙️ **Adminbereich** | Station, Modem, Frequenzen, DMR-Server, Zeitschlitze, Expertenzeilen. Dazu Benutzer, Dienste, Logs, System-Infos, Neustart. |
-| ⬆️ **Updates im Browser** | Prüfung zu jeder vollen Stunde auf GitHub, Hinweis für Admins, **Update jetzt installieren** mit Passwortabfrage und Fortschritt, danach Neustart von MMDVMHost, DMRGateway und Weboberfläche; antwortet sie nicht, automatisch zurück zur alten Version; auf Wunsch automatisch nachts |
+| ⚙️ **Adminbereich** | Station, Modem, Frequenzen, DMR-Server, Zeitschlitze, Expertenzeilen. Dazu Benutzer, Logs, System-Infos, Neustart. |
+| 🧩 **Dienste & Berechtigungen** | schlanke Dienste-Liste (Autostart an/aus, Starten, Stoppen, Neu starten) und **Berechtigungen & sudo prüfen und korrigieren** auf Knopfdruck – das gemeinsame **N8 Admin-Kit** wie im HobbyRadioPortal, adn-frn-server und HBlink4 |
+| ⬆️ **Update prüfen · Update jetzt** | Prüfung zu jeder vollen Stunde auf GitHub, Hinweis für Admins, **Update jetzt** mit Passwortabfrage: läuft als root (N8 Admin-Kit) – nur vorspulen, Pakete, Dienste, ini-Dateien, Rechte und sudo, Neustart, Prüfung; antwortet die Weboberfläche nicht, automatisch zurück. Update-Protokoll im Browser, auf Wunsch automatisch nachts |
 | 🌐 **Deutsch / Englisch** | Umschalter **DE \| EN** in der Kopfzeile, Standard Deutsch; gilt für alle N8schicht-Oberflächen auf dem Gerät |
 | 🎨 **Eigene Farben** | N8 Theme wie im HBlink4-Dashboard: 7 Profile (auch hell), jede Farbe frei wählbar, Export/Import zwischen allen N8-Dashboards |
 | 🧭 **Ein Menü + Statusleiste** | Kopfzeile mit Logo, Reitern, Links und Login ganz rechts (ohne Aufklappmenü, **⚙️ Admin** nach dem Login als Menüpunkt); darunter eine schmale Statusleiste für Live-Daten, Modem, DMR-Server und Modus |
@@ -115,10 +117,10 @@ Ohne vorher eingetragene Hotspot-Einstellungen geht es im Browser weiter: **Logi
 | Anleitung | Inhalt |
 |---|---|
 | 📦 [Installation & Image](docs/de/installation.md) | Hardware, Image bauen und flashen, geführte Einrichtung, Installation ohne Fragen, erster Start, Aktualisieren |
-| 🎙️ [Live & Statistik](docs/de/bedienung.md) | Kopfzeile, Zeitschlitze, Last Heard, Talkgroup-Verzeichnis, Statistik-Diagramme |
+| 🎙️ [Live & Statistik](docs/de/bedienung.md) | Kopfzeile, das Funkgerät (LEDs, Display, Zeitschlitze), Vocoder & Signal, Last Heard, Talkgroup-Verzeichnis, Statistik-Diagramme |
 | 🔐 [Sicherheit & N8 Kit](docs/de/sicherheit.md) | Sicherheits-Header, API-Doku aus, Reverse-Proxy (Caddy/nginx), Sprache DE/EN, Updates mit Prüfung und Rollback |
 | ⚙️ [Adminbereich](docs/de/adminbereich.md) | Standard-Login, alle Einstellungen, Modem finden, Benutzer, Aussehen, Links, System, Logs, Konfigurationsdateien |
-| ⬆️ [Updates & Versionen](docs/de/updates.md) | Update-Prüfung, Update now, automatische Updates, Neustart der Dienste, sudo-Regel, Versionsnummern, [Änderungen](CHANGELOG.md) |
+| ⬆️ [Updates & Versionen](docs/de/updates.md) | Update-Prüfung, Update jetzt (N8 Admin-Kit), Update-Protokoll, automatische Updates, Dienste, Berechtigungen & sudo, Versionsnummern, [Änderungen](CHANGELOG.md) |
 | 🎛️ [Kalibrierung](docs/de/kalibrierung.md) | Frequenz-Offset mit MMDVMCal finden, weitere Tests |
 | 🛡️ [FreeRadioID](docs/de/freeradioid.md) | Avatare, FRID, Profile, ID-Datenbank, Stationsansicht |
 | 🧩 [Technik](docs/de/technik.md) | Aufbau (MMDVMHost ↔ DMRGateway ↔ MQTT), Dateien, Ports, API, Sicherheit |
@@ -126,11 +128,13 @@ Ohne vorher eingetragene Hotspot-Einstellungen geht es im Browser weiter: **Logi
 
 ## Aktualisieren
 
-Im Browser: **Admin → ⬆️ Updates → Update now** – der Hotspot prüft stündlich selbst und meldet neue Versionen
+Im Browser: **Admin → ⬆️ Updates → Update jetzt** – der Hotspot prüft stündlich selbst und meldet neue Versionen. Das Update läuft
+als root über das N8 Admin-Kit mit Prüfung und automatischem Rückweg; das Protokoll steht gleich daneben
 (➡️ [Updates & Versionen](docs/de/updates.md), alle Änderungen in [CHANGELOG.md](CHANGELOG.md)). Auf der Konsole:
 
 ```bash
-sudo /opt/n8hotspot/scripts/update.sh              # Weboberfläche
+sudo /opt/n8hotspot/scripts/update.sh              # wie „Update jetzt“
+sudo /opt/n8hotspot/scripts/n8-admin.sh fix-perms  # Berechtigungen & sudo prüfen und korrigieren (einmal nach dem Update von 1.4.x)
 sudo /opt/n8hotspot/scripts/update.sh --rebuild    # zusätzlich MMDVMHost, DMRGateway, MMDVMCal neu bauen
 ```
 

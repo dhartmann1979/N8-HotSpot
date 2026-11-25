@@ -60,7 +60,7 @@ Der Scan schickt jeder freien Schnittstelle die MMDVM-Abfrage *GET_VERSION* (bei
   alle Schnittstellen werden direkt gefragt, danach läuft MMDVMHost wieder. Das hilft, wenn MMDVMHost am falschen Port hängt
   und deshalb selbst kein Modem meldet. (Während einer Kalibrierung geht das nicht.)
 - **Berechtigungen:** Darf die Weboberfläche eine Schnittstelle nicht öffnen (*no permission*), steht oben ein gelber Kasten mit dem Grund
-  und dem Befehl zum Reparieren: `sudo /opt/n8hotspot/scripts/permissions.sh`. Siehe [Updates → Berechtigungen](updates.md#-berechtigungen).
+  und dem Befehl zum Reparieren: `sudo /opt/n8hotspot/scripts/n8-admin.sh fix-perms` (oder *System → Berechtigungen & sudo → Korrigieren*). Siehe [Updates → Dienste, Berechtigungen & sudo](updates.md#-dienste-berechtigungen--sudo).
 - **USB:** Bei USB-Geräten stehen Hersteller, Produkt und USB-ID dabei.
 - **Übernehmen:** **Use** trägt Port und Geschwindigkeit ein und wählt die passende Board-Vorlage (Simplex/Duplex). Danach **Save**.
 

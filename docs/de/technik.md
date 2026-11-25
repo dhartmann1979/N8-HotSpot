@@ -31,7 +31,7 @@
 | ID-Liste für MMDVMHost | `/opt/n8hotspot/data/DMRIds.dat` (aus der FreeRadioID-Liste, täglich neu) |
 | Programme | `/usr/local/bin/MMDVMHost`, `DMRGateway`, `MMDVMCal`; Quellen in `/usr/local/src/g4klx` |
 | Dienste | `mmdvmhost`, `dmrgateway`, `mosquitto`, `n8hotspot` (alle als Benutzer `n8hotspot`, außer mosquitto) |
-| sudo-Regel | `/etc/sudoers.d/n8hotspot`: nur Start/Stopp/Neustart dieser Dienste, Reboot, Shutdown |
+| sudo-Regel | `/etc/sudoers.d/n8hotspot-n8admin` (N8 Admin-Kit): nur Start/Stopp/Neustart/Autostart dieser Dienste, „Update jetzt“, Rechte prüfen/korrigieren, Reboot, Shutdown |
 | Logs | `journalctl -u mmdvmhost -u dmrgateway -u n8hotspot`; Installation in `/var/log/n8hotspot-install.log` |
 
 ## Externe Dienste
@@ -64,7 +64,7 @@ Eingehende Ports im Router sind **nicht** nötig.
 - **Login-Sperre:** Nach 5 Fehlversuchen ist der Login 15 Minuten gesperrt. Das Protokoll zeichnet alle Änderungen mit IP auf.
 - **Passwörter in den Configs:** Das DMR-Passwort steht nur in `DMRGateway.ini` (lesbar nur für `n8hotspot`); Anzeigen in der Oberfläche blenden es aus.
 - **Updates im Browser** nur für Admins und nur mit erneuter Passwortabfrage. Installiert wird ausschließlich per Fast-Forward vom Git-Remote `origin`, der auf dem Hotspot eingetragen ist (nie eine Adresse aus dem Browser), und nur der Commit, der angezeigt wurde. Git läuft dabei ohne Hooks, ohne `file://`/`ext::`-Transporte und ohne Shell. Siehe [Updates](updates.md).
-- **sudo-Regel** `/etc/sudoers.d/n8hotspot`: nur Start/Stopp/Neustart der eigenen Dienste, Reboot und Shutdown – keine Shell, keine anderen Programme.
+- **sudo-Regel** `/etc/sudoers.d/n8hotspot-n8admin`: nur Start/Stopp/Neustart/Autostart der eigenen Dienste, „Update jetzt“, Rechte prüfen/korrigieren, Reboot und Shutdown – keine Shell, keine anderen Programme.
 - **Site-Icons** des Link-Menüs werden nur von öffentlichen Adressen geholt (keine privaten/lokalen IPs, auch nicht nach Weiterleitungen), höchstens 256 KB, nur echte Bilddateien; SVG mit Skripten wird verworfen. Ausgeliefert werden sie mit strenger Content-Security-Policy.
 - Die Weboberfläche ist für das **lokale Netz** gedacht. Nicht per Portweiterleitung ins Internet stellen, sondern bei Bedarf über VPN zugreifen.
 
@@ -81,7 +81,11 @@ Alle Antworten sind JSON. Die Oberfläche nutzt dieselbe API.
 | `GET /api/avatar/{id}` | Sichtbereich | Avatar (WebP) für bei FreeRadioID registrierte IDs, sonst 404 |
 | `GET /api/talkgroups` | Sichtbereich | alle Talkgroup-Namen (Liste + eigene) und was der Hotspot in 30 Tagen darauf gehört hat |
 | `POST /api/admin/serial/scan` | Admin | serielle Schnittstellen mit Typ, USB-Daten, Belegung und MMDVM-Antwort; Body `{"stop_mmdvmhost": true}` hält MMDVMHost dafür kurz an; dazu fehlende Berechtigungen |
-| `GET /api/admin/permissions` | Admin | Berechtigungsprüfung (dialout, Schnittstellen, Konsole, sudo-Regel, Programmordner, venv) |
+| `GET /api/admin/permissions` | Admin | Modem-Zugriff der laufenden Weboberfläche (dialout, Schnittstellen, Konsole) |
+| `GET /api/signal` | Sichtbereich | Vocoder & Signal: BER/RSSI über Funk, Paketverlust im Netz, Sprachrahmen, je Stunde, letzte 40 Durchgänge |
+| `GET /api/admin/services` · `POST /api/admin/services/{unit}/{action}` | Admin | Dienste (N8 Admin-Kit): Zustand, Autostart, start/stop/restart/enable/disable |
+| `GET /api/admin/perms` · `POST /api/admin/perms/fix` | Admin | Berechtigungen & sudo prüfen / korrigieren (`n8-admin.sh`) |
+| `GET /api/admin/update-log` | Admin | Protokoll und Ergebnis von „Update jetzt“ |
 | `WS /ws` | Sichtbereich | Live-Ereignisse `status`, `slot`, `heard`, `ui` (neues Farbschema/Links); für Admins zusätzlich `log`, `cal`, `update` |
 | `POST /api/auth/login`, `logout`, `password` | – | Anmeldung, eigenes Konto |
 | `GET/POST /api/admin/settings`, `POST /api/admin/apply` | Admin | Einstellungen lesen/speichern, Dienste neu starten |
