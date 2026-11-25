@@ -4,6 +4,15 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.5.1] – 2026-11-25
+
+### 📐 Live-Ansicht symmetrisch
+- Funkgerät und **Vocoder & Signal** stehen jetzt als **zwei gleich breite, gleich hohe Blöcke** nebeneinander: links das Funkgerät mit
+  RSSI und Sprachqualität darunter, rechts *Vocoder & Signal* im selben Gehäuse-Stil (eigene Kopfleiste wie das Funkgerät).
+- Die Diagramme *BER live* und *Letzte Durchgänge* wachsen mit der Höhe mit und zeichnen sich bei jeder Größenänderung neu.
+- Zeitschlitz-Zeile enger gesetzt: lange Namen und Talkgroups werden gekürzt statt sich zu überlappen (FRID-Marke, kürzerer BER-Balken).
+- Screenshots `live.png`, `radio.png`, `signal.png`, `live-mobile.png` neu.
+
 ## [1.5.0] – 2026-11-25
 
 **Der Hotspot sieht aus wie ein Funkgerät – und aktualisiert sich wie die anderen N8schicht-Projekte.**

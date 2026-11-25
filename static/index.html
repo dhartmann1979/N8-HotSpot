@@ -7,7 +7,7 @@
     <title>N8 Hotspot</title>
     <link rel="icon" href="/static/n8schicht-icon.svg">
     <link rel="apple-touch-icon" href="/static/n8schicht-icon-192.png">
-    <link rel="stylesheet" href="/static/app.css?v=3">
+    <link rel="stylesheet" href="/static/app.css?v=4">
     <link rel="stylesheet" href="/static/n8-extra.css?v=1">
     <link rel="stylesheet" href="/static/n8-theme.css?v=1">
     <link rel="stylesheet" href="/static/n8-light.css?v=1">
@@ -65,6 +65,7 @@
     <!-- ================= LIVE ================= -->
     <section id="tab-live">
         <div class="live-grid">
+          <div class="live-left">
             <!-- the hotspot as a digital radio: LEDs, display with both time slots, live meters -->
             <div class="radio" id="radio">
                 <div class="radio-bar">
@@ -97,18 +98,6 @@
                 </div>
             </div>
 
-            <!-- signal & vocoder: BER of the running call, quality of the last calls, RSSI, voice frames -->
-            <div class="sigpanel" id="sigPanel">
-                <h2 class="section-header" style="margin-top: 0">Vocoder &amp; signal <small class="dim" id="sigNote"></small></h2>
-                <div class="sig-card">
-                    <div class="sig-head"><span>BER live</span><b id="sigBerNow">–</b></div>
-                    <div class="sig-chart tall" id="chBerLive"></div>
-                </div>
-                <div class="sig-card">
-                    <div class="sig-head"><span>Last calls · BER (RF) / loss (network)</span><span class="legend-mini"><i class="lg rf"></i>RF <i class="lg net"></i>Network</span></div>
-                    <div class="sig-chart tall" id="chRecent"></div>
-                </div>
-            </div>
             <div class="sig-row">
                 <div class="sig-card">
                     <div class="sig-head"><span>RSSI (RF)</span><b id="sigRssi">–</b></div>
@@ -118,6 +107,20 @@
                     <div class="sig-head"><span>Voice quality today</span></div>
                     <div class="qbar" id="qBar"></div>
                     <div class="sig-kv" id="sigKv"></div>
+                </div>
+            </div>
+          </div>
+            <!-- signal & vocoder: BER of the running call, quality of the last calls, RSSI, voice frames -->
+            <div class="sigpanel" id="sigPanel">
+                <div class="radio-bar sig-bar"><div class="radio-brand"><span class="radio-badge">SIG</span><span class="radio-model">Vocoder &amp; signal</span></div>
+                    <small class="dim" id="sigNote"></small></div>
+                <div class="sig-card">
+                    <div class="sig-head"><span>BER live</span><b id="sigBerNow">–</b></div>
+                    <div class="sig-chart tall" id="chBerLive"></div>
+                </div>
+                <div class="sig-card">
+                    <div class="sig-head"><span>Last calls · BER (RF) / loss (network)</span><span class="legend-mini"><i class="lg rf"></i>RF <i class="lg net"></i>Network</span></div>
+                    <div class="sig-chart tall" id="chRecent"></div>
                 </div>
             </div>
         </div>
@@ -210,7 +213,7 @@
 </div>
 <div class="tip" id="tip"></div>
 <div id="modalRoot"></div>
-<script src="/static/app.js?v=3"></script>
+<script src="/static/app.js?v=4"></script>
 <script src="/static/n8-admin.js?v=2"></script>
 <script>
     // N8 Kit: DE | EN next to Links and the login (the same switch in all N8schicht pages)

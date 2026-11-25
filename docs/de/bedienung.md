@@ -87,6 +87,8 @@ Zeitschlitzen und der Bilanz des Tages darunter.
 
 ## 🎚️ Vocoder & Signal
 
+Rechts neben dem Funkgerät, gleich hoch und im selben Gehäuse-Stil (RSSI und Sprachqualität stehen links unter dem Funkgerät).
+
 <p align="center"><img src="../images/signal.png" alt="Vocoder & Signal: BER live, letzte Durchgänge, RSSI, Sprachqualität" width="90%"></p>
 
 | Karte | Inhalt |
