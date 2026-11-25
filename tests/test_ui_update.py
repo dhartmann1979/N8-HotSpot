@@ -151,3 +151,16 @@ def test_live_view_is_a_radio():
     html = (ROOT / "static" / "index.html").read_text()
     for k in ('id="ledRx"', 'id="ledTx"', 'id="ledMode"', 'class="lcd"', 'id="chBerLive"', 'id="chRecent"', 'id="qBar"'):
         assert k in html, k
+
+
+def test_keepalive_and_health(client):
+    """Keep-Alive: /api/n8/health nur lokal, Einstellungen speichern und prüfen."""
+    r = client.get("/api/n8/health")                    # TestClient = "testclient", nicht 127.0.0.1
+    assert r.status_code == 403
+    login(client)
+    d = client.get("/api/admin/keepalive").json()
+    assert d["conf"]["enabled"] is True and "checks" in d or "ready" in d
+    d = client.post("/api/admin/keepalive", json={"heartbeat_url": "https://hc-ping.com/abc-123", "net_restart": False}, headers=H).json()
+    assert d["conf"]["heartbeat_url"] == "https://hc-ping.com/abc-123" and d["conf"]["net_restart"] is False
+    assert client.post("/api/admin/keepalive", json={"heartbeat_url": "https://x/$(id)"}, headers=H).status_code == 400
+    assert client.post("/api/admin/keepalive", json={"pause_minutes": 60}, headers=H).json()["conf"]["paused_until"] > 0

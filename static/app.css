@@ -424,3 +424,5 @@ details.perm-ok summary { cursor: pointer; font-size: 13px; color: var(--muted, 
     .lcd-slot.idle .lcd-idle, .lcd-slot.unused .lcd-idle { grid-area: who; }
     .leds { gap: 9px; } .lcd-clock { margin-left: 0; }
 }
+.ka-tile { grid-column: 1 / -1; }
+.ka-form { margin-top: 10px; }

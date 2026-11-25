@@ -586,7 +586,7 @@ async def apply_config(request: Request):
     write_config()
     out = {}
     for svc in ("dmrgateway", "mmdvmhost"):
-        out[svc] = (await ctx.system.control(svc, "restart"))["rc"] == 0
+        out[svc] = (await svc_ctl(svc, "restart"))["rc"] == 0
     ctx.restart_needed = False
     ctx.auth.audit("services_restarted", u["username"], "settings applied", ip_of(request))
     await poll_services(force=True)
@@ -672,6 +672,33 @@ async def system_info(request: Request):
             "mqtt": ctx.live.mqtt_connected, "app_version": __version__, "demo": DEMO, "data_dir": str(DATA)}
 
 
+async def svc_ctl(svc: str, action: str) -> Dict[str, Any]:
+    """Dienst steuern – ein von Hand (oder für die Kalibrierung) gestoppter Dienst wird vom Keep-Alive nicht wieder gestartet."""
+    ctx.n8._hold(f"{svc}.service", action)
+    return await ctx.system.control(svc, action)
+
+
+@app.get("/api/n8/health")
+async def n8_health(request: Request):
+    """Für den Keep-Alive (scripts/n8-admin.sh): Zustand der Teile – nur direkt von diesem Rechner, nie über einen Proxy."""
+    host = request.client.host if request.client else ""
+    if host not in ("127.0.0.1", "::1") or any(h in request.headers for h in ("x-forwarded-for", "x-real-ip", "forwarded", "via")):
+        raise HTTPError(403, "local only")
+    L, s = ctx.live, ctx.settings.all()
+    cal = ctx.cal.running
+    link = L.link.get("state")
+    has_net = bool(station_info().get("network"))
+    modem_open = L.modem.get("open")
+    return {"ok": True, "items": {
+        "web": {"ok": True},
+        "mqtt": {"ok": L.mqtt_connected, "why": "" if L.mqtt_connected else "keine Live-Daten von MQTT (mosquitto)"},
+        "modem": {"ok": cal or modem_open is not False, "why": "MMDVMHost hat das Modem nicht geöffnet"},
+        "network": {"ok": cal or not has_net or link == "connected",
+                    "why": f"nicht beim DMR-Server angemeldet ({link}{' · ' + L.link.get('reason') if L.link.get('reason') else ''})"},
+        "calibration": {"ok": True, "running": cal},
+    }, "port": s.get("modem.port")}
+
+
 @app.post("/api/admin/service")
 async def service(request: Request):
     u = need_admin(request)
@@ -682,9 +709,9 @@ async def service(request: Request):
     try:
         if svc == "n8hotspot":
             ctx.auth.audit("service", u["username"], f"{svc} {action}", ip_of(request))
-            asyncio.get_running_loop().call_later(0.5, lambda: asyncio.ensure_future(ctx.system.control(svc, action)))
+            asyncio.get_running_loop().call_later(0.5, lambda: asyncio.ensure_future(svc_ctl(svc, action)))
             return {"ok": True}
-        r = await ctx.system.control(svc, action)
+        r = await svc_ctl(svc, action)
     except ValueError as e:
         raise HTTPError(400, str(e))
     ctx.auth.audit("service", u["username"], f"{svc} {action}", ip_of(request))
@@ -743,6 +770,24 @@ async def perms_fix(request: Request):
     ok, out = await ctx.n8.fix_perms()
     ctx.auth.audit("perms_fix", u["username"], "ok" if ok else "Fehler bleiben", ip_of(request))
     return {"ok": ok, "message": out, "check": await ctx.n8.check_perms()}
+
+
+@app.get("/api/admin/keepalive")
+async def keepalive_get(request: Request):
+    need_admin(request)
+    return ctx.n8.keepalive()
+
+
+@app.post("/api/admin/keepalive")
+async def keepalive_set(request: Request):
+    u = need_admin(request)
+    b = await body(request)
+    try:
+        c = ctx.n8.keepalive_set(b)
+    except (ValueError, TypeError) as e:
+        raise HTTPError(400, str(e))
+    ctx.auth.audit("keepalive", u["username"], ", ".join(f"{k}={'…' if 'url' in k and v else v}" for k, v in c.items()), ip_of(request))
+    return ctx.n8.keepalive()
 
 
 @app.get("/api/admin/update-log")
@@ -834,6 +879,7 @@ async def serial_scan(request: Request):
         if b.get("stop_mmdvmhost"):
             if ctx.cal.running:
                 raise HTTPError(409, "The calibration is running – stop it first.")
+            ctx.n8._hold("mmdvmhost.service", "stop")         # Keep-Alive: nicht dazwischen starten
             stopped = await asyncio.to_thread(updater.systemctl, "stop", "mmdvmhost")
             if not stopped:
                 raise HTTPError(500, "MMDVMHost could not be stopped (sudo rule missing?). " + permcheck.fix_command())
@@ -843,6 +889,7 @@ async def serial_scan(request: Request):
         finally:
             if stopped:
                 await asyncio.to_thread(updater.systemctl, "start", "mmdvmhost")
+                ctx.n8._hold("mmdvmhost.service", "start")
         if stopped:
             ctx.auth.audit("service", u["username"], "mmdvmhost stopped for the modem scan", ip_of(request))
     s = ctx.settings.all()
@@ -887,13 +934,13 @@ async def cal_start(request: Request):
     s = ctx.settings.all()
     freq = int(b.get("freq") or s["modem.rx_freq"])
     for svc in ("mmdvmhost", "dmrgateway"):
-        await ctx.system.control(svc, "stop")
+        await svc_ctl(svc, "stop")
     await poll_services(force=True)
     try:
         await ctx.cal.start(s["modem.port"], int(s["modem.speed"]), freq)
     except Exception as e:
         for svc in ("dmrgateway", "mmdvmhost"):
-            await ctx.system.control(svc, "start")
+            await svc_ctl(svc, "start")
         raise HTTPError(500, str(e))
     ctx.auth.audit("calibration_started", u["username"], f"{freq} Hz", ip_of(request))
     return {"cal": ctx.cal.snapshot()}
@@ -930,7 +977,7 @@ async def cal_stop(request: Request):
     await ctx.cal.stop()
     write_config()
     for svc in ("dmrgateway", "mmdvmhost"):
-        await ctx.system.control(svc, "start")
+        await svc_ctl(svc, "start")
     await poll_services(force=True)
     ctx.auth.audit("calibration_stopped", u["username"], "", ip_of(request))
     return {"cal": ctx.cal.snapshot()}

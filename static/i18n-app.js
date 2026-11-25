@@ -122,12 +122,21 @@ N8Kit.i18n.add({
         '3. Restart MMDVMHost, DMRGateway and the web interface': '3. MMDVMHost, DMRGateway und die Weboberfläche neu starten',
         '4. Check of the web interface – if it does not answer, back to the previous version; the page reloads by itself': '4. Prüfung der Weboberfläche – antwortet sie nicht, zurück auf die vorige Version; die Seite lädt von selbst neu',
         'Weboberfläche startet neu …': 'Weboberfläche startet neu …',
+        'Every minute as root: checks each service for real (web interface, MQTT, modem, login at the DMR server), restarts sick ones after 3 minutes (at most 4× per hour), notices internet outages and restarts the network services afterwards, and reports to a heartbeat address.': 'Jede Minute als root: prüft jeden Dienst wirklich (Weboberfläche, MQTT, Modem, Anmeldung am DMR-Server), startet kranke Dienste nach 3 Minuten neu (höchstens 4× je Stunde), erkennt Internet-Ausfälle und startet danach die Netzdienste neu, und meldet sich bei einer Heartbeat-Adresse.',
+        'Keep-Alive': 'Keep-Alive', 'active': 'aktiv', 'off': 'aus', 'paused': 'pausiert', 'not running': 'läuft nicht', 'healthy': 'gesund',
+        'stopped by hand – Keep-Alive waits': 'von Hand gestoppt – Keep-Alive wartet', 'Internet': 'Internet', 'reachable': 'erreichbar', 'Last check': 'Letzte Prüfung',
+        'just now': 'gerade eben', 'Heartbeat': 'Heartbeat', 'Keep-Alive on': 'Keep-Alive an', 'Restart network services after an internet outage': 'Netzdienste nach einem Internet-Ausfall neu starten',
+        'Heartbeat address': 'Heartbeat-Adresse', 'Heartbeat on errors (optional)': 'Heartbeat bei Fehlern (optional)',
+        'Called every minute while everything is fine (Uptime Kuma “Push”, Healthchecks.io …) – it alerts you when the calls stop.': 'Wird jede Minute aufgerufen, solange alles in Ordnung ist (Uptime Kuma „Push“, Healthchecks.io …) – bleiben die Aufrufe aus, alarmiert es dich.',
+        'Resume': 'Fortsetzen', 'Pause 1 h (maintenance)': '1 h pausieren (Wartung)', 'Keep-Alive log': 'Keep-Alive-Protokoll', 'Keep-Alive saved': 'Keep-Alive gespeichert',
+        'Keep-Alive paused for 1 hour': 'Keep-Alive für 1 Stunde pausiert', 'Keep-Alive active again': 'Keep-Alive wieder aktiv', 'Set up once on the console:': 'Einmal auf der Konsole einrichten:',
+
     },
     rules: [
         [/^→ TG (\d+) · just now$/, '→ TG $1 · gerade eben'], [/^Show all ([\d.,]+)$/, 'Alle $1 anzeigen'], [/^\((\d+) without picture\)$/, '($1 ohne Bild)'],
         [/^List of the N8schicht: ([\d.,]+) names$/, 'Liste der N8schicht: $1 Namen'], [/^(.+) – my account$/, '$1 – mein Konto'], [/^(.+) is starting$/, '$1 startet'],
         [/^Simplex · CC(\d+)$/, 'Simplex · FC$1'], [/^CC(\d+)$/, 'FC$1'], [/^Hotspot · DMR (Simplex|Duplex)$/, 'Hotspot · DMR $1'],
         [/^today · (\d+) RF \/ (\d+) network$/, 'heute · $1 Funk / $2 Netz'], [/^(\d+) problem\(s\)$/, '$1 Fehler'], [/^(\d+) checks in order$/, '$1 Prüfungen in Ordnung'], [/^(.+) · TS(\d) · now · (\d+) s$/, '$1 · TS$2 · jetzt · $3 s'], [/^(.+) · TS(\d) · last RF call · (\d+) s$/, '$1 · TS$2 · letzter Funk-Durchgang · $3 s'],
-        [/^Stop (.+)\?$/, '$1 stoppen?'], [/^failed · (.+)$/, 'fehlgeschlagen · $1'], [/^Duplex · CC(\d+)$/, 'Duplex · FC$1'], [/^(\d+) min ago$/, 'vor $1 Min.'],
+        [/^Stop (.+)\?$/, '$1 stoppen?'], [/^down since (.+)$/, 'weg seit $1'], [/^(\d+)× restarted(.*)$/, '$1× neu gestartet$2'], [/^failed · (.+)$/, 'fehlgeschlagen · $1'], [/^Duplex · CC(\d+)$/, 'Duplex · FC$1'], [/^(\d+) min ago$/, 'vor $1 Min.'],
     ],
 });

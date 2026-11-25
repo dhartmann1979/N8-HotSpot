@@ -879,6 +879,7 @@ async function loadSystem() {
             <div class="actions"><button class="btn" onclick="power('reboot')">🔄 Reboot</button><button class="btn danger" onclick="power('poweroff')">⏻ Shut down</button></div></div>
         <div class="tile" id="svcTile"><h3>🧩 Services</h3><div class="empty">…</div></div>
         <div class="tile" id="permTile"><h3>🔐 Permissions &amp; sudo</h3><div class="empty">…</div></div>
+        <div class="tile ka-tile" id="kaTile"><h3>💓 Keep-Alive</h3><div class="empty">…</div></div>
         <div class="tile"><h3>📦 Versions</h3><div class="kv" style="margin-top:10px"><div class="k">MQTT live data</div><div class="v">${d.mqtt ? '<span class="pill ok">connected</span>' : '<span class="pill bad">not connected</span>'}</div>
                 <div class="k">MMDVMHost</div><div class="v mono" style="font-size:12px">${esc(d.versions.mmdvmhost)}</div>
                 <div class="k">DMRGateway</div><div class="v mono" style="font-size:12px">${esc(d.versions.dmrgateway)}</div>
@@ -900,7 +901,7 @@ async function loadSystem() {
         <div class="tile"><h3>🗄️ Data</h3><div class="kv"><div class="k">Calls stored</div><div class="v">${d.calls.toLocaleString('de-DE')}</div>
             <div class="k">Since</div><div class="v">${d.calls_since ? fmtDate(d.calls_since) : '–'}</div><div class="k">Folder</div><div class="v mono" style="font-size:12px">${esc(d.data_dir)}</div></div></div>
     </div>`;
-    loadServices(); loadPerms();
+    loadServices(); loadPerms(); loadKeepalive();
 }
 async function power(a) {
     if (!await confirmBox({ title: a === 'reboot' ? 'Reboot the hotspot?' : 'Shut down the hotspot?', body: a === 'reboot' ? 'It is back after about a minute.' : 'Unplug and replug the power to start it again.' }, a === 'reboot' ? 'Reboot' : 'Shut down', 'danger')) return;
