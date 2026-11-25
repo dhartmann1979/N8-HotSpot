@@ -14,8 +14,8 @@
     <script src="/static/n8-theme.js?v=1"></script>
     <link rel="stylesheet" href="/static/n8-header.css?v=1">
     <link rel="stylesheet" href="/static/n8-look.css?v=1">
-    <link rel="stylesheet" href="/static/n8-kit.css?v=1">
-    <script src="/static/n8-kit.js?v=1"></script>
+    <link rel="stylesheet" href="/static/n8-kit.css?v=2">
+    <script src="/static/n8-kit.js?v=2"></script>
     <script src="/static/i18n-app.js?v=2"></script>
 </head>
 <body>
@@ -179,18 +179,9 @@
 
     <!-- ================= ADMIN ================= -->
     <section id="tab-admin" class="hidden">
-        <nav class="tabs sub" id="adminTabs">
-            <button data-a="settings" class="active">⚙️ Settings</button>
-            <button data-a="cal">🎛️ Calibration</button>
-            <button data-a="users">👥 Users</button>
-            <button data-a="appearance">🎨 Appearance</button>
-            <button data-a="links">🔗 Links</button>
-            <button data-a="system">🖥️ System</button>
-            <button data-a="updates">⬆️ Updates</button>
-            <button data-a="logs">📜 Logs</button>
-            <button data-a="files">🧾 Config files</button>
-            <button data-a="audit">🔑 Sessions &amp; log</button>
-        </nav>
+        <div class="n8-admin">
+        <nav id="adminNav" aria-label="Admin"></nav>
+        <div class="n8-admin-main">
         <div id="admin-settings"></div>
         <div id="admin-cal" class="hidden"></div>
         <div id="admin-users" class="hidden"></div>
@@ -201,6 +192,8 @@
         <div id="admin-logs" class="hidden"></div>
         <div id="admin-files" class="hidden"></div>
         <div id="admin-audit" class="hidden"></div>
+        <div id="admin-sys" class="hidden"></div>
+        </div></div>
     </section>
 
     <footer class="site-footer">
@@ -213,8 +206,8 @@
 </div>
 <div class="tip" id="tip"></div>
 <div id="modalRoot"></div>
-<script src="/static/app.js?v=4"></script>
-<script src="/static/n8-admin.js?v=2"></script>
+<script src="/static/app.js?v=5"></script>
+<script src="/static/n8-admin.js?v=3"></script>
 <script>
     // N8 Kit: DE | EN next to Links and the login (the same switch in all N8schicht pages)
     (function () { const u = document.getElementById('userArea'); if (u) N8Kit.langSwitch(u.parentNode, { before: u }); })();

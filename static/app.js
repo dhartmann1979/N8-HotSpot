@@ -601,17 +601,31 @@ $('tgMore').addEventListener('click', () => { TGV.limit = 100000; renderTalkgrou
 bindSeg('tgFilter', v => { TGV.filter = v; TGV.limit = 150; renderTalkgroups(); });
 
 // ---------------------------------------------------------------- admin
+// Admin menu: the same tree in every N8 system (N8 Kit) – Betrieb · Benutzer & Zugang · Darstellung · System
+const ADMIN_PANES = ['settings', 'cal', 'users', 'appearance', 'links', 'system', 'logs', 'files', 'audit', 'sys'];
+const ADMIN_OLD = { updates: 'sys-update' };
+function adminGroups() {
+    const G = N8Kit.nav.GROUPS;
+    return [
+        { id: 'betrieb', label: G.betrieb, items: [{ id: 'settings', label: '⚙️ Settings' }, { id: 'cal', label: '🎛️ Calibration' },
+            { id: 'logs', label: '📜 Logs' }, { id: 'files', label: '🧾 Config files' }] },
+        { id: 'zugang', label: G.zugang, items: [{ id: 'users', label: '👥 Users' }, { id: 'audit', label: '🔑 Sessions & log' }] },
+        { id: 'darstellung', label: G.darstellung, items: [{ id: 'appearance', label: '🎨 Appearance' }, { id: 'links', label: '🔗 Links' }] },
+        { id: 'system', label: G.system, items: [{ id: 'system', label: '🖥️ Hardware & data' }, ...N8Kit.nav.SYS_ITEMS.map(([id, label]) => ({ id, label }))] },
+    ];
+}
 function showAdmin(a) {
+    a = ADMIN_OLD[a] || a;
+    if (!adminGroups().some(g => g.items.some(i => i.id === a))) a = 'settings';
     S.admin.tab = a;
-    document.querySelectorAll('#adminTabs button').forEach(b => b.classList.toggle('active', b.dataset.a === a));
-    const ab = document.querySelector(`#adminTabs button[data-a="${a}"]`);
-    if (ab && ab.scrollIntoView) ab.scrollIntoView({ block: 'nearest', inline: 'center' });
-    ['settings', 'cal', 'users', 'appearance', 'links', 'system', 'updates', 'logs', 'files', 'audit'].forEach(x => $('admin-' + x).classList.toggle('hidden', x !== a));
-    ({ settings: loadSettings, cal: loadCal, users: loadUsers, appearance: loadAppearance, links: loadLinksAdmin,
-       updates: () => loadUpdates(false), system: loadSystem, logs: loadLogs, files: loadFiles, audit: loadAudit })[a]();
+    N8Kit.nav.tree($('adminNav'), adminGroups(), { active: a, key: 'n8hs-admin', onSelect: showAdmin });
+    const pane = a.startsWith('sys-') ? 'sys' : a;
+    ADMIN_PANES.forEach(x => $('admin-' + x).classList.toggle('hidden', x !== pane));
+    if (pane === 'sys') loadSysView(a.slice(4));
+    else ({ settings: loadSettings, cal: loadCal, users: loadUsers, appearance: loadAppearance, links: loadLinksAdmin,
+       system: loadSystem, logs: loadLogs, files: loadFiles, audit: loadAudit })[a]();
     if (S.tab === 'admin') history.replaceState(null, '', '#admin/' + a);
 }
-$('adminTabs').addEventListener('click', e => { const b = e.target.closest('button[data-a]'); if (b) showAdmin(b.dataset.a); });
 function setRestart(on) { $('restartBanner').classList.toggle('hidden', !on); }
 async function applyRestart(btn) {
     btn.disabled = true; btn.textContent = 'Restarting …';
@@ -877,9 +891,6 @@ async function loadSystem() {
             <div class="k">SD card</div><div class="v">${fmtBytes(i.disk_total - i.disk_free)} of ${fmtBytes(i.disk_total)}</div>
             <div class="k">Uptime</div><div class="v">${fmtDur(i.uptime, true)}</div></div>
             <div class="actions"><button class="btn" onclick="power('reboot')">🔄 Reboot</button><button class="btn danger" onclick="power('poweroff')">⏻ Shut down</button></div></div>
-        <div class="tile" id="svcTile"><h3>🧩 Services</h3><div class="empty">…</div></div>
-        <div class="tile" id="permTile"><h3>🔐 Permissions &amp; sudo</h3><div class="empty">…</div></div>
-        <div class="tile ka-tile" id="kaTile"><h3>💓 Keep-Alive</h3><div class="empty">…</div></div>
         <div class="tile"><h3>📦 Versions</h3><div class="kv" style="margin-top:10px"><div class="k">MQTT live data</div><div class="v">${d.mqtt ? '<span class="pill ok">connected</span>' : '<span class="pill bad">not connected</span>'}</div>
                 <div class="k">MMDVMHost</div><div class="v mono" style="font-size:12px">${esc(d.versions.mmdvmhost)}</div>
                 <div class="k">DMRGateway</div><div class="v mono" style="font-size:12px">${esc(d.versions.dmrgateway)}</div>
@@ -901,7 +912,6 @@ async function loadSystem() {
         <div class="tile"><h3>🗄️ Data</h3><div class="kv"><div class="k">Calls stored</div><div class="v">${d.calls.toLocaleString('de-DE')}</div>
             <div class="k">Since</div><div class="v">${d.calls_since ? fmtDate(d.calls_since) : '–'}</div><div class="k">Folder</div><div class="v mono" style="font-size:12px">${esc(d.data_dir)}</div></div></div>
     </div>`;
-    loadServices(); loadPerms(); loadKeepalive();
 }
 async function power(a) {
     if (!await confirmBox({ title: a === 'reboot' ? 'Reboot the hotspot?' : 'Shut down the hotspot?', body: a === 'reboot' ? 'It is back after about a minute.' : 'Unplug and replug the power to start it again.' }, a === 'reboot' ? 'Reboot' : 'Shut down', 'danger')) return;

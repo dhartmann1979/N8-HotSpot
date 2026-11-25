@@ -80,14 +80,14 @@ def test_theme_links_and_public_info(client):
     assert client.get("/api/link-icon/" + "0" * 64).status_code == 404
 
 
-def test_update_needs_password(client, monkeypatch):
-    login(client)
+def test_update_without_password_but_admin_only(client, monkeypatch):
     called = []
     monkeypatch.setattr(updater, "install", lambda branch, expected: called.append(expected) or
                         {"old": "a" * 40, "new": "b" * 40, "files": [], "changed": False, "requirements_changed": False})
-    r = client.post("/api/admin/update/install", json={"password": "wrong", "expected": "b" * 40}, headers=H)
-    assert r.status_code == 403 and not called
-    r = client.post("/api/admin/update/install", json={"password": "n8schicht", "expected": "b" * 40}, headers=H)
+    r = client.post("/api/admin/update/install", json={"expected": "b" * 40}, headers=H)
+    assert r.status_code in (401, 403) and not called          # not logged in
+    login(client)
+    r = client.post("/api/admin/update/install", json={"expected": "b" * 40}, headers=H)
     assert r.status_code == 200 and called == ["b" * 40] and r.json()["restart"] == "none"
 
 

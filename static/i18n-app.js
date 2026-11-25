@@ -9,7 +9,7 @@ N8Kit.i18n.add({
         'Top talkgroups': 'Top-Talkgroups', 'Activity': 'Aktivität', 'Most active stations': 'Aktivste Stationen', 'by airtime': 'nach Sprechzeit', 'Share': 'Anteil', 'Calls (30 d)': 'Gespräche (30 T.)',
         'Show more': 'Mehr anzeigen', 'Live log': 'Live-Protokoll', 'Since': 'Seit', 'Slot': 'Slot',
         'The factory login n8schicht / n8schicht is still active.': 'Der Werks-Login n8schicht / n8schicht ist noch aktiv.',
-        'Anyone on your network could change your hotspot. Please set your own password.': 'Jeder in deinem Netz könnte deinen Hotspot verändern. Bitte setze ein eigenes Passwort.',
+        '🖥️ Hardware & data': '🖥️ Hardware & Daten', 'Hardware & data': 'Hardware & Daten', 'Anyone on your network could change your hotspot. Please set your own password.': 'Jeder in deinem Netz könnte deinen Hotspot verändern. Bitte setze ein eigenes Passwort.',
         'Change now': 'Jetzt ändern', 'MMDVMHost and DMRGateway use them after a restart.': 'MMDVMHost und DMRGateway übernehmen sie nach einem Neustart.', 'Settings saved': 'Einstellungen gespeichert',
 
         // talkgroups

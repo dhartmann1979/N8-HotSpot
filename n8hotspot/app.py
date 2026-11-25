@@ -419,10 +419,7 @@ async def admin_update_install(request: Request):
     u = need_admin(request)
     b = await body(request)
     ip = ip_of(request)
-    try:
-        ctx.auth.confirm_password(u, str(b.get("password") or ""), ip)
-    except AuthError as e:
-        raise HTTPError(403, str(e))
+    # no password: an admin session (cookie + CSRF header) is enough – the same in every N8 system
     if ctx.update_lock.locked() or time.time() - ctx.update_last_try < 30:
         raise HTTPError(429, "An update is already running – please wait a moment.")
     res = await run_update(str(b.get("expected") or ""), u["username"], ip)
