@@ -5,7 +5,8 @@
 ---
 
 Ab Version **1.1.0** aktualisiert sich N8-Hotspot auf Knopfdruck im Browser. Er sieht selbst nach, ob es auf GitHub
-eine neue Version gibt, zeigt dir die Änderungen und startet nach dem Update alle Dienste neu.
+eine neue Version gibt, zeigt dir die Änderungen und startet nach dem Update die Weboberfläche neu – MMDVMHost und DMRGateway nur,
+wenn sich für sie etwas geändert hat.
 
 ## Hinweis auf neue Versionen
 
@@ -47,7 +48,7 @@ Darunter stehen die **Update-Einstellungen**:
 | **Check every (hours)** | 1 | 1 bis 168 Stunden |
 | **Install automatically** | aus | neue Versionen ohne Klick installieren (siehe unten) |
 | **Hour for automatic updates** | 04:00–04:59 | in dieser Stunde wird automatisch installiert |
-| **Restart MMDVMHost & DMRGateway** | an | nach dem Update die ini-Dateien neu schreiben und beide Funkdienste neu starten |
+| **Restart MMDVMHost & DMRGateway** | an | nur für das alte Update ohne Admin-Kit: ini-Dateien neu schreiben und beide Funkdienste neu starten. „Update jetzt“ startet sie seit 1.8.1 nur bei Änderungen neu (siehe unten) |
 | **Repository / Branch** | `dhartmann1979/N8-HotSpot` / `main` | nur ändern, wenn du einen eigenen Fork benutzt |
 
 ## Update jetzt installieren
@@ -72,7 +73,9 @@ von der Weboberfläche:
 2. **Python-Pakete**, wenn sich `requirements.txt` geändert hat; **Dienste** aus den Vorlagen (`systemd/*.service`, Port bleibt);
    **ini-Dateien** neu geschrieben.
 3. **Berechtigungen und sudo** prüfen und korrigieren (`fix-perms`), Update-Units aktuell halten.
-4. **Neustart** von DMRGateway, MMDVMHost und der Weboberfläche. Die Seite wartet und lädt sich von selbst neu.
+4. **Neustart:** zuerst die Weboberfläche. **DMRGateway und MMDVMHost** nur, wenn sich ihre ini-Dateien, ihre Dienst-Dateien oder
+   die Programme geändert haben (oder sie nicht laufen) – sonst bleibt das Modem offen und der Hotspot funkt einfach weiter. Im
+   Update-Protokoll steht „Funk-Teil unverändert“ bzw. „Funk-Teil neu gestartet“. Die Seite wartet und lädt sich von selbst neu.
 5. **Prüfung:** Antwortet die Weboberfläche nicht innerhalb von 90 Sekunden, geht es **automatisch zurück** auf den alten Stand
    (`git reset --keep`) und alles wird neu gestartet.
 

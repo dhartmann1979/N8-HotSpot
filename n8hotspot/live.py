@@ -22,6 +22,10 @@ from .db import DB
 log = logging.getLogger("n8hotspot.live")
 
 LOG_RE = re.compile(r"^([A-Z?]): (\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d+) (.*)$")
+# MMDVMHost (Modem.cpp): opened → "MMDVM protocol version: 1, description: MMDVM_HS_Hat-v1.6.1 …"
+MODEM_OK_RE = re.compile(r"MMDVM protocol version: (\d+), description: (.*)")
+MODEM_BAD_RE = re.compile(r"Unable to read the firmware version|Cannot open the modem|Unable to open the modem|"
+                          r"MMDVM is not responding|Couldn't open the MMDVM|Cannot open serial port")
 LEVELS = {"D": "debug", "M": "message", "I": "info", "W": "warning", "E": "error", "F": "fatal", "?": "info"}
 
 
@@ -160,11 +164,38 @@ class Live:
         entry = {"ts": time.time(), "app": app, "level": level, "text": text}
         self.logs.append(entry)
         self.emit({"type": "log", "entry": entry})
+        if app == "mmdvm":
+            self.modem_from_log(text, "log")
         if app == "gateway":
             if "Logged into the master successfully" in text or "Logged into the master via DTC" in text:
                 self._set_link("connected", text.split(",")[0], "", text)
             elif "timed out" in text or "Login to the master has failed" in text:
                 self._set_link("failed", text.split(",")[0], "timeout" if "timed out" in text else "login", text)
+
+    def modem_from_log(self, text: str, source: str = "log") -> bool:
+        """Modem-Zustand aus einer Log-Zeile von MMDVMHost (MQTT-Log oder Journal). True, wenn die Zeile ihn bestimmt hat."""
+        m = MODEM_OK_RE.search(text)
+        if m:
+            self._set_modem({"open": True, "protocol": int(m.group(1)), "description": m.group(2).strip(), "source": source})
+            return True
+        if MODEM_BAD_RE.search(text):
+            self._set_modem({"open": False, "error": text.strip()[:200], "source": source})
+            return True
+        return False
+
+    def _set_modem(self, modem: Dict[str, Any]) -> None:
+        if self.modem.get("source") == "mmdvm" and self.modem.get("open") == modem.get("open"):
+            return      # die genauere Meldung von MMDVMHost selbst behalten
+        self.modem = modem
+        self.emit({"type": "status", "status": self.snapshot()})
+
+    def modem_from_journal(self, lines: List[str]) -> bool:
+        """Nach einem Neustart der Weboberfläche: die Meldung „Modem geöffnet“ kam schon vorher – aus dem Journal
+        des laufenden MMDVMHost-Prozesses nachholen (letzte passende Zeile zählt)."""
+        for line in reversed(lines):
+            if self.modem_from_log(line, "journal"):
+                return True
+        return False
 
     def _set_link(self, state: str, network: str = "", reason: str = "", message: str = "") -> None:
         if self.link.get("state") != state:
@@ -201,10 +232,12 @@ class Live:
             if "mode" in b:
                 m = str(b["mode"])
                 self.mode = {"idle": "Idle", "dmr": "DMR", "lockout": "Lockout", "error": "Error", "quit": "Stopped"}.get(m.lower(), m)
+                if self.modem.get("open") is None and m.lower() in ("idle", "dmr"):
+                    self.modem = {"open": True, "source": "mode"}   # MMDVMHost arbeitet nur mit offenem Modem
                 self.emit({"type": "status", "status": self.snapshot()})
             return
         if kind == "Modem":
-            self.modem = b
+            self.modem = {**b, "source": "mmdvm"}
             self.emit({"type": "status", "status": self.snapshot()})
             return
         if kind in ("BER", "RSSI") and b.get("mode") == "DMR":
@@ -218,6 +251,8 @@ class Live:
         action, slot = b.get("action"), int(b.get("slot", 0) or 0)
         if slot not in (1, 2):
             return
+        if action in ("start", "late_entry") and b.get("source") == "rf" and self.modem.get("open") is None:
+            self.modem = {"open": True, "source": "rf"}             # Funk empfangen → Modem offen
         if action in ("start", "late_entry"):
             cur = self.slots.get(slot)
             if cur and (cur["src_id"] != b.get("src_id") or cur["dst_id"] != b.get("dst_id")):

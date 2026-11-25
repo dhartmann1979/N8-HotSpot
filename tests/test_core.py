@@ -114,6 +114,30 @@ def test_live_calls_and_link(db):
     assert any(ev["type"] == "heard" for ev in events)
 
 
+def test_modem_state_after_web_restart(db):
+    """Nach einem Update startet die Weboberfläche neu, MMDVMHost läuft weiter – „Modem geöffnet“ kam schon vorher."""
+    live = Live(db, lambda i: {})
+    assert live.modem["open"] is None
+    # aus dem Journal des laufenden MMDVMHost nachgeholt
+    assert live.modem_from_journal(["M: 2026-11-25 Opening the MMDVM",
+                                    "I: 2026-11-25 MMDVM protocol version: 1, description: MMDVM_HS_Hat-v1.6.1 20231115 FW by CA6JAU"])
+    assert live.modem["open"] is True and live.modem["description"].startswith("MMDVM_HS_Hat")
+    live2 = Live(db, lambda i: {})
+    assert live2.modem_from_journal(["E: 2026-11-25 Unable to read the firmware version after six attempts"])
+    assert live2.modem["open"] is False
+    assert not Live(db, lambda i: {}).modem_from_journal(["M: something else"])
+    # aus dem Betriebszustand / Funkempfang abgeleitet
+    live3 = Live(db, lambda i: {})
+    live3.handle("mmdvm/json", json.dumps({"MMDVM": {"mode": "idle"}}))
+    assert live3.modem["open"] is True
+    live4 = Live(db, lambda i: {})
+    live4.handle("mmdvm/json", json.dumps({"DMR": {"action": "start", "slot": 2, "source": "rf", "src_id": 1, "dst_id": 9}}))
+    assert live4.modem["open"] is True
+    # die echte Meldung von MMDVMHost gewinnt
+    live3.handle("mmdvm/json", json.dumps({"Modem": {"open": False}}))
+    assert live3.modem["open"] is False
+
+
 def test_stats(db):
     now = time.time()
     rows = [(now - 60, "rf", 262, 10.0), (now - 120, "network", 262, 5.0), (now - 180, "network", 91, 3.0)]

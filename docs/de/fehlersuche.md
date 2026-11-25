@@ -8,6 +8,7 @@
 
 | Symptom | Ursache | Lösung |
 |---|---|---|
+| **Modem** gelb (nach einem Update) | bis 1.8.0: die Weboberfläche startete *nach* MMDVMHost neu und verpasste seine einmalige Meldung „Modem geöffnet“ – das Modem lief, nur die Anzeige wusste es nicht | ab 1.8.1 behoben: Der Zustand wird aus dem Journal des laufenden MMDVMHost nachgeholt (oder aus „Idle“/Funkempfang abgeleitet), und das Update lässt MMDVMHost ohne Änderungen weiterlaufen. Bleibt es gelb: *Admin → System → Dienste* → MMDVMHost **↻ Neu starten** |
 | **✕ Modem** rot | falscher Port, Board nicht gesteckt, serielle Konsole oder Bluetooth belegen `/dev/ttyAMA0` | *Settings → Modem → 🔍 Find*: zeigt, wo ein Modem antwortet, und trägt den Port mit **Use** ein. Nach der Installation einmal neu starten. |
 | Modem-Scan findet nichts / *no permission* | Weboberfläche nicht in der Gruppe `dialout`, Login-Konsole auf dem Port, oder MMDVMHost hält den (falschen) Port | Im Scan **Stop MMDVMHost & scan**; *Admin → System → 🔐 Berechtigungen & sudo* → **Korrigieren**, oder einmal `sudo /opt/n8hotspot/scripts/n8-admin.sh fix-perms` |
 | **✕ N8schicht: password wrong** | falsches Passwort beim Server | *Settings → DMR network → Password*: bei der N8schicht das FreeRadioID-Passwort oder das Gast-Passwort |

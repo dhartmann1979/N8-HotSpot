@@ -4,6 +4,25 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.8.1] – 2026-11-25
+
+### 🐛 Behoben: nach jedem Update „Modem“ gelb / Modem scheinbar weg
+- **Ursache:** MMDVMHost meldet „Modem geöffnet“ (`Modem`-JSON und die Log-Zeile `MMDVM protocol version …`) nur **einmal beim Start**
+  über MQTT – ohne `retain`. Das Update startete DMRGateway, **dann MMDVMHost und erst zuletzt die Weboberfläche** neu. Bis die neue
+  Weboberfläche wieder mit MQTT verbunden war, war die Meldung längst vorbei: Der Zustand blieb „unbekannt“, Statuszeile und LED
+  **Modem** zeigten gelb bzw. blinkten, obwohl das Modem in Ordnung war. Zusätzlich wurde das Modem bei **jedem** Update unnötig
+  zurückgesetzt (kurze Funkpause, laufende Durchgänge abgebrochen).
+- **Jetzt holt die Weboberfläche den Zustand selbst nach:** Ist er unbekannt und MMDVMHost läuft, liest sie das Journal genau des
+  laufenden MMDVMHost-Prozesses (`journalctl _SYSTEMD_UNIT=mmdvmhost.service _PID=…`) und wertet die letzte Zeile „protocol version“
+  (offen, mit Firmware) bzw. „Unable to read the firmware version / Cannot open …“ (Fehler) aus. Außerdem zählt **Betriebsart Idle/DMR**
+  und jeder **Funkempfang** als „Modem offen“. Die echte `Modem`-Meldung von MMDVMHost hat immer Vorrang.
+- **Update startet den Funk-Teil nur noch bei Bedarf neu:** zuerst die Weboberfläche, **MMDVMHost und DMRGateway nur**, wenn sich
+  ihre ini-Dateien, Dienst-Dateien oder Programme geändert haben (Prüfsumme vor/nach dem Einspielen) oder sie nicht laufen. Das
+  Update-Protokoll sagt „Funk-Teil unverändert – MMDVMHost und DMRGateway laufen weiter“ bzw. „Funk-Teil neu gestartet“.
+- Hinweis: Das Update **auf** 1.8.1 läuft noch mit dem alten Ablauf (startet alles neu); die neue Anzeige erkennt das Modem dann
+  trotzdem nach wenigen Sekunden. Ab dem nächsten Update bleibt der Funk-Teil ohne Änderungen einfach an.
+- Test `test_modem_state_after_web_restart`; Fehlersuche-Tabelle um „Modem gelb nach einem Update“ ergänzt.
+
 ## [1.8.0] – 2026-11-25
 
 ### 👥 Benutzer & Zugang wie in HBlink4-FreeRadioID

@@ -1128,8 +1128,34 @@ async def station(rid: int, request: Request):
 
 
 # ---------------------------------------------------------------- background
+_modem_probe = {"pid": "", "at": 0.0}
+
+
+async def probe_modem(states: Dict[str, str]) -> None:
+    """MMDVMHost meldet „Modem geöffnet“ nur einmal beim Start. Lief er schon, als die Weboberfläche neu startete
+    (z. B. nach einem Update), fehlt die Meldung – dann aus dem Journal des laufenden MMDVMHost-Prozesses nachholen."""
+    if DEMO or ctx.live.modem.get("open") is not None or states.get("mmdvmhost") != "active":
+        return
+    now = time.time()
+    if now - _modem_probe["at"] < 15:
+        return
+    _modem_probe["at"] = now
+    from .system import run
+    r = await run(["systemctl", "show", "-p", "MainPID", "--value", "mmdvmhost.service"], 5)
+    pid = r["out"].strip()
+    if r["rc"] != 0 or not pid.isdigit() or pid == "0":
+        return
+    r = await run(["journalctl", "_SYSTEMD_UNIT=mmdvmhost.service", f"_PID={pid}", "-o", "cat", "--no-pager", "-n", "400"], 10)
+    if r["rc"] == 0 and ctx.live.modem_from_journal(r["out"].splitlines()):
+        log.info(f"Modem-Zustand aus dem Journal von MMDVMHost (PID {pid}): {ctx.live.modem}")
+
+
 async def poll_services(force: bool = False) -> None:
     states = await ctx.system.service_states()
+    try:
+        await probe_modem(states)
+    except Exception:
+        log.exception("modem probe")
     if force or states != ctx.services:
         ctx.services = states
         snap = ctx.live.snapshot()
