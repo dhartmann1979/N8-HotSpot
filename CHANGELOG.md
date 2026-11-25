@@ -4,6 +4,13 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.6.2] – 2026-11-25
+
+### 🧭 Frühere Unter-Menüs im Baum-Menü
+- **⚙️ Einstellungen** hat jetzt Zweige im Baum: 📻 Station · 📡 Modem · DMR-Netz · DMR-Betrieb · Dashboard · FreeRadioID.net · Experte.
+  Ein Klick auf einen Zweig zeigt nur diesen Abschnitt in voller Breite, „Einstellungen“ selbst zeigt wie bisher alle.
+- N8 Kit: Einträge im Baum können Zweige haben (`children`); sie klappen mit ihrem Eintrag auf und zu.
+
 ## [1.6.1] – 2026-11-25
 
 ### 🐛 Fix: Keep-Alive startete einen gesunden Dienst neu („Antwort ist kein JSON“)
