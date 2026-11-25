@@ -18,7 +18,7 @@ mit denselben Gruppen in derselben Reihenfolge:
 | 🎨 **Darstellung** | 🎨 Aussehen · 🔗 Links |
 | 🖥️ **System** | 🖥️ Hardware & Daten · ⬆️ Update · 🧩 Dienste · 🔐 Berechtigungen & sudo · 💓 Keep-Alive |
 
-Gruppen klappen per Klick auf und zu (der Browser merkt sich das). Seit 1.6.2 hängen die Abschnitte der Einstellungen als Zweige darunter – ein Zweig zeigt nur diesen Abschnitt in voller Breite. Auf dem Handy wird das Menü zu einer Leiste
+Alle Gruppen sind **anfangs zugeklappt** – offen ist nur die Gruppe der gerade gewählten Seite; ein Klick auf eine Gruppe klappt sie auf (gemerkt bis zum Schließen des Browser-Tabs). Seit 1.6.2 hängen die Abschnitte der Einstellungen als Zweige darunter – ein Zweig zeigt nur diesen Abschnitt in voller Breite. Auf dem Handy wird das Menü zu einer Leiste
 „☰ *aktueller Bereich*“, die sich aufklappen lässt. Kacheln einer Reihe sind gleich hoch, die Knöpfe stehen unten bündig.
 
 <p align="center"><img src="../images/admin-mobile-menu.png" alt="Menü auf dem Handy" width="32%"></p>
