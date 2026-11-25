@@ -273,18 +273,7 @@ details.perm-ok summary { cursor: pointer; font-size: 13px; color: var(--muted, 
 /* =====================================================================================================
    Live view 1.5.0: the hotspot as a digital radio – LEDs, display with both time slots, signal & vocoder
    ===================================================================================================== */
-.live-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "radio sig" "row recent";
-    gap: 16px; align-items: stretch; margin-top: 6px; }
-.live-grid > .radio { grid-area: radio; display: flex; flex-direction: column; }
-.live-grid > .sp-live { grid-area: sig; }
-.live-grid > .sig-row { grid-area: row; }
-.live-grid > .sp-recent { grid-area: recent; }
-.live-grid > .sig-row > .sig-card { display: flex; flex-direction: column; min-height: 210px; }
-.live-grid > .sig-row .sig-chart.sm { flex: 1; min-height: 120px; height: auto; }
-.live-grid > .sp-recent .sig-chart.tall { min-height: 150px; }
-/* the charts draw into the space they get – they never push the card bigger */
 .sig-chart > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-@media (max-width: 1060px) { .live-grid { grid-template-columns: 1fr; grid-template-areas: "radio" "sig" "row" "recent"; } }
 
 .radio { position: relative; border-radius: 26px; padding: 14px 14px 12px;
     background: linear-gradient(180deg, rgba(42, 48, 66, .92), rgba(20, 24, 36, .96));
@@ -307,6 +296,9 @@ details.perm-ok summary { cursor: pointer; font-size: 13px; color: var(--muted, 
 .led.on.g i { background: radial-gradient(circle at 35% 30%, #c9ffd6, #30d158 45%, #14802f); box-shadow: 0 0 10px #30d158, 0 0 2px #fff inset; }
 .led.on.r i { background: radial-gradient(circle at 35% 30%, #ffd1cc, #ff453a 45%, #a3150c); box-shadow: 0 0 12px #ff453a, 0 0 2px #fff inset; }
 .led.on.a i { background: radial-gradient(circle at 35% 30%, #fff3b8, #ffd60a 45%, #a98400); box-shadow: 0 0 10px #ffd60a; }
+.led.on.m i { background: radial-gradient(circle at 35% 30%, #ffd1f5, #ff2dd1 45%, #a3007f); box-shadow: 0 0 12px #ff2dd1, 0 0 2px #fff inset; }
+.led.on.m.pulse i { animation: ledpulse-m 1s ease-in-out infinite; }
+@keyframes ledpulse-m { 50% { filter: brightness(1.35); box-shadow: 0 0 18px #ff2dd1; } }
 .led.on.b i { background: radial-gradient(circle at 35% 30%, #d4f0ff, #5ac8fa 45%, #1b6fa8); box-shadow: 0 0 10px #5ac8fa; }
 .led.pulse i { animation: ledpulse 1s ease-in-out infinite; }
 .led.blink i { animation: ledblink 1.2s steps(2, start) infinite; }
@@ -333,9 +325,9 @@ details.perm-ok summary { cursor: pointer; font-size: 13px; color: var(--muted, 
     min-height: 66px; padding: 8px 10px; border-radius: 12px; background: rgba(90, 200, 250, .04); border: 1px solid rgba(90, 200, 250, .10); transition: background .25s, border-color .25s; }
 .lcd-slot .ts { font-family: var(--mono); font-weight: 800; font-size: 15px; color: #8fdcff; display: flex; flex-direction: column; gap: 3px; letter-spacing: .04em; }
 .lcd-slot .ts .dir { font-size: 10px; font-weight: 800; letter-spacing: .1em; }
-.lcd-slot.on.rf { background: linear-gradient(90deg, rgba(48, 209, 88, .20), rgba(48, 209, 88, .05)); border-color: rgba(48, 209, 88, .45); }
+.lcd-slot.on.rf { background: linear-gradient(90deg, rgba(255, 45, 209, .20), rgba(255, 45, 209, .05)); border-color: rgba(255, 45, 209, .5); }
 .lcd-slot.on.net { background: linear-gradient(90deg, rgba(255, 69, 58, .20), rgba(255, 69, 58, .05)); border-color: rgba(255, 69, 58, .45); }
-.lcd-slot.on.rf .dir { color: #6ff0a0; } .lcd-slot.on.net .dir { color: #ff8a80; }
+.lcd-slot.on.rf .dir { color: #ff7ae4; } .lcd-slot.on.net .dir { color: #ff8a80; }
 .lcd-slot.idle, .lcd-slot.unused { grid-template-columns: 58px minmax(0, 1fr); }
 .lcd-slot.unused { opacity: .45; min-height: 44px; }
 .lcd-idle { display: flex; flex-direction: column; gap: 2px; font-family: var(--mono); font-size: 12.5px; color: rgba(207, 239, 255, .6); }
@@ -438,4 +430,21 @@ details.perm-ok summary { cursor: pointer; font-size: 13px; color: var(--muted, 
 .lcd .lcd-slots { display: grid; grid-template-rows: 1fr 1fr; gap: 8px; flex: 1; }
 .lcd .lcd-slot { min-height: 76px; }
 .lcd .lcd-slot.unused { opacity: .55; }
-@media (min-width: 1800px) { .live-grid { gap: 20px; } .lcd .lcd-slot { min-height: 86px; } }
+@media (min-width: 1800px) { .lcd .lcd-slot { min-height: 86px; } }
+
+/* 1.10.0: one radio over the full width – display, BER live, instruments and today in the same device */
+.radio-wide { margin-top: 6px; display: flex; flex-direction: column; gap: 10px; }
+.radio-wide .radio-bar { padding-bottom: 0; }
+.rd-note { margin-left: 10px; font-size: 11.5px; }
+.rd-main { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 10px; align-items: stretch; position: relative; }
+.rd-main > .lcd { display: flex; flex-direction: column; }
+.lcd-chart .sig-chart.tall { flex: 1; min-height: 170px; height: auto; margin-top: 8px; }
+.lcd-chart .lcd-clock { font-size: 14px; }
+.rd-inst { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr); gap: 10px; position: relative; }
+.rd-inst .inst { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 10px 12px; border-radius: 14px;
+    background: linear-gradient(180deg, rgba(8, 18, 27, .85), rgba(7, 14, 22, .92)); border: 1px solid rgba(90, 200, 250, .18);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .5), inset 0 6px 22px rgba(0, 0, 0, .45); }
+.rd-inst .inst .sig-chart.sm { flex: 1; min-height: 120px; height: auto; }
+.radio-wide .radio-today { margin-top: 0; }
+@media (max-width: 1100px) { .rd-main { grid-template-columns: 1fr; } .rd-inst { grid-template-columns: 1fr 1fr; } .rd-inst .inst:last-child { grid-column: 1 / -1; } }
+@media (max-width: 600px) { .rd-inst { grid-template-columns: 1fr; } .rd-note { display: block; margin: 2px 0 0; } }

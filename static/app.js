@@ -261,10 +261,10 @@ function renderChips() {
 function renderLeds() {
     const L = S.live || {}, svc = L.services || {}, act = Object.values(L.slots || {}).filter(Boolean);
     const led = (id, cls, label) => { const e = $(id); if (!e) return; e.className = 'led ' + cls; if (label != null) { const b = e.querySelector('b'); if (b) b.textContent = label; } };
-    led('ledRx', act.some(c => c.source === 'rf') ? 'on g pulse' : '');
+    led('ledRx', act.some(c => c.source === 'rf') ? 'on m pulse' : '');      // N8-LEDs: RX Magenta · TX Rot · Dienst ok Grün
     led('ledTx', act.some(c => c.source !== 'rf') ? 'on r' : '');
     const mode = svc.mmdvmhost && svc.mmdvmhost !== 'active' ? 'Stopped' : (L.mode || 'Idle');
-    led('ledMode', mode === 'DMR' ? 'on b' : mode === 'Lockout' ? 'on a blink' : ['Error', 'Stopped'].includes(mode) ? 'on r' : 'dim', mode === 'Idle' ? 'IDLE' : mode.toUpperCase());
+    led('ledMode', mode === 'DMR' ? 'on g' : mode === 'Lockout' ? 'on a blink' : ['Error', 'Stopped'].includes(mode) ? 'on r' : 'dim', mode === 'Idle' ? 'IDLE' : mode.toUpperCase());
     const ln = L.link || {}, net = S.info && S.info.network;
     led('ledNet', !net ? '' : svc.dmrgateway && svc.dmrgateway !== 'active' ? 'on r' : ln.state === 'connected' ? 'on g' : ln.state === 'failed' ? 'on r' : 'on a blink');
     led('ledModem', svc.mmdvmhost && svc.mmdvmhost !== 'active' ? 'on r' : L.modem && L.modem.open === true ? 'on g' : L.modem && L.modem.open === false ? 'on r' : 'on a blink');
@@ -376,7 +376,7 @@ const svgNS = 'http://www.w3.org/2000/svg';
 function svgEl(w, h, inner) { return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" class="sig-svg" role="img">${inner}</svg>`; }
 function boxSize(el, h) { return [Math.max(200, Math.round(el.clientWidth || 600)), Math.max(40, Math.round(el.clientHeight || h))]; }
 if (window.ResizeObserver) new ResizeObserver(() => { clearTimeout(S.sigRo); S.sigRo = setTimeout(() => { if (S.sig.data) renderSignal(); }, 120); })
-    .observe(document.querySelector('.live-grid') || document.getElementById('sigPanel'));
+    .observe(document.getElementById('radio'));
 window.addEventListener('resize', () => { clearTimeout(S.sigRz); S.sigRz = setTimeout(() => { if (S.sig.data) renderSignal(); }, 200); });
 function zoneBands(W, H, max) {   // green < 1 %, amber 1–3 %, red above (BER)
     const y = v => H - Math.min(v, max) / max * H;

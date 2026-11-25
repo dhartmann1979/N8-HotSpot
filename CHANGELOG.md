@@ -4,6 +4,19 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.10.0] – 2026-11-25
+
+### 📻 Grafen und Statistik im Funkgerät
+- Die Live-Ansicht ist jetzt **ein einziges Funkgerät über die ganze Browserbreite**: Kopfleiste mit Modell, Tageszahlen und LEDs; darunter
+  zwei Displays nebeneinander – **TS1/TS2** (gleich hoch) und **BER live** als zweites Display im selben Stil –; darunter drei
+  eingebaute Instrumente **RSSI (Funk)**, **Sprachqualität heute** und **Letzte Durchgänge (BER/Verlust)**; ganz unten die
+  Tagesstatistik (Gespräche, Sprechzeit, Funk lokal, Netz, Funk-BER).
+- Alle Blöcke einer Reihe gleich hoch; die Grafiken füllen ihren Platz. Bis 1100 px Breite stehen die Displays untereinander und die
+  Instrumente 2 + 1, auf dem Handy alles untereinander.
+- **LED-Farben wie in allen N8-Systemen:** RX **Magenta**, TX **Rot**, Dienst ok **Grün** – die RX-LED und ein empfangender Slot
+  (▼ RX) leuchten jetzt magenta statt grün, die Betriebsart-LED (DMR) grün statt blau; NET und MODEM bleiben grün bei ok.
+- Screenshots *live.png* und *live-mobile.png* neu.
+
 ## [1.9.1] – 2026-11-25
 
 ### 📐 Live-Ansicht symmetrisch
