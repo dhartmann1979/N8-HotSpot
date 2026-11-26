@@ -8,7 +8,7 @@
 
 <p align="center"><img src="../images/admin-keepalive.png" alt="Adminbereich mit Baum-Menü" width="95%"></p>
 
-Seit **1.6.0** steht links ein **Baum-Menü** – dasselbe wie im HobbyRadioPortal, ADN-FRN-Server, HBlink4-FreeRadioID und N8 Crosslink,
+Seit **1.6.0** steht links ein **Baum-Menü** – dasselbe wie im ADN-FRN-Server, HBlink4-FreeRadioID und N8 Crosslink,
 mit denselben Gruppen in derselben Reihenfolge:
 
 | Gruppe | Einträge beim Hotspot |

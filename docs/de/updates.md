@@ -63,7 +63,7 @@ fragt es **nicht mehr nach dem Passwort** – eine Admin-Sitzung (mit dem Sicher
 N8-Systemen. Dann siehst du drei Schritte: **Update wird geladen und eingespielt → Dienst startet neu → Weboberfläche wird geprüft**.
 Im Einzelnen:
 
-Seit **1.5.0** läuft das Update über das gemeinsame **N8 Admin-Kit** (`scripts/n8-admin.sh`, dasselbe wie im HobbyRadioPortal,
+Seit **1.5.0** läuft das Update über das gemeinsame **N8 Admin-Kit** (`scripts/n8-admin.sh`, dasselbe wie im
 adn-frn-server und HBlink4-FreeRadioID, nach dem Vorbild von N8 Crosslink). Die Weboberfläche schreibt nur eine Anforderung
 (`data/update.request`); `n8hotspot-update.path` sieht sie und startet `n8hotspot-update.service` – **als root**, unabhängig
 von der Weboberfläche:

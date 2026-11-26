@@ -37,7 +37,7 @@
 | 📈 **Statistiken** | Talkgroups, Sprechzeit, RF und Netz, aktivste Stationen; heute, 24 h, 7 oder 30 Tage, als Diagramm und Tabelle |
 | 🎛️ **Kalibrierung** | Frequenzabgleich mit MMDVMCal im Browser: BER live, Frequenz per Knopf verschieben, Offset mit einem Klick speichern |
 | ⚙️ **Adminbereich** | Station, Modem, Frequenzen, DMR-Server, Zeitschlitze, Expertenzeilen. Dazu Benutzer, Logs, System-Infos, Neustart. |
-| 🧩 **Dienste & Berechtigungen** | schlanke Dienste-Liste (Autostart an/aus, Starten, Stoppen, Neu starten) und **Berechtigungen & sudo prüfen und korrigieren** auf Knopfdruck – das gemeinsame **N8 Admin-Kit** wie im HobbyRadioPortal, adn-frn-server und HBlink4 |
+| 🧩 **Dienste & Berechtigungen** | schlanke Dienste-Liste (Autostart an/aus, Starten, Stoppen, Neu starten) und **Berechtigungen & sudo prüfen und korrigieren** auf Knopfdruck – das gemeinsame **N8 Admin-Kit** wie im adn-frn-server, HBlink4 und N8 Crosslink |
 | ⬆️ **Update prüfen · Update jetzt** | Prüfung zu jeder vollen Stunde auf GitHub, Hinweis für Admins, **Update jetzt** mit Passwortabfrage: läuft als root (N8 Admin-Kit) – nur vorspulen, Pakete, Dienste, ini-Dateien, Rechte und sudo, Neustart, Prüfung; antwortet die Weboberfläche nicht, automatisch zurück. Update-Protokoll im Browser, auf Wunsch automatisch nachts |
 | 🌐 **Deutsch / Englisch** | Umschalter **DE \| EN** in der Kopfzeile, Standard Deutsch; gilt für alle N8schicht-Oberflächen auf dem Gerät |
 | 🎨 **Eigene Farben** | N8 Theme wie im HBlink4-Dashboard: 7 Profile (auch hell), jede Farbe frei wählbar, Export/Import zwischen allen N8-Dashboards |

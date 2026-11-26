@@ -140,7 +140,7 @@ fi
 # ---------------------------------------------------------------------------
 step "7/7 Dienste"
 # Dienste aus den Vorlagen (Pfad und Web-Port), dann Berechtigungen, sudo und „Update jetzt“ – das N8 Admin-Kit,
-# dasselbe wie bei jedem Update (scripts/n8-admin.sh, wie im HobbyRadioPortal, adn-frn-server und HBlink4)
+# dasselbe wie bei jedem Update (scripts/n8-admin.sh, wie im adn-frn-server, HBlink4 und N8 Crosslink)
 PORT_OLD="$(sed -n 's/^Environment=N8HS_PORT=//p' /etc/systemd/system/n8hotspot.service 2>/dev/null | head -1)"
 for s in mmdvmhost dmrgateway n8hotspot; do
     sed "s#/opt/n8hotspot#${N8_DIR}#g; s#N8HS_PORT=80#N8HS_PORT=${PORT_OLD:-$N8_PORT}#" "$N8_DIR/systemd/$s.service" > "/etc/systemd/system/$s.service"

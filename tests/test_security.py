@@ -57,13 +57,10 @@ def test_update_runs_through_the_admin_kit():
 
 
 def test_admin_kit_identical_in_other_projects():
-    for repo in ("hobbyradioportal", "hblink4-freeradioid", "adn-frn-server"):
+    for repo in ("hblink4-freeradioid", "adn-frn-server", "n8crosslink"):
         o = ROOT.parent / repo / "scripts" / "n8-admin.sh"
         if o.exists():
             assert o.read_bytes() == (ROOT / "scripts" / "n8-admin.sh").read_bytes(), repo
-    o = ROOT.parent / "hobbyradioportal" / "portal" / "n8_admin.py"
-    if o.exists():
-        assert o.read_bytes() == (ROOT / "n8hotspot" / "n8_admin.py").read_bytes()
 
 
 def test_kit_files_loaded():

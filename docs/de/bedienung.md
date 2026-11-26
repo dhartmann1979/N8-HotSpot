@@ -12,11 +12,11 @@ Dieser Teil ist der **Sichtbereich**: ohne Login sichtbar, solange *Public view*
   <img src="../images/live-mobile.png" alt="Live am Smartphone" width="22%">
 </p>
 
-## 🎨 Eine Designsprache mit dem HobbyRadioPortal
+## 🎨 Eine Designsprache mit allen N8-Systemen
 
-Der N8 Hotspot bleibt eigenständig, sieht aber aus wie das [HobbyRadioPortal](https://github.com/dhartmann1979/HobbyRadioPortal):
+Der N8 Hotspot bleibt eigenständig, sieht aber aus wie die übrigen N8-Systeme ([ADN-FRN-Server](https://github.com/dhartmann1979/adn-frn-server), N8 Crosslink, HBlink4-FreeRadioID):
 gleiches Farbsystem (N8 Theme 2), gleiche Kopfzeile mit Statusleiste und seit 1.4.2 die gemeinsame Datei **N8 Look**
-(`static/n8-look.css`, identisch im Portal). Sie sorgt für den durchgehenden Hintergrund, die farbig leuchtenden Kacheln
+(`static/n8-look.css`). Sie sorgt für den durchgehenden Hintergrund, die farbig leuchtenden Kacheln
 die Abschnittsüberschriften und die Fußzeile als Glaskarte:
 
 ### 🔤 Schrift (N8 Theme 2.1)
