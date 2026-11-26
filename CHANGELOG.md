@@ -4,6 +4,23 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.11.0] – 2026-11-26
+
+### 🔐 Sicherheits-Update
+Prüfung aller N8-Portale auf Sicherheitslücken, Fehler, Flooding, Brute-Force und Hintertüren. Hintertüren wurden keine gefunden. Verbessert:
+
+- **N8 Guard gegen Flooding** – neuer, in allen N8-Systemen gleicher Wächter vor dem Dashboard (`n8_guard.py`, Version 1.0.0):
+  Anfragen-Budget je IP-Adresse (API 1200/min, Seiten 600/min, Anmeldung 30/min, WebSocket 60 neue/min und höchstens 24 gleichzeitig),
+  darüber `429 Too Many Requests` mit `Retry-After`; zu große Anfragen werden mit `413` abgewiesen, bevor sie gelesen werden (Grenze 64 MB).
+  Statische Dateien und die Let's-Encrypt-Prüfung zählen nicht mit. Der Speicher für die Zähler ist begrenzt (höchstens 20 000 IPs),
+  damit ein Angriff mit vielen Adressen den Server nicht vollschreibt.
+- **Login-Sperre über den N8 Guard:** 5 Fehlversuche für denselben Benutzernamen oder 10 von derselben IP in 15 Minuten sperren 15 Minuten –
+  auch für Benutzernamen, die es nicht gibt.
+- **Werks-Login:** Solange `n8schicht / n8schicht` gilt, lässt das Dashboard keine Änderungen zu, nur das Ändern des Passworts unter
+  *Admin → Benutzer & Zugang*. Bisher wurde nur ein Hinweis gezeigt.
+- Tests: Prüfungen für Sperre, Werks-Login und Flooding.
+- Doku: [Sicherheit](docs/de/sicherheit.md) ergänzt.
+
 ## [1.10.0] – 2026-11-25
 
 ### 📻 Grafen und Statistik im Funkgerät

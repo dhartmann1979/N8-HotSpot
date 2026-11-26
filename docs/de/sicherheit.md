@@ -41,7 +41,29 @@ Last heard, Statistik, Talkgroups, Live-Protokoll und im Adminbereich.
 ### Anmeldung
 
 Sitzungs-Cookie `HttpOnly`, `SameSite`, über HTTPS `Secure`; jede schreibende Anfrage braucht den Header `X-N8` (CSRF-Schutz); fünf
-Fehlversuche sperren 15 Minuten. Der Werks-Login `n8schicht / n8schicht` wird mit einem Hinweis angemahnt, bis er geändert ist.
+Fehlversuche sperren 15 Minuten. Solange der Werks-Login `n8schicht / n8schicht` gilt, lässt das Dashboard **keine Änderungen** zu – zuerst muss das Passwort unter *Admin → Benutzer & Zugang* geändert werden (die Meldung führt direkt dorthin). So kann niemand, der das Werks-Passwort kennt, einen frisch installierten Hotspot umstellen.
+
+
+
+### Schutz vor Flooding und Brute-Force (N8 Guard)
+
+Seit dem Sicherheits-Update im November 2026 läuft in allen N8-Systemen derselbe Wächter **N8 Guard** vor dem Dashboard:
+
+| Was | Grenze je IP-Adresse | Antwort bei Überschreitung |
+|---|---|---|
+| API-Aufrufe (`/api/…`) | 1200 pro Minute (kurze Spitzen erlaubt) | `429 Too Many Requests` mit `Retry-After` |
+| Seitenaufrufe | 600 pro Minute | `429` |
+| Anmelde-Versuche (POST an Login/Setup) | 30 pro Minute | `429` |
+| WebSocket-Verbindungen | 60 neue pro Minute, höchstens 24 gleichzeitig | Verbindung wird abgelehnt |
+| Größe einer Anfrage | 64 MB | `413 Payload Too Large` |
+
+Dazu kommt die **Login-Sperre**: 5 Fehlversuche für denselben Benutzernamen oder 10 Fehlversuche von derselben IP innerhalb von
+15 Minuten sperren für 15 Minuten (`429`, mit Hinweis in der Anmeldemaske). Eine erfolgreiche Anmeldung setzt den Zähler zurück.
+Die Sperre gilt auch für Anmeldungen, deren Benutzername gar nicht existiert – von außen ist nicht zu erkennen, ob es ihn gibt.
+
+Die IP-Adresse kommt immer aus der Verbindung selbst. Den Header `X-Forwarded-For` nimmt das Dashboard **nur vom eigenen Rechner**
+(`127.0.0.1`, also vom Reverse-Proxy) an – ein Angreifer kann sich damit keine neue Adresse ausdenken, um die Sperren zu umgehen.
+Statische Dateien (`/static/…`) und die Let's-Encrypt-Prüfung zählen nicht mit.
 
 ## Reverse-Proxy davor (empfohlen)
 

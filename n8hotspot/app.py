@@ -145,11 +145,20 @@ async def _settings_error(request: Request, exc: SettingsError):
     return JSONResponse({"error": str(exc)}, status_code=400)
 
 
+from .n8_guard import Guard, LoginGuard  # noqa: E402
+app.add_middleware(Guard, api_per_min=1200, page_per_min=600, auth_per_min=30, max_body=64 * 1024 * 1024)
+LOGIN_GUARD = LoginGuard()
+
+
 @app.middleware("http")
 async def _mw(request: Request, call_next):
     if request.url.path.startswith("/api/") and request.method in ("POST", "PUT", "PATCH", "DELETE") \
             and request.headers.get("x-n8") != "1":
         return JSONResponse({"error": "Missing X-N8 header."}, status_code=403)
+    if request.url.path.startswith("/api/admin/") and request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        u = user_of(request)
+        if u and u.get("default_pw"):             # factory login: first an own password (👤 → My account)
+            return JSONResponse({"error": "Please set your own password first (👤 → My account)."}, status_code=403)
     resp = await call_next(request)
     _sec.headers(resp, https=_sec.is_https(request))
     if request.url.path.startswith("/api/"):
@@ -527,8 +536,16 @@ async def me(request: Request):
 async def login(request: Request):
     b = await body(request)
     hours = 24 * 30 if b.get("remember") else float(ctx.settings.get("dashboard.session_hours"))
-    r = ctx.auth.login(str(b.get("username", "")), str(b.get("password", "")), ip_of(request),
-                       request.headers.get("user-agent", ""), hours)
+    ip, name = ip_of(request), str(b.get("username", ""))[:64]
+    if not LOGIN_GUARD.allowed(ip, name):              # 10 failures per IP (any name) in 15 minutes → locked
+        return JSONResponse({"error": "Too many failed attempts. Please wait 15 minutes."}, status_code=429)
+    try:
+        r = ctx.auth.login(name, str(b.get("password", "")), ip, request.headers.get("user-agent", ""), hours)
+    except AuthError:
+        LOGIN_GUARD.failed(ip, name)
+        await asyncio.sleep(0.4)
+        raise
+    LOGIN_GUARD.ok(ip, name)
     resp = JSONResponse({"user": r["user"], "default_login": r["user"]["default_pw"]})
     resp.set_cookie(COOKIE, r["token"], max_age=r["max_age"] if b.get("remember") else None, httponly=True,
                     samesite="strict", secure=request.url.scheme == "https", path="/")

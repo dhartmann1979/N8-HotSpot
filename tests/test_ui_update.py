@@ -30,6 +30,7 @@ def client(tmp_path, monkeypatch):
 
 def login(c):
     assert c.post("/api/auth/login", json={"username": "n8schicht", "password": "n8schicht"}, headers=H).status_code == 200
+    c.appmod.ctx.db.x("UPDATE users SET default_pw = 0")      # as if the own password was already set
 
 
 def test_links_validation():

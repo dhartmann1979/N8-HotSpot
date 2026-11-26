@@ -31,6 +31,10 @@ def test_public_view_and_admin(client):
     r = client.post("/api/auth/login", json={"username": "n8schicht", "password": "n8schicht"}, headers=H)
     assert r.status_code == 200 and r.json()["default_login"] is True
     assert client.get("/api/info").json()["default_login"] is True
+    # factory login: no admin change before an own password is set
+    assert client.post("/api/admin/settings", json={"changes": {"dashboard.public": False}}, headers=H).status_code == 403
+    assert client.post("/api/auth/password", json={"old": "n8schicht", "new": "ein-eigenes-pw-1"}, headers=H).status_code == 200
+    client.post("/api/auth/login", json={"username": "n8schicht", "password": "ein-eigenes-pw-1"}, headers=H)
     r = client.post("/api/admin/settings", json={"changes": {"dashboard.public": False, "station.callsign": "DL1ABC"}}, headers=H)
     assert r.status_code == 200 and "station.callsign" in r.json()["changed"]
     files = client.get("/api/admin/config-files").json()
@@ -39,3 +43,10 @@ def test_public_view_and_admin(client):
     assert client.get("/api/live").status_code == 401                  # private now
     assert client.get("/api/info").json()["login_required"] is True
     assert client.post("/api/admin/settings", json={"changes": {"station.dmr_id": "1"}}, headers=H).status_code == 401
+
+
+def test_login_lockout_per_ip(client):
+    for i in range(10):
+        client.post("/api/auth/login", json={"username": f"x{i}", "password": "falsch"}, headers=H)
+    r = client.post("/api/auth/login", json={"username": "n8schicht", "password": "n8schicht"}, headers=H)
+    assert r.status_code == 429
