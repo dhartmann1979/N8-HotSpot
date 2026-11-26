@@ -122,7 +122,7 @@ Ohne vorher eingetragene Hotspot-Einstellungen geht es im Browser weiter: **Logi
 |---|---|
 | 📦 [Installation & Image](docs/de/installation.md) | Hardware, Image bauen und flashen, geführte Einrichtung, Installation ohne Fragen, erster Start, Aktualisieren |
 | 🎙️ [Live & Statistik](docs/de/bedienung.md) | Kopfzeile, das Funkgerät (LEDs, Display, Zeitschlitze), Vocoder & Signal, Last Heard, Talkgroup-Verzeichnis, Statistik-Diagramme |
-| 🔐 [Sicherheit & N8 Kit](docs/de/sicherheit.md) | Sicherheits-Header, API-Doku aus, Reverse-Proxy (Caddy/nginx), Sprache DE/EN, Updates mit Prüfung und Rollback |
+| 🔐 [Sicherheit & N8 Kit](docs/de/sicherheit.md) | Sicherheits-Header, API-Doku aus, Reverse-Proxy (Caddy/nginx), neun Sprachen, Anmeldefenster, Updates mit Prüfung und Rollback |
 | ⚙️ [Adminbereich](docs/de/adminbereich.md) | Baum-Menü, Standard-Login, alle Einstellungen, Modem finden, Benutzer, Aussehen, Links, System, Logs, Konfigurationsdateien |
 | ⬆️ [Updates & Versionen](docs/de/updates.md) | Update-Prüfung, Update jetzt (N8 Admin-Kit), Update-Protokoll, automatische Updates, Dienste, Berechtigungen & sudo, Keep-Alive, Versionsnummern, [Änderungen](CHANGELOG.md) |
 | 🎛️ [Kalibrierung](docs/de/kalibrierung.md) | Frequenz-Offset mit MMDVMCal finden, weitere Tests |

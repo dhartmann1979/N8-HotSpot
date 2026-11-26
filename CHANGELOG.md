@@ -4,6 +4,46 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.12.0] – 2026-11-26
+
+### 🌐 Neun Sprachen, neue Kopfleiste und ein Anmeldefenster für alle N8-Systeme (N8 Kit 1.6.0)
+
+**Sprachmenü mit neun Sprachen**
+- Statt des Umschalters **DE | EN** gibt es das Sprachmenü **🌐 DE ▾** mit **Deutsch, English, Français, Français (Belgique), Magyar, Svenska,
+  Nederlands, Italiano und Español** – in der Kopfleiste und unten im Anmeldefenster. Bedienbar auch mit der Tastatur (↓ ↑, Esc).
+- Übersetzt sind über **2200 Texte** der vier N8-Systeme mit den Fachbegriffen des Funkbetriebs (Rufzeichen → *indicatif*, *hívójel*,
+  *anropssignal*, *roepnaam*, *nominativo*, *indicativo*; Talkgroup, Time Slot und Color Code bleiben wie im DMR-Alltag), dazu Regeln für
+  Zahlen und Zeitangaben („vor 5 Min.“ → „il y a 5 min“, „5 perce“ …). **Français (Belgique)** nutzt das Französische mit belgischen
+  Abweichungen (z. B. „GSM“) und dem belgischen Datumsformat.
+- **Beim ersten Besuch gilt die Sprache des Browsers**, wenn es eine der neun ist, sonst Deutsch. Die Wahl gilt sofort und per Cookie für alle
+  N8-Oberflächen auf demselben Server; `?lang=fr` (bzw. `hu`, `sv`, `nl`, `it`, `es`, `fr-BE`) im Link wählt die Sprache direkt.
+- **Datum, Uhrzeit und Zahlen** folgen der Sprache (bisher immer deutsches Format).
+- Jede weitere Sprache liegt in einer eigenen Datei `static/n8-i18n-<sprache>.js` (rund 80 KB) und wird **nur geladen, wenn sie gewählt ist** –
+  beim ersten Aufruf noch vor dem Anzeigen der Seite, damit nichts auf Deutsch aufblitzt.
+- Mit einem Sprach-Scan aller Seiten wurden außerdem Texte gefunden, denen bisher die deutsche oder englische Übersetzung fehlte; sie sind ergänzt.
+
+**Einheitliches Anmeldefenster**
+- In allen N8-Systemen dasselbe Fenster: Logo und Titel, Benutzername und Passwort mit **👁** zum Anzeigen, Hinweis bei eingeschalteter
+  **Feststelltaste**, Schalter **„Angemeldet bleiben“**, Sprachmenü und ein Hinweis, ob die Verbindung verschlüsselt ist (🔒 HTTPS / HTTP).
+- Fehler und Sperren (Login-Sperre des N8 Guard) erscheinen direkt im Fenster, das Fenster wackelt kurz; während der Anmeldung dreht ein
+  Ladekreis im Knopf. Esc oder ✕ schließt (außer, wenn das Dashboard privat ist und die Anmeldung verlangt).
+
+**Benutzermenü ▾ in der Kopfleiste**
+- Angemeldet zeigt die Kopfleiste **Avatar + Name ▾**. Das Menü darunter: Name, Rolle (Superadmin, Admin, …) und die passenden Einträge –
+  Konto bzw. Passwort, Adminbereich und **⏻ Abmelden**. Vorher waren es zwei lose Knöpfe.
+
+**Kopfleiste auf Handy und Tablet**
+- Unter 900 px Breite ist die Kopfleiste überall gleich aufgebaut: oben Logo, Titel und rechts Sprache · Links · Anmeldung als kompakte
+  Knöpfe, darunter die Reiter als wischbare Leiste. Bisher sah jedes System auf dem Handy anders aus.
+
+**Im N8-Hotspot**
+- Benutzermenü mit 🔑 Mein Konto, ⚙️ Admin und Abmelden.
+- Ergänzt: die deutsche Übersetzung des Werks-Login-Hinweises („Du nutzt den Werks-Login …“), der Kalibrier-Hinweise und von „x MB von y MB“;
+  die englische Übersetzung der Ports-Seite (Weboberfläche, DMR-Server-Port, Live-Daten …).
+- Statistik, Talkgroups, Kalibrierung und System zeigen Zahlen und Datum im Format der gewählten Sprache.
+- Alle Dateien der Oberfläche tragen die Version im Link (`?v=1.12.0`), damit der Browser nach dem Update die neuen lädt.
+- Doku: [Sicherheit & N8 Kit](docs/de/sicherheit.md) – Sprachen, Anmeldefenster, Benutzermenü; Kopfleisten- und Werks-Login-Bilder erneuert.
+
 ## [1.11.0] – 2026-11-26
 
 ### 🔐 Sicherheits-Update

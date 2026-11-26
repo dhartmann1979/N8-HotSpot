@@ -140,3 +140,40 @@ N8Kit.i18n.add({
         [/^Stop (.+)\?$/, '$1 stoppen?'], [/^down since (.+)$/, 'weg seit $1'], [/^(\d+)× restarted(.*)$/, '$1× neu gestartet$2'], [/^failed · (.+)$/, 'fehlgeschlagen · $1'], [/^Duplex · CC(\d+)$/, 'Duplex · FC$1'], [/^(\d+) min ago$/, 'vor $1 Min.'],
     ],
 });
+
+/* 1.6: texts found without translation by the language scan */
+N8Kit.i18n.add({
+    base: 'de',
+    en: {
+        "Alle Ports des N8 Hotspot an einer Stelle. Der Hotspot braucht keine Portfreigabe im Router: er verbindet sich nur nach draußen (DMR-Server); die Weboberfläche ist für das Heimnetz.": "All ports of the N8 Hotspot in one place. The hotspot needs no port forwarding in the router: it only connects outwards (DMR server); the web interface is for the home network.",
+        "🌐 Weboberfläche": "🌐 Web interface",
+        "Weboberfläche": "Web interface",
+        "steht im systemd-Dienst (N8HS_PORT)": "set in the systemd service (N8HS_PORT)",
+        "Server und Passwort unter Betrieb → Einstellungen → DMR-Netz.": "Server and password under Operation → Settings → DMR network.",
+        "Verbindungen zwischen den Diensten auf dem Hotspot – nichts freigeben.": "Connections between the services on the hotspot – do not open anything.",
+        "Live-Daten von MMDVMHost und DMRGateway an die Weboberfläche (127.0.0.1)": "Live data from MMDVMHost and DMRGateway to the web interface (127.0.0.1)",
+        "Update-Auslöser („Update jetzt“)": "Update trigger (“Update now”)",
+        "Demo – keine echte Prüfung": "Demo – no real check",
+        "DMR-Server-Port": "DMR server port",
+        "DMRGateway (DMR-Server)": "DMRGateway (DMR server)",
+    },
+    rules: [
+        [/^zu (\S+) \(HomeBrew, Standard (\d+)\)$/, "to $1 (HomeBrew, default $2)"],
+    ]
+});
+
+/* 1.6: English texts without German (language scan) */
+N8Kit.i18n.add({
+    base: 'en',
+    de: {
+        "7-digit ID from radioid.net / FreeRadioID.net": "7-stellige ID von radioid.net / FreeRadioID.net",
+        ". MMDVMHost and DMRGateway stop while the calibration runs.": ". MMDVMHost und DMRGateway stoppen, solange die Kalibrierung läuft.",
+        ". The hotspot starts again with the new offset.": ". Der Hotspot startet danach mit dem neuen Offset.",
+        "Transmit with your radio – the BER appears here": "Mit dem Funkgerät senden – die BER erscheint hier",
+        "with the next ID list update": "mit der nächsten Aktualisierung der ID-Liste",
+        "You are using the factory login. Choose your own username and password – the factory login stops working then.": "Du nutzt den Werks-Login. Wähle einen eigenen Benutzernamen und ein eigenes Passwort – der Werks-Login funktioniert danach nicht mehr.",
+    },
+    rules: [
+        [/^([\d.,]+ ?[KMGT]?B) of ([\d.,]+ ?[KMGT]?B)$/, "$1 von $2"],
+    ]
+});
