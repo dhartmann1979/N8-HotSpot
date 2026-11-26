@@ -28,7 +28,7 @@ function renderFooter(b) {
     $('footerYear').textContent = new Date().getFullYear();
     if (!b) return;
     $('ver').textContent = 'N8-Hotspot ' + (b.version ? 'v' + b.version : '') + (b.commit ? ` (${b.commit})` : '');
-    $('footerDate').textContent = b.date ? new Date(b.date).toLocaleDateString('de-DE') : '';
+    $('footerDate').textContent = b.date ? new Date(b.date).toLocaleDateString(N8Kit.locale()) : '';
     $('footerDate').previousElementSibling.hidden = !b.date;
 }
 

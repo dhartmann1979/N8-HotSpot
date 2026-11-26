@@ -27,8 +27,8 @@ function fmtDur(s, short) {
 function fmtClock(sec) { sec = Math.max(0, Math.floor(sec)); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`; }
 function fmtFreq(hz) { if (!hz) return '–'; return (hz / 1e6).toFixed(4) + ' MHz'; }
 function fmtFreqLong(hz) { const s = String(hz).padStart(9, '0'); return `${s.slice(0, 3)}.${s.slice(3, 6)} ${s.slice(6)} MHz`; }
-function fmtTime(ts) { return new Date(ts * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
-function fmtDate(ts) { return ts ? new Date(ts * 1000).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '–'; }
+function fmtTime(ts) { return new Date(ts * 1000).toLocaleTimeString(N8Kit.locale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+function fmtDate(ts) { return ts ? new Date(ts * 1000).toLocaleString(N8Kit.locale(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '–'; }
 function ago(ts) {
     const d = Date.now() / 1000 - ts;
     if (d < 60) return 'just now'; if (d < 3600) return `${Math.floor(d / 60)} min ago`;
@@ -94,11 +94,16 @@ function renderUser() {
     const el = $('userArea');
     if (isAdmin() && !S.crashChecked) { S.crashChecked = true; setTimeout(() => checkCrashes(), 900); }
     if (!S.me) S.crashChecked = false;
-    if (!S.me) { el.innerHTML = '<button class="btn primary" onclick="openLogin()">🔐 Login</button>'; return; }
-    // logged in: name (click = my account) and log out – no drop-down; ⚙️ Admin is a menu item
-    const name = esc(S.me.display_name || S.me.username);
-    el.innerHTML = `<span class="n8-user"><button class="btn" onclick="openAccount()" title="${name} · ${esc(S.me.role)} – my account">👤 <span class="u-name">${name}</span></button>
-        <button class="btn n8-logout" onclick="logout()" title="Log out" aria-label="Log out">⏻</button></span>`;
+    // N8 Kit 1.6: 🔐 Login – or avatar + name ▾ (my account, admin, log out), the same in every N8 system
+    const ROLE = { superadmin: 'Superadmin', admin: 'Admin', user: 'User' };
+    N8Kit.userMenu(el, S.me && { name: S.me.display_name || S.me.username, role: S.me.role, sub: S.me.display_name ? S.me.username : '' }, {
+        btnClass: S.me ? 'btn' : 'btn primary', loginLabel: 'Log in', logoutLabel: 'Log out', roleLabel: S.me && (ROLE[S.me.role] || S.me.role),
+        onLogin: () => openLogin(), onLogout: logout,
+        items: [
+            { icon: '🔑', label: 'My account', onClick: () => openAccount() },
+            { icon: '⚙️', label: 'Admin', onClick: () => showTab('admin'), hidden: !isAdmin(), sep: true },
+        ],
+    });
 }
 
 // ---------------------------------------------------------------- modals
@@ -110,27 +115,17 @@ function closeModal() { $('modalRoot').innerHTML = ''; }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('ov')?.dataset.locked) closeModal(); });
 
 function openLogin(locked) {
-    modal(`<img class="logo" src="/static/n8schicht-icon.svg" alt="">
-        <h2 style="text-align:center">${esc((S.info && S.info.title) || 'N8 Hotspot')}</h2>
-        <p class="dim" style="text-align:center;margin:0 0 12px">${locked ? 'This hotspot is private. Please log in.' : 'Log in to change settings.'}</p>
-        <form onsubmit="event.preventDefault(); doLogin(this)">
-            <div class="row"><label>Username</label><input type="text" name="username" autocomplete="username" required autofocus></div>
-            <div class="row"><label>Password</label><input type="password" name="password" autocomplete="current-password" required></div>
-            <label style="display:flex;gap:8px;align-items:center;margin-top:6px" class="dim"><input type="checkbox" name="remember"> Stay logged in (30 days)</label>
-            <div class="err" id="loginErr"></div>
-            <div class="actions">${locked ? '' : '<button type="button" class="btn" onclick="closeModal()">Cancel</button>'}<button class="btn primary">Log in</button></div>
-        </form>`, locked);
-    if (locked) $('ov').dataset.locked = '1';
-    setTimeout(() => document.querySelector('#ov input[name=username]')?.focus(), 50);
-}
-async function doLogin(f) {
-    try {
-        const r = await api('POST', '/api/auth/login', { username: f.username.value, password: f.password.value, remember: f.remember.checked });
-        S.me = r.user; closeModal();
-        if (S.ws) { try { S.ws.close(); } catch (e) {} }
-        await boot();
-        if (r.default_login) openAccount(true);
-    } catch (e) { $('loginErr').textContent = e.message; }
+    N8Kit.login.open({
+        logo: '/static/n8schicht-icon.svg', title: (S.info && S.info.title) || 'N8 Hotspot',
+        subtitle: locked ? 'This hotspot is private. Please log in.' : 'Log in to change settings.',
+        remember: 'Stay logged in (30 days)', closable: !locked,
+        submit: async v => {
+            const r = await api('POST', '/api/auth/login', { username: v.username, password: v.password, remember: v.remember });
+            S.me = r.user; closeModal();
+            if (S.ws) { try { S.ws.close(); } catch (e) {} }
+            setTimeout(async () => { await boot(); if (r.default_login) openAccount(true); }, 0);
+        },
+    });
 }
 async function logout() { await api('POST', '/api/auth/logout', {}); location.hash = ''; location.reload(); }
 function openAccount(force) {
@@ -283,7 +278,7 @@ function renderInfo() {
         .filter(Boolean).map(x => `<span>${x}</span>`).join('');
     $('rdModel').textContent = `Hotspot · ${i.duplex ? 'DMR Duplex' : 'DMR Simplex'}`;
 }
-setInterval(() => { const c = $('lcdClock'); if (c) c.textContent = new Date().toLocaleTimeString('de-DE'); }, 1000);
+setInterval(() => { const c = $('lcdClock'); if (c) c.textContent = new Date().toLocaleTimeString(N8Kit.locale()); }, 1000);
 // S-meter: 9 bars from -121 dBm (S1) in 6 dB steps, the last bars for S9+ (MMDVM reports dBm)
 function smeter(rssi) {
     const n = rssi == null ? 0 : Math.max(0, Math.min(12, Math.round((rssi + 127) / 6)));
@@ -346,7 +341,7 @@ async function loadToday() {
     try {
         const d = await api('GET', '/api/stats?range=today');
         const T = d.totals;
-        $('sCalls').textContent = T.calls.toLocaleString('de-DE');
+        $('sCalls').textContent = T.calls.toLocaleString(N8Kit.locale());
         $('sAir').textContent = fmtDur(T.duration, true);
         $('sRf').innerHTML = `${T.rf_calls}<small>${fmtDur(T.rf_duration, true)}</small>`;
         $('sNet').innerHTML = `${T.net_calls}<small>${fmtDur(T.net_duration, true)}</small>`;
@@ -436,7 +431,7 @@ function renderSignal() {
     const q = [T.ber_good, T.ber_mid, T.ber_bad], qs = q.reduce((a, b) => a + b, 0);
     $('qBar').innerHTML = qs ? [['good', 'clean < 1 %'], ['mid', 'audible 1–3 %'], ['bad', 'bad > 3 %']].map(([c, l], k) => q[k]
         ? `<i class="${c}" style="flex:${q[k]}" title="${l}: ${q[k]}"><span>${q[k]}</span></i>` : '').join('') : '<i class="none" style="flex:1"><span>no RF call today</span></i>';
-    const de = v => Number(v || 0).toLocaleString('de-DE');
+    const de = v => Number(v || 0).toLocaleString(N8Kit.locale());
     $('sigKv').innerHTML = `<div><small>Ø BER (RF)</small><b>${T.ber_avg != null ? T.ber_avg.toFixed(2) + ' %' : '–'}</b></div>
         <div><small>max. BER</small><b>${T.ber_max != null ? T.ber_max.toFixed(1) + ' %' : '–'}</b></div>
         <div><small>Ø loss (network)</small><b>${T.loss_avg != null ? T.loss_avg.toFixed(1) + ' %' : '–'}</b></div>
@@ -467,12 +462,12 @@ function bindSeg(id, fn) {
 bindSeg('stRange', v => { S.stats.range = v; loadStats(); });
 bindSeg('stMetric', v => { S.stats.metric = v; renderStats(); });
 bindSeg('stBy', v => { S.stats.by = v; renderStats(); });
-function sFmt(v) { return S.stats.metric === 'calls' ? Math.round(v).toLocaleString('de-DE') : fmtDur(v, true); }
+function sFmt(v) { return S.stats.metric === 'calls' ? Math.round(v).toLocaleString(N8Kit.locale()) : fmtDur(v, true); }
 function renderStats() {
     const d = S.stats.data; if (!d) return;
     assignColors(d.series || []);
     const T = d.totals;
-    $('kCalls').textContent = T.calls.toLocaleString('de-DE');
+    $('kCalls').textContent = T.calls.toLocaleString(N8Kit.locale());
     $('kAir').textContent = fmtDur(T.duration, true);
     $('kRf').textContent = T.duration ? Math.round(T.rf_duration / T.duration * 100) + ' %' : '–';
     $('kSt').textContent = T.stations;
@@ -506,8 +501,8 @@ function renderBars(d) {
 }
 function bucketLabel(d, i, long) {
     const t = new Date(d.buckets[i] * 1000);
-    if (d.bucket === 'hour') { const h = String(t.getHours()).padStart(2, '0'); return long ? `${t.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })} ${h}:00–${String((t.getHours() + 1) % 24).padStart(2, '0')}:00` : h; }
-    return long ? t.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' }) : t.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }).replace(/\.$/, '');
+    if (d.bucket === 'hour') { const h = String(t.getHours()).padStart(2, '0'); return long ? `${t.toLocaleDateString(N8Kit.locale(), { weekday: 'short', day: '2-digit', month: '2-digit' })} ${h}:00–${String((t.getHours() + 1) % 24).padStart(2, '0')}:00` : h; }
+    return long ? t.toLocaleDateString(N8Kit.locale(), { weekday: 'long', day: '2-digit', month: '2-digit' }) : t.toLocaleDateString(N8Kit.locale(), { day: '2-digit', month: '2-digit' }).replace(/\.$/, '');
 }
 function niceMax(v) {
     if (S.stats.metric === 'duration') { for (const s of [60, 120, 300, 600, 900, 1200, 1800, 3600, 7200, 10800, 18000, 36000, 72000]) if (s * 4 >= v) return s * 4; return Math.ceil(v / 4 / 3600) * 3600 * 4; }
@@ -595,15 +590,15 @@ function renderTalkgroups() {
     if (TGV.filter === 'own') rows = rows.filter(r => r.own);
     if (q) rows = rows.filter(r => r.tg.startsWith(q) || r.name.toLowerCase().includes(q));
     rows.sort((x, y) => TGV.filter === 'heard' ? (y.a.duration - x.a.duration) : (Number(x.tg) - Number(y.tg)));
-    $('tgCount').textContent = rows.length.toLocaleString('de-DE');
+    $('tgCount').textContent = rows.length.toLocaleString(N8Kit.locale());
     const shown = rows.slice(0, TGV.limit);
     $('tgBody').innerHTML = shown.length ? shown.map(r => `<tr><td><b class="mono">${esc(r.tg)}</b></td>
         <td style="white-space:normal">${esc(r.name) || '<span class="dim">–</span>'} ${r.own ? '<span class="pill" style="font-size:10.5px;padding:1px 7px">own</span>' : ''}</td>
         <td class="num">${r.a ? r.a.calls : '<span class="dim">–</span>'}</td><td class="num hide-sm">${r.a ? fmtDur(r.a.duration, true) : ''}</td>
         <td class="hide-sm">${r.a ? ago(r.a.last) : ''}</td></tr>`).join('') : '<tr><td colspan="5" class="empty">No talkgroup found.</td></tr>';
     $('tgMore').classList.toggle('hidden', rows.length <= TGV.limit);
-    $('tgMore').textContent = `Show all ${rows.length.toLocaleString('de-DE')}`;
-    $('tgSource').innerHTML = d.list.enabled ? `List of the N8schicht: ${d.list.count.toLocaleString('de-DE')} names${d.list.updated ? ', updated ' + fmtDate(d.list.updated) : ''} · <a href="https://github.com/dhartmann1979/n8schicht/blob/main/talkgroup_ids.json" target="_blank" rel="noopener">talkgroup_ids.json</a>` : 'Talkgroup list switched off (Admin → Settings → Dashboard)';
+    $('tgMore').textContent = `Show all ${rows.length.toLocaleString(N8Kit.locale())}`;
+    $('tgSource').innerHTML = d.list.enabled ? `List of the N8schicht: ${d.list.count.toLocaleString(N8Kit.locale())} names${d.list.updated ? ', updated ' + fmtDate(d.list.updated) : ''} · <a href="https://github.com/dhartmann1979/n8schicht/blob/main/talkgroup_ids.json" target="_blank" rel="noopener">talkgroup_ids.json</a>` : 'Talkgroup list switched off (Admin → Settings → Dashboard)';
 }
 let tgT = null;
 $('tgSearch').addEventListener('input', () => { clearTimeout(tgT); tgT = setTimeout(() => { TGV.limit = 150; renderTalkgroups(); }, 120); });
@@ -927,19 +922,19 @@ async function loadSystem() {
                 <div class="k">MMDVMCal</div><div class="v">${esc(d.versions.mmdvmcal)}</div>
                 <div class="k">N8-Hotspot</div><div class="v">${esc(d.app_version)}${d.demo ? ' (demo)' : ''}</div></div></div>
         <div class="tile"><h3>📘 DMR ID list</h3><div class="subt">Callsigns and names for the dashboard and MMDVMHost (DMRIds.dat).</div>
-            <div class="kv"><div class="k">IDs</div><div class="v">${d.idlist.count.toLocaleString('de-DE')}</div><div class="k">Updated</div><div class="v">${d.idlist.updated ? fmtDate(d.idlist.updated) : 'never'}</div>
+            <div class="kv"><div class="k">IDs</div><div class="v">${d.idlist.count.toLocaleString(N8Kit.locale())}</div><div class="k">Updated</div><div class="v">${d.idlist.updated ? fmtDate(d.idlist.updated) : 'never'}</div>
             ${d.idlist.error ? `<div class="k">Error</div><div class="v" style="color:#ff8a80;white-space:normal">${esc(d.idlist.error)}</div>` : ''}</div>
             <div class="actions"><button class="btn" onclick="refreshIds(this)">⟳ Update now</button></div></div>
         <div class="tile"><h3>🗂️ Talkgroup list</h3><div class="subt">Names from github.com/dhartmann1979/n8schicht, plus your own.</div>
-            <div class="kv"><div class="k">Names</div><div class="v">${d.talkgroups.enabled ? d.talkgroups.count.toLocaleString('de-DE') : 'off'}${d.talkgroups.own ? ` <span class="dim">+ ${d.talkgroups.own} own</span>` : ''}</div>
+            <div class="kv"><div class="k">Names</div><div class="v">${d.talkgroups.enabled ? d.talkgroups.count.toLocaleString(N8Kit.locale()) : 'off'}${d.talkgroups.own ? ` <span class="dim">+ ${d.talkgroups.own} own</span>` : ''}</div>
             <div class="k">Updated</div><div class="v">${d.talkgroups.updated ? fmtDate(d.talkgroups.updated) : 'copy shipped with N8-Hotspot'}</div>
             ${d.talkgroups.error ? `<div class="k">Error</div><div class="v" style="color:#ff8a80;white-space:normal">${esc(d.talkgroups.error)}</div>` : ''}</div></div>
         <div class="tile"><h3>🛡️ FreeRadioID.net</h3><div class="subt">Registered IDs (FRID badge) and avatars, loaded with the ID list.</div>
-            <div class="kv"><div class="k">Registered IDs</div><div class="v">${d.frid.enabled ? d.frid.registered.toLocaleString('de-DE') : 'off'}</div>
+            <div class="kv"><div class="k">Registered IDs</div><div class="v">${d.frid.enabled ? d.frid.registered.toLocaleString(N8Kit.locale()) : 'off'}</div>
             <div class="k">Avatars cached</div><div class="v">${d.frid.avatars.with_avatar} <span class="dim">(${d.frid.avatars.without} without picture)</span></div>
             <div class="k">Updated</div><div class="v">${d.frid.updated ? fmtDate(d.frid.updated) : 'with the next ID list update'}</div>
             ${d.frid.error ? `<div class="k">Error</div><div class="v" style="color:#ff8a80;white-space:normal">${esc(d.frid.error)}</div>` : ''}</div></div>
-        <div class="tile"><h3>🗄️ Data</h3><div class="kv"><div class="k">Calls stored</div><div class="v">${d.calls.toLocaleString('de-DE')}</div>
+        <div class="tile"><h3>🗄️ Data</h3><div class="kv"><div class="k">Calls stored</div><div class="v">${d.calls.toLocaleString(N8Kit.locale())}</div>
             <div class="k">Since</div><div class="v">${d.calls_since ? fmtDate(d.calls_since) : '–'}</div><div class="k">Folder</div><div class="v mono" style="font-size:12px">${esc(d.data_dir)}</div></div></div>
     </div>`;
 }
@@ -949,7 +944,7 @@ async function power(a) {
 }
 async function refreshIds(btn) {
     btn.disabled = true; btn.textContent = 'Loading …';
-    try { const r = await api('POST', '/api/admin/idlist/refresh', {}); toast(`${r.count.toLocaleString('de-DE')} IDs${r.talkgroups ? ', ' + r.talkgroups.toLocaleString('de-DE') + ' talkgroups' : ''} loaded`); loadSystem(); } catch (e) { toast(e.message, true); btn.disabled = false; btn.textContent = '⟳ Update now'; }
+    try { const r = await api('POST', '/api/admin/idlist/refresh', {}); toast(`${r.count.toLocaleString(N8Kit.locale())} IDs${r.talkgroups ? ', ' + r.talkgroups.toLocaleString(N8Kit.locale()) + ' talkgroups' : ''} loaded`); loadSystem(); } catch (e) { toast(e.message, true); btn.disabled = false; btn.textContent = '⟳ Update now'; }
 }
 
 // logs
