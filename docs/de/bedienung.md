@@ -59,7 +59,7 @@ niedriger als das Menü. Beides bleibt beim Scrollen oben stehen.
 | **🎙️ Live · 📈 Statistics · 🗂️ Talkgroups** | die Ansichten |
 | **⚙️ Admin** | erscheint nach dem Login für Admins als eigener Menüpunkt (gestrichelt umrandet) |
 | **🔗 Links ▾** | Link-Menü mit Site-Icons der verlinkten Seiten (im Adminbereich unter *Links* einstellbar) |
-| **🔐 Login** | ganz rechts; nach dem Anmelden steht dort dein **👤 Name** (Klick = *My account*, Passwort ändern) und daneben **⏻** zum Abmelden – ohne Aufklappmenü |
+| **🔐 Anmelden** | ganz rechts; öffnet das [Anmeldefenster](sicherheit.md#anmeldung). Nach dem Anmelden steht dort **Avatar + Name ▾** – das Menü darunter enthält Rolle, 🔑 Mein Konto (Passwort ändern), ⚙️ Admin und ⏻ Abmelden |
 
 **Statusleiste** – ein farbiger Punkt sagt den Zustand: grün = ok, gelb = wartet, rot = Fehler, blau = aktiv, grau = aus.
 

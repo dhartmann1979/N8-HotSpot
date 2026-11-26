@@ -129,7 +129,7 @@ Optionen per Umgebungsvariable:
 Hast du das Image mit Hotspot-Einstellungen gebaut oder `setup.sh` benutzt, sind die Schritte 3 und 4 schon erledigt.
 
 1. **http://n8-hotspot.local** öffnen. Die Live-Ansicht ist sofort sichtbar.
-2. **🔐 Login** mit `n8schicht` / `n8schicht`. Es erscheint sofort *My account*: eigenen Benutzernamen und ein neues Passwort setzen. Danach funktioniert der Werks-Login nicht mehr.
+2. **🔐 Anmelden** mit `n8schicht` / `n8schicht`. Es erscheint sofort **🔑 Mein Konto**: eigenen Benutzernamen und ein neues Passwort setzen. Solange der Werks-Login gilt, lassen sich keine Einstellungen ändern; danach funktioniert er nicht mehr.
 3. **Admin → Settings**:
    - **📻 Station**: Rufzeichen, DMR-ID, zwei Ziffern für die Hotspot-ID (z. B. `01` → `262123401`), Ort
    - **📡 Modem**: Board auswählen, das trägt Port, Geschwindigkeit und Simplex/Duplex ein. Dazu die Frequenz.

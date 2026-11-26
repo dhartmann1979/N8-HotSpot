@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="#schnellstart">Schnellstart</a> ·
+  🌍 <a href="docs/anleitung/README.md"><b>Schritt für Schritt</b> (9 Sprachen)</a> · 
   <a href="docs/de/installation.md">Installation &amp; Image</a> ·
   <a href="docs/de/bedienung.md">Live &amp; Statistik</a> ·
   <a href="docs/de/adminbereich.md">Adminbereich</a> ·
@@ -81,7 +82,7 @@ Ohne vorher eingetragene Hotspot-Einstellungen geht es im Browser weiter: **Logi
   <img src="docs/images/setup-1.png" alt="Geführte Einrichtung" width="49%">
 </p>
 
-➡️ Ausführlich: **[Installation & Image](docs/de/installation.md)**
+➡️ Ausführlich: **[Installation & Image](docs/de/installation.md)** · 🌍 **[Schritt für Schritt (9 Sprachen)](docs/anleitung/README.md)**
 
 ## So sieht es aus
 
