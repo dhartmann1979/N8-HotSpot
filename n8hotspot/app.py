@@ -24,7 +24,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from . import n8_security as _sec
-from . import __version__, configgen, demo, permcheck, siteicons, stats, updater
+from . import __version__, configgen, demo, n8feed, permcheck, siteicons, stats, updater
 from .auth import Auth, AuthError, DEFAULT_PASSWORD, DEFAULT_USER
 from .calib import KEYS, CalSession
 from .db import DB
@@ -479,6 +479,48 @@ async def midnight_site_icon_refresh() -> None:
             log.info("Midnight site icon refresh completed (%d links)", len(link_icon_urls()))
         except Exception:
             log.exception("Midnight site icon refresh failed")
+
+
+# ---------------------------------------------------------------- 📰 portal feed for the adn-frn-server (n8feed.py)
+_feed_replay = n8feed.Replay()
+
+
+def _feed_summary() -> Dict[str, Any]:
+    """Status, who is talking and last heard – what the portal page shows as a widget. Only the public data, no IPs."""
+    s = ctx.settings.all()
+    snap = ctx.live.snapshot()
+    link = snap.get("link") or {}
+    names = ctx.tg_names()
+    tg = lambda d: f"TG {d.get('dst_id')}" + (f" {names[d.get('dst_id')]}" if d.get("dst_id") in names else "") if d.get("group", True)         else f"privat {d.get('dst_id')}"  # noqa: E731
+    air = [{"call": c.get("callsign") or c.get("src_id"), "name": c.get("name", ""), "where": f"{tg(c)} · TS{c.get('slot')}"
+            + (" · RF" if c.get("source") == "rf" else " · Netz")} for c in (snap.get("slots") or {}).values() if c and not c.get("is_data")]
+    lh = [{"call": d.get("callsign") or d.get("src_id"), "name": d.get("name", ""), "where": f"{tg(d)} · TS{d.get('slot')}",
+           "ts": d.get("ts"), "duration": d.get("duration")} for d in snap.get("last_heard", []) if not d.get("is_data")][:8]
+    row = ctx.db.q("SELECT COUNT(*) n, COALESCE(SUM(duration),0) d, COUNT(DISTINCT src_id) s FROM calls WHERE ts >= ? AND is_data = 0",
+                   (n8feed.midnight(),))[0]
+    linked = link.get("state") == "connected"
+    status = "ok" if linked and snap.get("mqtt") else "warn" if snap.get("mqtt") else "down"
+    text = "" if status == "ok" else (link.get("message") or link.get("state") or "MMDVMHost not running")
+    return n8feed.summary("hotspot", s["dashboard.title"] or "N8 Hotspot", __version__, status, text,
+                          [("Network", link.get("network") or s["network.name"] or "–"), ("Calls today", row["n"]),
+                           ("Airtime today", n8feed.fmt_dur(row["d"])), ("Stations today", row["s"])], air, lh)
+
+
+@app.post(n8feed.PATH)
+async def portal_feed(request: Request):
+    """📰 Live summary for the portal page of the adn-frn-server – only into the local network, encrypted with the sync key."""
+    key = str(ctx.settings.get("dashboard.portal_key") or "") if ctx.settings.get("dashboard.portal_feed") else ""
+    if not key:
+        return JSONResponse({"error": "portal feed is off"}, status_code=404)
+    if not n8feed.is_local(ip_of(request)):
+        return JSONResponse({"error": "The portal feed of a hotspot answers only in the local network."}, status_code=403)
+    raw = await request.body()
+    try:
+        blob = await asyncio.to_thread(n8feed.answer_request, raw, key, _feed_replay, _feed_summary)
+    except n8feed.FeedError as e:
+        await asyncio.sleep(1.0)
+        return JSONResponse({"error": str(e)}, status_code=403 if key else 404)
+    return Response(blob, media_type=n8feed.CTYPE)
 
 
 @app.get("/api/live")

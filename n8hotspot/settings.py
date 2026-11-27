@@ -129,6 +129,11 @@ FIELDS: List[Field] = [
     Field("dashboard.public", "dashboard", "Public view", "bool", True,
           "Off = only logged-in users see the dashboard", restart=False),
     Field("dashboard.session_hours", "dashboard", "Session length (hours)", "int", 12, min=1, max=720, restart=False),
+    Field("dashboard.portal_feed", "dashboard", "Live data for the ADN portal page", "bool", False,
+          "The portal page of the adn-frn-server in the same network shows this hotspot as a widget (status, talking now, "
+          "last heard) – only into the local network, encrypted with the sync key", restart=False),
+    Field("dashboard.portal_key", "dashboard", "Sync key for the ADN portal page", "password", "",
+          "Copy it from the portal (adn-frn-server: 📰 Portal → 🧩 Widgets → 🎲 New key) – at least 24 characters", restart=False),
     Field("dashboard.idlist_url", "dashboard", "DMR ID list", "choice", FREERADIOID_CSV, restart=False,
           choices=[(FREERADIOID_CSV, "FreeRadioID.net (radioid.net + FreeRadioID)"), (RADIOID_CSV, "radioid.net only")]),
     Field("dashboard.idlist_time", "dashboard", "Daily ID list update", "time", "03:27", restart=False),
