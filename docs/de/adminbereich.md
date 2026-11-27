@@ -58,6 +58,22 @@ Jeder Abschnitt hat einen eigenen **Save**-Knopf. Die Werte landen in SQLite, un
 | 🛡️ **FreeRadioID.net** | registrierte IDs laden (FRID), **Avatare** anzeigen, **Profile** abrufen; siehe [FreeRadioID](freeradioid.md) |
 | 🧪 **Expert** | Zusätzliche Zeilen für `MMDVM-Host.ini` und `DMRGateway.ini` im ini-Format. Sie ersetzen gleichnamige Schlüssel oder ergänzen ganze Abschnitte, z. B. `[Modem]` + `Trace=1`. |
 
+### 📰 Live-Daten für die Portal-Seite des ADN FRN Servers (nur im lokalen Netz)
+
+<p align="center"><img src="../images/admin-portal-feed.png" alt="Einstellungen → Dashboard mit Portal-Feed" width="80%"></p>
+
+Ab **1.13.0** kann ein [adn-frn-server](https://github.com/dhartmann1979/adn-frn-server/blob/main/docs/de/portal.md#-widgets-am-rand-live-daten-der-anderen-n8-systeme) **im selben Netz** diesen Hotspot als **Widget am Rand seiner Portal-Seite** zeigen:
+Netz, wer gerade spricht (TG, Zeitschlitz, RF oder Netz), Durchgänge, Sprechzeit und Stationen heute, zuletzt gehört.
+
+1. Im adn-frn-server: *📰 Portal → 🧩 Widgets → ＋ N8 Hotspot*, **LAN-Adresse** des Hotspots (z. B. `http://192.168.1.20`), **🎲 Neuer Schlüssel**, kopieren.
+2. Hier: *Einstellungen → 🌐 Dashboard* → **Live-Daten für die Portal-Seite** an, **Sync-Schlüssel** einfügen, speichern.
+3. Im Portal speichern – es ruft sofort ab.
+
+- **Nur im lokalen Netz:** Der Hotspot beantwortet den Feed nur aus privaten Netzen (192.168.x.x, 10.x, 172.16–31.x, fd00::/8,
+  Loopback); das Portal nimmt für einen Hotspot nur LAN-Adressen an.
+- Verschlüsselt mit dem Sync-Schlüssel, jede Anfrage nur einmal und höchstens 5 Minuten gültig; ohne Anmeldung, auch wenn die öffentliche
+  Ansicht aus ist. Es geht nur hinaus, was die Live-Seite zeigt – keine IP-Adressen, keine Konten. Standard: aus.
+
 ### 🔍 Wo steckt das Modem?
 
 Neben **Serial port** im Abschnitt *Modem* öffnet **🔍 Find** ein Fenster mit:

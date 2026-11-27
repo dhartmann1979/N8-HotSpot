@@ -177,3 +177,16 @@ N8Kit.i18n.add({
         [/^([\d.,]+ ?[KMGT]?B) of ([\d.,]+ ?[KMGT]?B)$/, "$1 von $2"],
     ]
 });
+
+/* 1.13.0: portal feed for the adn-frn-server */
+N8Kit.i18n.add({
+    base: 'en',
+    de: {
+        "Live data for the ADN portal page": "Live-Daten für die Portal-Seite des ADN FRN Servers",
+        "The portal page of the adn-frn-server in the same network shows this hotspot as a widget (status, talking now, last heard) – only into the local network, encrypted with the sync key":
+            "Die Portal-Seite eines adn-frn-server im selben Netz zeigt diesen Hotspot als Widget (Status, wer gerade spricht, zuletzt gehört) – nur ins lokale Netz, verschlüsselt mit dem Sync-Schlüssel",
+        "Sync key for the ADN portal page": "Sync-Schlüssel für die Portal-Seite",
+        "Copy it from the portal (adn-frn-server: 📰 Portal → 🧩 Widgets → 🎲 New key) – at least 24 characters":
+            "Aus dem Portal kopieren (adn-frn-server: 📰 Portal → 🧩 Widgets → 🎲 Neuer Schlüssel) – mindestens 24 Zeichen",
+    },
+});

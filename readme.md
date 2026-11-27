@@ -34,6 +34,7 @@
 | 🎚️ **Vocoder & Signal** | **BER live** des laufenden Funk-Durchgangs, BER/Paketverlust der letzten 40 Durchgänge, RSSI-Verlauf, Sprachqualität des Tages (sauber/hörbar/schlecht) und die AMBE+2-Sprachrahmen über Funk und Netz |
 | 🛡️ **FreeRadioID.net** | **Avatare**, **FRID**-Kennzeichen, Profile und die **DMR-ID-Datenbank** direkt aus der FreeRadioID-API; Stationsansicht per Klick auf ein Rufzeichen |
 | 🗂️ **Talkgroups** | rund 1.400 Talkgroup-Namen aus der [N8schicht-Liste](https://github.com/dhartmann1979/n8schicht/blob/main/talkgroup_ids.json) überall in der Oberfläche, eigener Tab mit Suche und „hier gehört“ |
+| 📰 **Portal-Widget** | Live-Daten als Widget am Rand der Portal-Seite eines adn-frn-server **im lokalen Netz** – verschlüsselt mit dem Sync-Schlüssel ([mehr](docs/de/adminbereich.md)) |
 | 🔍 **Modem finden** | Scan aller seriellen Schnittstellen mit MMDVM-Abfrage, Erklärung der Ports, Übernahme per Klick |
 | 📈 **Statistiken** | Talkgroups, Sprechzeit, RF und Netz, aktivste Stationen; heute, 24 h, 7 oder 30 Tage, als Diagramm und Tabelle |
 | 🎛️ **Kalibrierung** | Frequenzabgleich mit MMDVMCal im Browser: BER live, Frequenz per Knopf verschieben, Offset mit einem Klick speichern |

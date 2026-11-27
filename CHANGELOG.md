@@ -4,6 +4,21 @@ Alle Versionen von **N8-Hotspot** (DMR Die N8schicht), die neueste oben.
 Die Nummern folgen [Semantic Versioning](https://semver.org/lang/de/): `MAJOR.MINOR.PATCH`.
 Wie Versionen und Updates funktionieren, steht in [docs/de/updates.md](docs/de/updates.md).
 
+## [1.13.0] – 2026-11-27
+
+### 📰 Live-Daten für die Portal-Seite des ADN FRN Servers – nur im lokalen Netz
+
+- **Neu: Portal-Feed.** Ein adn-frn-server (ab 2.33.0) im selben Netz zeigt diesen Hotspot als **Widget am Rand seiner Portal-Seite**:
+  Status (Netz verbunden, MMDVMHost läuft), Netz, wer gerade spricht (TG mit Namen, Zeitschlitz, RF oder Netz), Durchgänge, Sprechzeit
+  und Stationen heute, zuletzt gehört.
+- Einstellung unter **Einstellungen → 🌐 Dashboard**: *Live-Daten für die Portal-Seite* (Standard aus) und *Sync-Schlüssel für die
+  Portal-Seite* (kommt aus dem Portal: 📰 Portal → 🧩 Widgets → 🎲 Neuer Schlüssel).
+- Neuer Endpunkt `POST /api/n8/feed`: **nur aus dem lokalen Netz** (private Adressen, Loopback, Link-Local), **verschlüsselt mit dem
+  Sync-Schlüssel** (scrypt, SHAKE-256, HMAC-SHA-256), jede Anfrage nur einmal und höchstens 5 Minuten gültig. Keine IP-Adressen,
+  keine Konten.
+- Neue Datei `n8hotspot/n8feed.py` (in allen N8-Systemen gleich). Tests: `tests/test_portal_feed.py`.
+- Doku: [docs/de/adminbereich.md](docs/de/adminbereich.md) Abschnitt „📰 Live-Daten für die Portal-Seite“ mit Bildschirmfoto.
+
 ## [1.12.1] – 2026-11-26
 
 ### 📘 Neue Schritt-für-Schritt-Anleitung in neun Sprachen, bereinigte Doku
